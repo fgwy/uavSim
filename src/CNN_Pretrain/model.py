@@ -18,6 +18,8 @@ class Autoencoder(Model):
         )
         self.decoder = tf.keras.Sequential(
             [
-                tf.keras.layers.Conv2D()
+                tf.keras.layers.Conv2DTranspose()
             ]
         )
+
+    def __call__(self, *args, **kwargs):

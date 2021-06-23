@@ -14,7 +14,7 @@ def print_node(x):
 class DDQNAgentParams:
     def __init__(self):
         # Convolutional part config
-        self.conv_layers = 2
+        self.conv_layers = 3
         self.conv_kernel_size = 5
         self.conv_kernels = 16
 

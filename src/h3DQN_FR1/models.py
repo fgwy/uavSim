@@ -48,4 +48,14 @@ class ControllerParams:
         # Exploration strategy
         self.soft_max_scaling = 0.1
 
-class MetaController():
+class MetaController(object):
+    def __init__(self, params=MetaControllerParams()):
+        self.params = params
+
+class Controller(object):
+    def __init__(self, params=ControllerParams()):
+        self.params = params
+
+    def build_model(self):
+        pass
+        return 0

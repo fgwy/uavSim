@@ -6,6 +6,7 @@ from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, 
 import numpy as np
 
 
+
 def print_node(x):
     print(x)
     return x
@@ -48,6 +49,7 @@ class ControllerParams:
         # Exploration strategy
         self.soft_max_scaling = 0.1
 
+
 class MetaController(object):
     def __init__(self, params=MetaControllerParams()):
         self.params = params
@@ -59,3 +61,4 @@ class Controller(object):
     def build_model(self):
         pass
         return 0
+

@@ -30,6 +30,11 @@ class MetaControllerParams:
         # Exploration strategy
         self.soft_max_scaling = 0.1
 
+    def build_model(self):
+        pass
+        return 0
+
+
 class ControllerParams:
     def __init__(self):
         # Convolutional part config

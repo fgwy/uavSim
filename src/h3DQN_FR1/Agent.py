@@ -112,7 +112,7 @@ class DDQNAgent(object):
         # Softmax explore model
         softmax_scaling = tf.divide(q_values, tf.constant(self.params.soft_max_scaling, dtype=float))
         softmax_action = tf.math.softmax(softmax_scaling, name='softmax_action')
-        self.soft_explore_model = Model(inputs=states, outputs=softmax_action)
+        self.soft_explore_model = Model(inputs=states, outputs=softmax_action) 
 
         self.q_optimizer = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
 

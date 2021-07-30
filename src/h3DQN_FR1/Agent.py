@@ -56,20 +56,25 @@ class DDQNAgent(object):
         # Create shared inputs
         boolean_map_input = Input(shape=self.boolean_map_shape, name='boolean_map_input', dtype=tf.bool)
         float_map_input = Input(shape=self.float_map_shape, name='float_map_input', dtype=tf.float32)
+        mask_input = Input(shape=(), name='mask_input', dtype=tf.bool)
         scalars_input = Input(shape=(self.scalars,), name='scalars_input', dtype=tf.float32)
         action_input = Input(shape=(), name='action_input', dtype=tf.int64)
         reward_input = Input(shape=(), name='reward_input', dtype=tf.float32)
         termination_input = Input(shape=(), name='termination_input', dtype=tf.bool)
         q_star_input = Input(shape=(), name='q_star_input', dtype=tf.float32)
-        states = [boolean_map_input,
+        states_h = [boolean_map_input,
                   float_map_input,
                   scalars_input]
+
+        states_l = [boolean_map_input,
+                    float_map_input,
+                    mask_input]
 
         map_cast = tf.cast(boolean_map_input, dtype=tf.float32)
         padded_map = tf.concat([map_cast, float_map_input], axis=3)
 
-        self.q_network = self.build_model(padded_map, scalars_input, states)
-        self.target_network = self.build_model(padded_map, scalars_input, states, 'target_')
+        self.q_network = self.build_model_h(padded_map, scalars_input, states)
+        self.target_network = self.build_model_h(padded_map, scalars_input, states, 'target_')
         self.hard_update()
 
         if self.params.use_global_local:
@@ -112,7 +117,7 @@ class DDQNAgent(object):
         # Softmax explore model
         softmax_scaling = tf.divide(q_values, tf.constant(self.params.soft_max_scaling, dtype=float))
         softmax_action = tf.math.softmax(softmax_scaling, name='softmax_action')
-        self.soft_explore_model = Model(inputs=states, outputs=softmax_action)
+        self.soft_explore_model = Model(inputs=states, outputs=softmax_action) 
 
         self.q_optimizer = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
 
@@ -122,7 +127,7 @@ class DDQNAgent(object):
         if stats:
             stats.set_model(self.target_network)
 
-    def build_model(self, map_proc, states_proc, inputs, name=''):
+    def build_model_h(self, map_proc, states_proc, inputs, name=''):
 
         flatten_map = self.create_map_proc(map_proc, name)
 
@@ -135,6 +140,21 @@ class DDQNAgent(object):
         model = Model(inputs=inputs, outputs=output)
 
         return model
+
+    def build_model_l(self, map_proc, states_proc, inputs, name=''):
+
+        flatten_map = self.create_map_proc(map_proc, name)
+
+        layer = Concatenate(name=name + 'concat')([flatten_map, states_proc])
+        for k in range(self.params.hidden_layer_num):
+            layer = Dense(self.params.hidden_layer_size, activation='relu', name=name + 'hidden_layer_all_' + str(k))(
+                layer)
+        output = Dense(self.num_actions, activation='linear', name=name + 'output_layer')(layer)
+
+        model = Model(inputs=inputs, outputs=output)
+
+        return model
+
 
     def create_map_proc(self, conv_in, name):
 

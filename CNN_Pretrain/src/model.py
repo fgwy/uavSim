@@ -4,10 +4,11 @@ print(tf.__version__)
 
 class Autoencoder_flex(tf.keras.models.Model):
 
-    def __init__(self, num_layers, inp_shape):
+    def __init__(self, num_layers, inp_shape, kernel_size):
         super(Autoencoder_flex, self).__init__()
         self.num_layers = num_layers
         self.inp_shape = inp_shape
+        self.kernel_size = kernel_size
         self.encoder = self.build_encoder()
         self.decoder = self.build_decoder()
 
@@ -24,16 +25,16 @@ class Autoencoder_flex(tf.keras.models.Model):
         encoder = tf.keras.Sequential(name='encoder')
         encoder.add(tf.keras.layers.Input(shape=self.inp_shape))
         for k in range(self.num_layers):
-            encoder.add(tf.keras.layers.Conv2D(filters=2+(2*(k+2)), kernel_size=3, name='{}.-encoding_layer'.format(k), padding='valid', activation="elu"))
+            encoder.add(tf.keras.layers.Conv2D(filters=2+(2*(k+2)), kernel_size=self.kernel_size, name='{}.-encoding_layer'.format(k), padding='valid', activation="elu"))
             # encoder.add(tf.keras.layers.MaxPooling2D((2, 2), strides=1))
         return encoder
 
     def build_decoder(self):
         decoder = tf.keras.Sequential(name='decoder')
         for k in range(self.num_layers-1):
-            decoder.add(tf.keras.layers.Conv2DTranspose(filters=2+2*(self.num_layers-k+1), kernel_size=3, name='{}.-decoding_layer'.format(k), activation='elu', padding='valid'))
+            decoder.add(tf.keras.layers.Conv2DTranspose(filters=2+2*(self.num_layers-k+1), kernel_size=self.kernel_size, name='{}.-decoding_layer'.format(k), activation='elu', padding='valid'))
             # decoder.add(tf.keras.layers.UpSampling2D((2, 2)))
-        decoder.add(tf.keras.layers.Conv2DTranspose(filters=self.inp_shape[2], kernel_size=3))
+        decoder.add(tf.keras.layers.Conv2DTranspose(filters=self.inp_shape[2], kernel_size=self.kernel_size))
 
         # sh = decoder.output_shape()
         # print('decoder shape: {}'.format(sh))

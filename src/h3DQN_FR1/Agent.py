@@ -11,7 +11,7 @@ def print_node(x):
     return x
 
 
-class DDQNAgentParams:
+class H_DDQNAgentParams:
     def __init__(self):
         # Convolutional part config
         self.conv_layers = 3
@@ -39,9 +39,9 @@ class DDQNAgentParams:
         self.print_summary = False
 
 
-class DDQNAgent(object):
+class H_DDQNAgent(object):
 
-    def __init__(self, params: DDQNAgentParams, example_state, example_action, stats=None):
+    def __init__(self, params: H_DDQNAgentParams, example_state, example_action, stats=None):
 
         self.params = params
         gamma = tf.constant(self.params.gamma, dtype=float)
@@ -73,9 +73,14 @@ class DDQNAgent(object):
         map_cast = tf.cast(boolean_map_input, dtype=tf.float32)
         padded_map = tf.concat([map_cast, float_map_input], axis=3)
 
-        self.q_network = self.build_model_h(padded_map, scalars_input, states)
-        self.target_network = self.build_model_h(padded_map, scalars_input, states, 'target_')
-        self.hard_update()
+        self.q_network_h = self.build_model_h(padded_map, scalars_input, states_h)
+        self.target_network_h = self.build_model_h(padded_map, scalars_input, states_h, 'target_')
+
+        self.q_network_l = self.build_model_h(padded_map, scalars_input, states_l)
+        self.target_network_l = self.build_model_h(padded_map, scalars_input, states_l, 'target_')
+
+        self.hard_update_l()
+        self.hard_update_h()
 
         if self.params.use_global_local:
             self.global_map_model = Model(inputs=[boolean_map_input, float_map_input],
@@ -85,47 +90,96 @@ class DDQNAgent(object):
             self.total_map_model = Model(inputs=[boolean_map_input, float_map_input],
                                          outputs=self.total_map)
 
-        q_values = self.q_network.output
-        q_target_values = self.target_network.output
+        q_values_l = self.q_network_l.output
+        q_target_values_l = self.target_network_l.output
 
+        q_values_h = self.q_network_h.output
+        q_target_values_h = self.target_network_h.output
+
+        ########## LOW-level Agent ###########3#
         # Define Q* in min(Q - (r + gamma_terminated * Q*))^2
-        max_action = tf.argmax(q_values, axis=1, name='max_action', output_type=tf.int64)
-        max_action_target = tf.argmax(q_target_values, axis=1, name='max_action', output_type=tf.int64)
-        one_hot_max_action = tf.one_hot(max_action, depth=self.num_actions, dtype=float)
-        q_star = tf.reduce_sum(tf.multiply(one_hot_max_action, q_target_values, name='mul_hot_target'), axis=1,
+        max_action_l = tf.argmax(q_values_l, axis=1, name='max_action', output_type=tf.int64)
+        max_action_target_l = tf.argmax(q_target_values_l, axis=1, name='max_action', output_type=tf.int64)
+        one_hot_max_action_l = tf.one_hot(max_action_l, depth=self.num_actions, dtype=float)
+        q_star = tf.reduce_sum(tf.multiply(one_hot_max_action_l, q_target_values_l, name='mul_hot_target'), axis=1,
                                name='q_star')
-        self.q_star_model = Model(inputs=states, outputs=q_star)
+        self.q_star_model_l = Model(inputs=states_l, outputs=q_star)
 
         # Define Bellman loss
         one_hot_rm_action = tf.one_hot(action_input, depth=self.num_actions, on_value=1.0, off_value=0.0, dtype=float)
         one_cold_rm_action = tf.one_hot(action_input, depth=self.num_actions, on_value=0.0, off_value=1.0, dtype=float)
-        q_old = tf.stop_gradient(tf.multiply(q_values, one_cold_rm_action))
+        q_old = tf.stop_gradient(tf.multiply(q_values_l, one_cold_rm_action))
         gamma_terminated = tf.multiply(tf.cast(tf.math.logical_not(termination_input), tf.float32), gamma)
         q_update = tf.expand_dims(tf.add(reward_input, tf.multiply(q_star_input, gamma_terminated)), 1)
         q_update_hot = tf.multiply(q_update, one_hot_rm_action)
         q_new = tf.add(q_update_hot, q_old)
-        q_loss = tf.losses.MeanSquaredError()(q_new, q_values)
-        self.q_loss_model = Model(
+        q_loss = tf.losses.MeanSquaredError()(q_new, q_values_l)
+        self.q_loss_model_l = Model(
             inputs=[boolean_map_input, float_map_input, scalars_input, action_input, reward_input,
                     termination_input, q_star_input],
             outputs=q_loss)
 
         # Exploit act model
-        self.exploit_model = Model(inputs=states, outputs=max_action)
-        self.exploit_model_target = Model(inputs=states, outputs=max_action_target)
+        self.exploit_model = Model(inputs=states_l, outputs=max_action_l)
+        self.exploit_model_target = Model(inputs=states_l, outputs=max_action_target_l)
 
         # Softmax explore model
-        softmax_scaling = tf.divide(q_values, tf.constant(self.params.soft_max_scaling, dtype=float))
+        softmax_scaling = tf.divide(q_values_l, tf.constant(self.params.soft_max_scaling, dtype=float))
         softmax_action = tf.math.softmax(softmax_scaling, name='softmax_action')
-        self.soft_explore_model = Model(inputs=states, outputs=softmax_action) 
+        self.soft_explore_model = Model(inputs=states_l, outputs=softmax_action)
 
         self.q_optimizer = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
 
         if self.params.print_summary:
-            self.q_loss_model.summary()
+            self.q_loss_model_l.summary()
 
         if stats:
-            stats.set_model(self.target_network)
+            stats.set_model(self.target_network_l)
+
+
+
+        ########## HIGH-Level Agent ##############
+
+        # Define Q* in min(Q - (r + gamma_terminated * Q*))^2
+        max_action_h = tf.argmax(q_values_h, axis=1, name='max_action', output_type=tf.int64)
+        max_action_target_h = tf.argmax(q_target_values_h, axis=1, name='max_action', output_type=tf.int64)
+        one_hot_max_action_h = tf.one_hot(max_action_h, depth=self.num_actions, dtype=float)
+        q_star_h = tf.reduce_sum(tf.multiply(one_hot_max_action_h, q_target_values_h, name='mul_hot_target'), axis=1,
+                               name='q_star')
+        self.q_star_model_h = Model(inputs=states_h, outputs=q_star_h)
+
+        # Define Bellman loss
+        one_hot_rm_action_h = tf.one_hot(action_input, depth=self.num_actions, on_value=1.0, off_value=0.0,
+                                       dtype=float)
+        one_cold_rm_action_h = tf.one_hot(action_input, depth=self.num_actions, on_value=0.0, off_value=1.0,
+                                        dtype=float)
+        q_old_h = tf.stop_gradient(tf.multiply(q_values_h, one_cold_rm_action_h))
+        gamma_terminated_h = tf.multiply(tf.cast(tf.math.logical_not(termination_input), tf.float32), gamma)
+        q_update_h = tf.expand_dims(tf.add(reward_input, tf.multiply(q_star_input, gamma_terminated_h)), 1)
+        q_update_hot_h = tf.multiply(q_update_h, one_hot_rm_action_h)
+        q_new_h = tf.add(q_update_hot_h, q_old_h)
+        q_loss_h = tf.losses.MeanSquaredError()(q_new_h, q_values_h)
+        self.q_loss_model_h = Model(
+            inputs=[boolean_map_input, float_map_input, scalars_input, action_input, reward_input,
+                    termination_input, q_star_input],
+            outputs=q_loss_h)
+
+        # Exploit act model
+        self.exploit_model_h = Model(inputs=states_h, outputs=max_action_h)
+        self.exploit_model_target_h = Model(inputs=states_h, outputs=max_action_target_h)
+
+        # Softmax explore model
+        softmax_scaling_h = tf.divide(q_values_h, tf.constant(self.params.soft_max_scaling, dtype=float))
+        softmax_action_h = tf.math.softmax(softmax_scaling_h, name='softmax_action')
+        self.soft_explore_model = Model(inputs=states_h, outputs=softmax_action_h)
+
+        self.q_optimizer = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
+
+        if self.params.print_summary:
+            self.q_loss_model_h.summary()
+
+        if stats:
+            stats.set_model(self.target_network_h)
 
     def build_model_h(self, map_proc, states_proc, inputs, name=''):
 
@@ -228,16 +282,25 @@ class DDQNAgent(object):
 
         return self.exploit_model_target([boolean_map_in, float_map_in, scalars]).numpy()[0]
 
-    def hard_update(self):
-        self.target_network.set_weights(self.q_network.get_weights())
+    def hard_update_h(self):
+        self.target_network_h.set_weights(self.q_network_l.get_weights())
 
-    def soft_update(self, alpha):
-        weights = self.q_network.get_weights()
-        target_weights = self.target_network.get_weights()
-        self.target_network.set_weights(
+    def hard_update_l(self):
+        self.target_network_l.set_weights(self.q_network_h.get_weights())
+
+    def soft_update_h(self, alpha):
+        weights = self.q_network_h.get_weights()
+        target_weights = self.target_network_h.get_weights()
+        self.target_network_h.set_weights(
             [w_new * alpha + w_old * (1. - alpha) for w_new, w_old in zip(weights, target_weights)])
 
-    def train(self, experiences):
+    def soft_update_l(self, alpha):
+        weights = self.q_network_l.get_weights()
+        target_weights = self.target_network_l.get_weights()
+        self.target_network_l.set_weights(
+            [w_new * alpha + w_old * (1. - alpha) for w_new, w_old in zip(weights, target_weights)])
+
+    def train_h(self, experiences):
         boolean_map = experiences[0]
         float_map = experiences[1]
         scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
@@ -248,28 +311,62 @@ class DDQNAgent(object):
         next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
         terminated = experiences[8]
 
-        q_star = self.q_star_model(
+        q_star = self.q_star_model_h(
             [next_boolean_map, next_float_map, next_scalars])
 
         # Train Value network
         with tf.GradientTape() as tape:
-            q_loss = self.q_loss_model(
+            q_loss = self.q_loss_model_h(
                 [boolean_map, float_map, scalars, action, reward,
                  terminated, q_star])
-        q_grads = tape.gradient(q_loss, self.q_network.trainable_variables)
-        self.q_optimizer.apply_gradients(zip(q_grads, self.q_network.trainable_variables))
+        q_grads = tape.gradient(q_loss, self.q_network_h.trainable_variables)
+        self.q_optimizer.apply_gradients(zip(q_grads, self.q_network_h.trainable_variables))
 
-        self.soft_update(self.params.alpha)
+        self.soft_update_h(self.params.alpha)
 
-    def save_weights(self, path_to_weights):
-        self.target_network.save_weights(path_to_weights)
+    def train_l(self, experiences):
+        boolean_map = experiences[0]
+        float_map = experiences[1]
+        scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
+        action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
+        reward = experiences[4]
+        next_boolean_map = experiences[5]
+        next_float_map = experiences[6]
+        next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
+        terminated = experiences[8]
 
-    def save_model(self, path_to_model):
-        self.target_network.save(path_to_model)
+        q_star = self.q_star_model_l(
+            [next_boolean_map, next_float_map, next_scalars])
 
-    def load_weights(self, path_to_weights):
-        self.q_network.load_weights(path_to_weights)
-        self.hard_update()
+        # Train Value network
+        with tf.GradientTape() as tape:
+            q_loss = self.q_loss_model_l(
+                [boolean_map, float_map, scalars, action, reward,
+                 terminated, q_star])
+        q_grads = tape.gradient(q_loss, self.q_network_h.trainable_variables)
+        self.q_optimizer.apply_gradients(zip(q_grads, self.q_network_h.trainable_variables))
+
+        self.soft_update_l(self.params.alpha)
+
+    def save_weights_l(self, path_to_weights):
+        self.target_network_l.save_weights(path_to_weights)
+
+    def save_weights_h(self, path_to_weights):
+        self.target_network_h.save_weights(path_to_weights)
+
+    def save_model_l(self, path_to_model):
+        self.target_network_l.save(path_to_model)
+
+    def save_model_h(self, path_to_model):
+        self.target_network_h.save(path_to_model)
+
+    def load_weights_l(self, path_to_weights):
+        self.q_network_l.load_weights(path_to_weights)
+        self.hard_update_l()
+
+    def load_weights_h(self, path_to_weights):
+        self.q_network_h.load_weights(path_to_weights)
+        self.hard_update_h()
 
     def get_global_map(self, state):
         boolean_map_in = state.get_boolean_map()[tf.newaxis, ...]

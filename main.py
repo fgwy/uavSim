@@ -1,7 +1,8 @@
 import argparse
 import os
 
-from src.CPP.Environment import CPPEnvironmentParams, CPPEnvironment
+from src.h_CPP.Environment import h_CPPEnvironmentParams, h_CPPEnvironment
+from src.CPP.Environment import CPPEnvironment, CPPEnvironmentParams
 from src.DH.Environment import DHEnvironmentParams, DHEnvironment
 from src.DHMulti.Environment import DHMultiEnvironment
 
@@ -16,6 +17,11 @@ def main_cpp(p):
 
 def main_dh(p):
     env = DHEnvironment(p)
+
+    env.run()
+
+def main_h(p):
+    env = h_CPPEnvironment(p)
 
     env.run()
 
@@ -36,6 +42,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--params', nargs='*', default=None)
 
+    parser.add_argument('--h_cpp', action='store_true', help='Run Coverage Path Planning with hierarchical Agent')
     parser.add_argument('--cpp', action='store_true', help='Run Coverage Path Planning')
     parser.add_argument('--dh', action='store_true', help='Run Path Planning for Data Harvesting')
     parser.add_argument('--multi', action='store_true', help='Run Path Planning for Multi (So far only DH)')
@@ -43,10 +50,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.generate_config:
-        if args.cpp:
-            generate_config(CPPEnvironmentParams(), "config/cpp.json")
+        if args.h_cpp:
+            generate_config(h_CPPEnvironmentParams(), "config/h_cpp.json")
         elif args.dh:
             generate_config(DHEnvironmentParams(), "config/dh.json")
+        elif args.cpp:
+            generate_config(CPPEnvironmentParams(), "config/cpp.json")
         else:
             print("Specify which config to generate, DH or CPP")
         exit(0)
@@ -69,6 +78,8 @@ if __name__ == "__main__":
 
     if args.cpp:
         main_cpp(params)
+    elif args.h_cpp:
+        main_h(params)
     elif args.dh:
         if args.multi:
             main_dh_multi(params)

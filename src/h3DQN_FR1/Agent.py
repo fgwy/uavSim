@@ -56,19 +56,21 @@ class H_DDQNAgent(object):
         # Create shared inputs
         boolean_map_input = Input(shape=self.boolean_map_shape, name='boolean_map_input', dtype=tf.bool)
         float_map_input = Input(shape=self.float_map_shape, name='float_map_input', dtype=tf.float32)
-        mask_input = Input(shape=(), name='mask_input', dtype=tf.bool)
+        goal_mask_input = Input(shape=(), name='mask_input', dtype=tf.bool)
         scalars_input = Input(shape=(self.scalars,), name='scalars_input', dtype=tf.float32)
         action_input = Input(shape=(), name='action_input', dtype=tf.int64)
         reward_input = Input(shape=(), name='reward_input', dtype=tf.float32)
         termination_input = Input(shape=(), name='termination_input', dtype=tf.bool)
         q_star_input = Input(shape=(), name='q_star_input', dtype=tf.float32)
+        low_level_movement_budget_input = Input(shape=(), name='q_star_input', dtype=tf.float16)
         states_h = [boolean_map_input,
                   float_map_input,
                   scalars_input]
 
         states_l = [boolean_map_input,
                     float_map_input,
-                    mask_input]
+                    goal_mask_input,
+                    low_level_movement_budget_input]
 
         map_cast = tf.cast(boolean_map_input, dtype=tf.float32)
         padded_map = tf.concat([map_cast, float_map_input], axis=3)
@@ -96,7 +98,7 @@ class H_DDQNAgent(object):
         q_values_h = self.q_network_h.output
         q_target_values_h = self.target_network_h.output
 
-        ########## LOW-level Agent ###########3#
+        ########## LOW-level Agent ############
         # Define Q* in min(Q - (r + gamma_terminated * Q*))^2
         max_action_l = tf.argmax(q_values_l, axis=1, name='max_action', output_type=tf.int64)
         max_action_target_l = tf.argmax(q_target_values_l, axis=1, name='max_action', output_type=tf.int64)
@@ -120,15 +122,15 @@ class H_DDQNAgent(object):
             outputs=q_loss)
 
         # Exploit act model
-        self.exploit_model = Model(inputs=states_l, outputs=max_action_l)
-        self.exploit_model_target = Model(inputs=states_l, outputs=max_action_target_l)
+        self.exploit_model_l = Model(inputs=states_l, outputs=max_action_l)
+        self.exploit_model_target_l = Model(inputs=states_l, outputs=max_action_target_l)
 
         # Softmax explore model
         softmax_scaling = tf.divide(q_values_l, tf.constant(self.params.soft_max_scaling, dtype=float))
         softmax_action = tf.math.softmax(softmax_scaling, name='softmax_action')
-        self.soft_explore_model = Model(inputs=states_l, outputs=softmax_action)
+        self.soft_explore_model_l = Model(inputs=states_l, outputs=softmax_action)
 
-        self.q_optimizer = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
+        self.q_optimizer_l = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
 
         if self.params.print_summary:
             self.q_loss_model_l.summary()
@@ -171,9 +173,9 @@ class H_DDQNAgent(object):
         # Softmax explore model
         softmax_scaling_h = tf.divide(q_values_h, tf.constant(self.params.soft_max_scaling, dtype=float))
         softmax_action_h = tf.math.softmax(softmax_scaling_h, name='softmax_action')
-        self.soft_explore_model = Model(inputs=states_h, outputs=softmax_action_h)
+        self.soft_explore_model_h = Model(inputs=states_h, outputs=softmax_action_h)
 
-        self.q_optimizer = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
+        self.q_optimizer_h = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
 
         if self.params.print_summary:
             self.q_loss_model_h.summary()
@@ -189,7 +191,9 @@ class H_DDQNAgent(object):
         for k in range(self.params.hidden_layer_num):
             layer = Dense(self.params.hidden_layer_size, activation='relu', name=name + 'hidden_layer_all_' + str(k))(
                 layer)
-        output = Dense(self.num_actions, activation='linear', name=name + 'output_layer')(layer)
+        layer = Conv2D((self.float_map_shape[0], self.float_map_shape), filters=1, activation='relu', name=name + 'output_layer')(layer)
+        layer = tf.cast(layer > 0.5, 0)
+        output = tf.cast(layer <= 0.5, 1)
 
         model = Model(inputs=inputs, outputs=output)
 
@@ -255,6 +259,13 @@ class H_DDQNAgent(object):
     def act(self, state):
         return self.get_soft_max_exploration(state)
 
+    def get_goal(self, state):
+        boolean_map_in = state.get_boolean_map()[tf.newaxis, ...]
+        float_map_in = state.get_float_map()[tf.newaxis, ...]
+        scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
+        goal = self.soft_explore_model_h([boolean_map_in, float_map_in, scalars]).numpy()[0]
+        return goal
+
     def get_random_action(self):
         return np.random.randint(0, self.num_actions)
 
@@ -264,14 +275,14 @@ class H_DDQNAgent(object):
         float_map_in = state.get_float_map()[tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
 
-        return self.exploit_model([boolean_map_in, float_map_in, scalars]).numpy()[0]
+        return self.exploit_model_l([boolean_map_in, float_map_in, scalars]).numpy()[0]
 
     def get_soft_max_exploration(self, state):
 
         boolean_map_in = state.get_boolean_map()[tf.newaxis, ...]
         float_map_in = state.get_float_map()[tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
-        p = self.soft_explore_model([boolean_map_in, float_map_in, scalars]).numpy()[0]
+        p = self.soft_explore_model_l([boolean_map_in, float_map_in, scalars]).numpy()[0]
         return np.random.choice(range(self.num_actions), size=1, p=p)
 
     def get_exploitation_action_target(self, state):
@@ -280,7 +291,7 @@ class H_DDQNAgent(object):
         float_map_in = state.get_float_map()[tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
 
-        return self.exploit_model_target([boolean_map_in, float_map_in, scalars]).numpy()[0]
+        return self.exploit_model_target_l([boolean_map_in, float_map_in, scalars]).numpy()[0]
 
     def hard_update_h(self):
         self.target_network_h.set_weights(self.q_network_l.get_weights())
@@ -320,7 +331,7 @@ class H_DDQNAgent(object):
                 [boolean_map, float_map, scalars, action, reward,
                  terminated, q_star])
         q_grads = tape.gradient(q_loss, self.q_network_h.trainable_variables)
-        self.q_optimizer.apply_gradients(zip(q_grads, self.q_network_h.trainable_variables))
+        self.q_optimizer_h.apply_gradients(zip(q_grads, self.q_network_h.trainable_variables))
 
         self.soft_update_h(self.params.alpha)
 
@@ -344,7 +355,7 @@ class H_DDQNAgent(object):
                 [boolean_map, float_map, scalars, action, reward,
                  terminated, q_star])
         q_grads = tape.gradient(q_loss, self.q_network_h.trainable_variables)
-        self.q_optimizer.apply_gradients(zip(q_grads, self.q_network_h.trainable_variables))
+        self.q_optimizer_l.apply_gradients(zip(q_grads, self.q_network_h.trainable_variables))
 
         self.soft_update_l(self.params.alpha)
 

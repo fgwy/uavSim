@@ -1,7 +1,8 @@
 import numpy as np
 
 import src.Map.Map as ImageLoader
-from src.CPP.State import CPPState, CPPScenario
+from src.CPP.State import CPPScenario
+from src.h_CPP.State import CPPState
 from src.CPP.RandomTargetGenerator import RandomTargetGenerator, RandomTargetGeneratorParams
 from src.base.BaseGrid import BaseGrid, BaseGridParams
 

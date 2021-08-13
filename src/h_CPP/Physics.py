@@ -1,4 +1,4 @@
-from src.CPP.State import CPPState
+from src.h_CPP.State import h_CPPState
 from src.CPP.SimpleSquareCamera import SimpleSquareCameraParams, SimpleSquareCamera
 from src.ModelStats import ModelStats
 from src.base.GridActions import GridActions, GridActionsNoHover
@@ -31,7 +31,7 @@ class CPPPhysics(GridPhysics):
         stats.add_log_data_callback('landing_attempts', self.get_landing_attempts)
         stats.add_log_data_callback('movement_ratio', self.get_movement_ratio)
 
-    def reset(self, state: CPPState):
+    def reset(self, state: h_CPPState):
         GridPhysics.reset(self, state)
         self.landed = False
 

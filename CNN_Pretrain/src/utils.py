@@ -30,6 +30,12 @@ def show_images(images, cols=1, titles=None):
     fig.set_size_inches(np.array(fig.get_size_inches()) * n_images)
     plt.show()
 
+def draw_map(map_in):
+    rgb = map_in[0, :, :, :3]
+    rgb = np.stack([rgb[:, :, 0], rgb[:, :, 2], rgb[:, :, 1]], axis=2)
+    plt.imshow(rgb.astype(float))
+    plt.show()
+
 
 def shuffle_along_axis(a, axis):
     idx = np.random.rand(*a.shape).argsort(axis=axis)
@@ -86,10 +92,10 @@ def plot_bw_figs(n, x_enc, x_rec, x_orig):
     plt.show()
 
 
-def generate_target(obstacles):
+def generate_target(obstacles, shape):
     shape_range = (1, 5)
     coverage_range = (0.2, 0.8)
-    area = np.product(self.shape)
+    area = np.product(shape)
 
     target = __generate_random_shapes_area(
         shape_range[0],

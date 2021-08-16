@@ -5,13 +5,13 @@ from src.base.GridActions import GridActions, GridActionsNoHover
 from src.base.GridPhysics import GridPhysics
 
 
-class CPPPhysicsParams:
+class H_CPPPhysicsParams:
     def __init__(self):
         self.camera_params = SimpleSquareCameraParams()
 
 
-class CPPPhysics(GridPhysics):
-    def __init__(self, params: CPPPhysicsParams, stats: ModelStats):
+class H_CPPPhysics(GridPhysics):
+    def __init__(self, params: H_CPPPhysicsParams, stats: ModelStats):
         super().__init__()
         self.landed = False
 
@@ -50,6 +50,7 @@ class CPPPhysics(GridPhysics):
     def vision_step(self):
         view = self.camera.computeView(self.state.position, 0)
         self.state.add_explored(view)
+        self.state.add_explored_h_target(view)
 
     def get_example_action(self):
         return GridActionsNoHover.LAND

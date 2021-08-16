@@ -26,3 +26,11 @@ class h_CPPState(CPPState):
 
     def get_remaining_h_target_cells(self):
         return np.sum(self.h_target)
+
+    def add_explored_h_target(self, view):
+        self.h_target &= ~view
+        self.h_coverage |= view
+
+    def goal_not_present(self):
+
+        return not bool(self.h_target or self.get_remaining_h_target_cells())

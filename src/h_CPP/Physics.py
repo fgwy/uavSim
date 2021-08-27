@@ -52,8 +52,11 @@ class H_CPPPhysics(GridPhysics):
         self.state.add_explored(view)
         self.state.add_explored_h_target(view)
 
-    def get_example_action(self):
+    def get_example_action_l(self):
         return GridActionsNoHover.LAND
+
+    def get_example_action_h(self):
+        return None
 
     def is_in_landing_zone(self):
         return self.state.is_in_landing_zone()

@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from src.h_CPP.Environment import h_CPPEnvironmentParams, h_CPPEnvironment
+from src.h_CPP.Environment import H_CPPEnvironmentParams, H_CPPEnvironment
 from src.CPP.Environment import CPPEnvironment, CPPEnvironmentParams
 from src.DH.Environment import DHEnvironmentParams, DHEnvironment
 from src.DHMulti.Environment import DHMultiEnvironment
@@ -21,9 +21,9 @@ def main_dh(p):
     env.run()
 
 def main_h(p):
-    env = h_CPPEnvironment(p)
+    env = H_CPPEnvironment(p)
 
-    env.run()
+    env.run_h()
 
 
 def main_dh_multi(p):
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     if args.generate_config:
         if args.h_cpp:
-            generate_config(h_CPPEnvironmentParams(), "config/h_cpp.json")
+            generate_config(H_CPPEnvironmentParams(), "config/h_cpp.json")
         elif args.dh:
             generate_config(DHEnvironmentParams(), "config/dh.json")
         elif args.cpp:

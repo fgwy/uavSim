@@ -208,16 +208,16 @@ class HL_DDQNAgent(object):
         return Flatten(name=name + 'local_flatten')(local_map)
 
     def get_goal(self, state):
-        boolean_map_in = state.get_boolean_map()[tf.newaxis, ...]
-        float_map_in = state.get_float_map()[tf.newaxis, ...]
-        scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
-        goal = self.soft_explore_model_hl([boolean_map_in, float_map_in, scalars]).numpy()[0]
+        goal = self.get_soft_max_exploration(state)
+        print('soft goal:', goal.shape, goal)
         return goal
 
     def get_random_goal(self):
         arr = np.zeros(self.params.local_map_size)
         arr[:1] = 1
-        return np.random.shuffle(arr)
+        np.random.shuffle(arr)
+        print('rand goal:', arr.shape)
+        return arr
 
     def get_exploitation_goal(self, state):
         boolean_map_in = state.get_boolean_map()[tf.newaxis, ...]
@@ -225,6 +225,15 @@ class HL_DDQNAgent(object):
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         goal = self.exploit_model_hl([boolean_map_in, float_map_in, scalars]).numpy()[0]
         return goal
+
+    def get_soft_max_exploration(self, state):
+        boolean_map_in = state.get_boolean_map()[tf.newaxis, ...]
+        float_map_in = state.get_float_map()[tf.newaxis, ...]
+        scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
+        p = self.soft_explore_model_hl([boolean_map_in, float_map_in, scalars]).numpy()[0]
+        a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
+        a = tf.one_hot(a, depth=self.num_actions_hl)
+        return a
 
     def hard_update_hl(self):
         self.target_network_hl.set_weights(self.q_network_hl.get_weights())

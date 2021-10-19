@@ -34,8 +34,8 @@ class AgentManager():
         # print("reached step_h")
         if exploit:
             while state.goal_not_present():
-                # TODO: reshape the goal in good size
-                goal = self.agent_hl.get_goal(state).reshape((self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
+                goal = tf.one_hot(self.agent_hl.get_exploitation_goal(state), depth=self.agent_hl.num_actions_hl).numpy().reshape(
+                    (self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
                 valid = self.check_valid_target(goal, state)
                 if not valid:
                     reward_h = self.rewards.invalid_goal_penalty()
@@ -50,17 +50,16 @@ class AgentManager():
                 action_l = self.agent_ll.get_random_action()
             else:
                 while state.goal_not_present():
-                    # TODO: reshape the goal in useful size
                     print("reached new goal")
                     if random:
-                        goal = self.agent_hl.get_random_goal().reshape((self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
+                        goal = tf.one_hot(self.agent_hl.get_random_goal(), depth=self.agent_hl.num_actions_hl).numpy().reshape((self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
+
                         valid = self.check_valid_target(goal, state)
                         if not valid:
                             reward_h = self.rewards.invalid_goal_penalty()
                     else:
-                        goal = self.agent_hl.get_goal(state).reshape(
-                            (self.agent_ll.params.local_map_size,
-                             self.agent_ll.params.local_map_size)).reshape((self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size)) # TODO: reshape soon not needed
+                        goal = tf.one_hot(self.agent_hl.get_goal(state), depth=self.agent_hl.num_actions_hl).numpy().reshape((self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
+                        print(goal, goal.shape)
                         valid = self.check_valid_target(goal, state)
                         if not valid:
                             reward_h = self.rewards.invalid_goal_penalty()

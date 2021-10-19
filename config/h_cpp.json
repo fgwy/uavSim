@@ -11,6 +11,7 @@
             200
         ],
         "map_path": "res/manhattan32.png",
+        "local_map_size": 17,
         "generator_params": {
             "shape": [
                 32,

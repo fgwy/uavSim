@@ -16,7 +16,7 @@ class CPPState(BaseState):
     def __init__(self, map_init: Map):
         super().__init__(map_init)
         self.target = None
-        self.position = None
+        self.position = [17, 17]
         self.movement_budget = None
         self.landed = False
         self.terminal = False
@@ -46,6 +46,7 @@ class CPPState(BaseState):
         return 1
 
     def get_boolean_map(self):
+        # print("reached bool map hl in CPP_State")
         padded_red = pad_centered(self, np.concatenate([np.expand_dims(self.no_fly_zone, -1),
                                                         np.expand_dims(self.obstacles, -1)], axis=-1), 1)
         padded_rest = pad_centered(self, np.concatenate([np.expand_dims(self.landing_zone, -1),

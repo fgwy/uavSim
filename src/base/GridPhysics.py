@@ -11,6 +11,7 @@ class GridPhysics:
         old_position = self.state.position
         x, y = old_position
 
+        # position seems to be initialized as 0 at bottom left corner
         if action == GridActions.NORTH:
             y += 1
         elif action == GridActions.SOUTH:

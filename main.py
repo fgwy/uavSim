@@ -23,7 +23,7 @@ def main_dh(p):
 def main_h(p):
     env = H_CPPEnvironment(p)
 
-    env.run_h()
+    env.run()
 
 
 def main_dh_multi(p):

@@ -1,4 +1,4 @@
-from src.h_CPP.State import h_CPPState
+from src.h_CPP.State import H_CPPState
 from src.CPP.SimpleSquareCamera import SimpleSquareCameraParams, SimpleSquareCamera
 from src.ModelStats import ModelStats
 from src.base.GridActions import GridActions, GridActionsNoHover
@@ -31,7 +31,7 @@ class H_CPPPhysics(GridPhysics):
         stats.add_log_data_callback('landing_attempts', self.get_landing_attempts)
         stats.add_log_data_callback('movement_ratio', self.get_movement_ratio)
 
-    def reset(self, state: h_CPPState):
+    def reset(self, state: H_CPPState):
         GridPhysics.reset(self, state)
         self.landed = False
 
@@ -51,6 +51,9 @@ class H_CPPPhysics(GridPhysics):
         view = self.camera.computeView(self.state.position, 0)
         self.state.add_explored(view)
         self.state.add_explored_h_target(view)
+
+    def get_example_action(self):
+        return [self.get_example_action_h(), self.get_example_action_l()]
 
     def get_example_action_l(self):
         return GridActionsNoHover.LAND

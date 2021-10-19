@@ -5,32 +5,73 @@ from src.StateUtils import pad_centered
 from src.CPP.State import CPPState
 
 
-class h_CPPScenario:
+class H_CPPScenario:
     def __init__(self):
         self.target_path = ""
         self.position_idx = 0
         self.movement_budget = 100
 
 
-class h_CPPState(CPPState):
+class H_CPPState(CPPState):
     def __init__(self, map_init: Map):
         super().__init__(map_init)
-        self.h_target = None
+        self.h_target = np.zeros((17, 17))
         self.initial_h_target_cell_count = 0
         self.h_coverage = 0
         self.initial_ll_movement_budget = 50
         self.current_ll_mb = 0
         self.h_terminal = False
+        self.goal_active = False
 
     def reset_h_target(self, h_target):
-        self.h_target = h_target
+        # print(h_target)
+
+        self.h_target = self.pad_lm_to_total_size(h_target)
         self.initial_h_target_cell_count = np.sum(h_target)
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
+
+    def pad_lm_to_total_size(self, h_target):
+        """
+        pads input of shape local_map to output of total_map_size
+        """
+
+        shape_map = self.landing_zone.shape[:2]
+        shape_htarget = h_target.shape
+        if self.position == None:
+            x, y = 0, 0
+        else:
+            x, y = self.position
+
+        # outline = (shape_htarget[0]-1)/2
+
+        # try:
+        #     no_fly_border = int((shape_htarget[0]-1)/2)
+        # except ValueError:
+        #     print("Division does not yield a valid integer!")
+
+        # padding htarget to total-map shape: x and y are 0 at bottom left corner
+        # TODO: check how x and y are initialized (0 at bottom left?)
+        pad_left = x
+        pad_right = shape_map[0] - x - 1
+        pad_up = shape_map[1] - y - 1
+        pad_down = y
+
+        padded = np.pad(h_target, ((pad_up, pad_down), (pad_left, pad_right)))
+        # print(int((shape_htarget[0]-1)/2), int((padded.shape[0]-(shape_htarget[0]-1)/2)))
+
+        lm_as_tm_size = padded[int((shape_htarget[0] - 1) / 2):int(padded.shape[0] - (shape_htarget[0] - 1) / 2),
+                 int((shape_htarget[1] - 1) / 2):int(padded.shape[1] - (shape_htarget[1] - 1) / 2)]
+
+        return lm_as_tm_size.astype(bool)
+
+    def goal_not_present(self):
+        return not self.goal_active
 
     def get_remaining_h_target_cells(self):
         return np.sum(self.h_target)
 
     def add_explored_h_target(self, view):
+        # print("reached")
         self.h_target &= ~view
         self.h_coverage |= view
 
@@ -42,10 +83,20 @@ class h_CPPState(CPPState):
         self.current_ll_mb = self.initial_ll_movement_budget
 
     def get_boolean_map_ll(self):
+        # print("reached bool map ll")
         padded_red = pad_centered(self, np.concatenate([np.expand_dims(self.no_fly_zone, -1),
                                                         np.expand_dims(self.obstacles, -1)], axis=-1), 1)
+
+        ##### use this if h_target is of shape map (h_targets outside of map are not seen by ll-ag)####
         padded_rest = pad_centered(self, np.concatenate([np.expand_dims(self.landing_zone, -1),
                                                          np.expand_dims(self.h_target, -1)], axis=-1), 0)
+
+        ##### use this if h_target is of shape after pad_centered ###
+        # padded_rest = pad_centered(self, np.expand_dims(self.landing_zone, -1), 0)
+        #
+        # print("\n", padded_rest.shape, "\n", padded_red.shape, "\n", self.no_fly_zone.shape)
+        # padded_rest = np.concatenate([np.expand_dims(padded_rest, -1), np.expand_dims(self.h_target, -1)], axis=-1)
+
         return np.concatenate([padded_red, padded_rest], axis=-1)
 
     def get_float_map_ll(self):
@@ -58,7 +109,16 @@ class h_CPPState(CPPState):
         return self.get_float_map_ll().shape
 
     def get_boolean_map_shape(self):
+        return self.get_boolean_map().shape
+
+    def get_goal_target_shape(self):
+        return self.h_target.shape
+
+    def get_boolean_map_ll_shape(self):
         return self.get_boolean_map_ll().shape
+
+    def get_example_goal(self):
+        return self.h_target
 
     def get_scalars_hl(self):
         return np.array([self.movement_budget])

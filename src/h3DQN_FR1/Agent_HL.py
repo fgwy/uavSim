@@ -57,7 +57,7 @@ class HL_DDQNAgent(object):
         self.float_map_shape = example_state.get_float_map_shape()
         self.scalars = example_state.get_num_scalars()
         self.goal_target_shape = example_state.get_goal_target_shape()
-        self.num_actions_hl = self.params.local_map_size**2
+        self.num_actions_hl = self.params.local_map_size ** 2
         self.example_goal = example_state.get_example_goal()
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
 
@@ -90,7 +90,6 @@ class HL_DDQNAgent(object):
             self.total_map_model_hl = Model(inputs=[boolean_map_input, float_map_input],
                                             outputs=self.total_map_hl)
 
-
         q_values_hl = self.q_network_hl.output
         q_target_values_hl = self.target_network_hl.output
 
@@ -100,7 +99,8 @@ class HL_DDQNAgent(object):
         max_action_hl = tf.argmax(q_values_hl, axis=1, name='max_action',
                                   output_type=tf.int64)  # TODO: on mask output not defined properly
         max_action_target_hl = tf.argmax(q_target_values_hl, axis=1, name='max_action', output_type=tf.int64)
-        one_hot_max_action_hl = tf.one_hot(max_action_hl, depth=self.num_actions_hl, dtype=float, on_value=0.0, off_value=1.0)
+        one_hot_max_action_hl = tf.one_hot(max_action_hl, depth=self.num_actions_hl, dtype=float, on_value=0.0,
+                                           off_value=1.0)
         one_hot_max_action_hl = tf.squeeze(one_hot_max_action_hl)
         q_star_hl = tf.reduce_sum(tf.multiply(one_hot_max_action_hl, q_target_values_hl, name='mul_hot_target'), axis=1,
                                   name='q_star_hl')
@@ -168,7 +168,7 @@ class HL_DDQNAgent(object):
             self.global_map = global_map
             self.total_map_hl = conv_in
 
-            #Todo: create discussed model
+            # Todo: create discussed model
 
             for k in range(self.params.conv_layers):
                 global_map = Conv2D(self.params.conv_kernels, self.params.conv_kernel_size, activation='relu',
@@ -267,7 +267,6 @@ class HL_DDQNAgent(object):
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
 
         self.soft_update_hl(self.params.alpha)
-
 
     def save_weights_hl(self, path_to_weights):
         self.target_network_hl.save_weights(path_to_weights)

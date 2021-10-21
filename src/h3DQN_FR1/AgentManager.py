@@ -8,9 +8,11 @@ from src.h_CPP.Rewards import H_CPPRewardParams, H_CPPRewards
 
 import tensorflow as tf
 
+
 class AgentManager_Params():
     def __init__(self):
         self.hierarchical = False
+
 
 class AgentManager():
     def __init__(self, params: AgentManager_Params, example_state, example_action, stats):
@@ -26,7 +28,6 @@ class AgentManager():
             self.agent_ll.load_weights_ll(self.trainer.params.load_model)
             self.agent_hl.load_weights_hl(self.trainer.params.load_model)
 
-
     def step(self, state=None, exploit=False, random=False):
         action_l = None
         reward_h = 0
@@ -34,7 +35,8 @@ class AgentManager():
         # print("reached step_h")
         if exploit:
             while state.goal_not_present():
-                goal = tf.one_hot(self.agent_hl.get_exploitation_goal(state), depth=self.agent_hl.num_actions_hl).numpy().reshape(
+                goal = tf.one_hot(self.agent_hl.get_exploitation_goal(state),
+                                  depth=self.agent_hl.num_actions_hl).numpy().reshape(
                     (self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
                 valid = self.check_valid_target(goal, state)
                 if not valid:
@@ -52,13 +54,17 @@ class AgentManager():
                 while state.goal_not_present():
                     print("reached new goal")
                     if random:
-                        goal = tf.one_hot(self.agent_hl.get_random_goal(), depth=self.agent_hl.num_actions_hl).numpy().reshape((self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
+                        goal = tf.one_hot(self.agent_hl.get_random_goal(),
+                                          depth=self.agent_hl.num_actions_hl).numpy().reshape(
+                            (self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
 
                         valid = self.check_valid_target(goal, state)
                         if not valid:
                             reward_h = self.rewards.invalid_goal_penalty()
                     else:
-                        goal = tf.one_hot(self.agent_hl.get_goal(state), depth=self.agent_hl.num_actions_hl).numpy().reshape((self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
+                        goal = tf.one_hot(self.agent_hl.get_goal(state),
+                                          depth=self.agent_hl.num_actions_hl).numpy().reshape(
+                            (self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
                         print(goal, goal.shape)
                         valid = self.check_valid_target(goal, state)
                         if not valid:
@@ -85,7 +91,7 @@ class AgentManager():
         return self.rewards.calculate_reward_h(state, action, next_state)
 
     def add_experience(self, state, action, reward, next_state):
-        self.trainer.add_experience_ll(state, action, reward,next_state)
+        self.trainer.add_experience_ll(state, action, reward, next_state)
 
     def train_agent(self):
         self.trainer.train_agent()
@@ -104,16 +110,11 @@ class AgentManager():
         obs = np.logical_not(state.obstacles)
         # nfz = np.logical_not(tt_m)
         # print(nfz.shape)
-        valid1 = total_goal*nfz
+        valid1 = total_goal * nfz
         valid2 = total_goal * obs
-        valid = not np.all(valid1==0) or not np.all(valid2==0)
-        print('on obs: ', not np.all(valid2==0), 'on nfz: ', not np.all(valid1==0), 'Goal valid: ', valid, )
+        valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
+        print('on obs: ', not np.all(valid2 == 0), 'on nfz: ', not np.all(valid1 == 0), 'Goal valid: ', valid, )
 
         if not valid:
             print('######################## Goal Not Valid ####################################')
         return valid
-
-
-
-
-

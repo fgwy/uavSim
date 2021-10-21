@@ -32,8 +32,9 @@ class H_CPPEnvironment(BaseEnvironment):
         self.grid = H_CPPGrid(params.grid_params, self.stats)
         self.rewards = H_CPPRewards(params.reward_params, stats=self.stats)
         self.physics = H_CPPPhysics(params=params.physics_params, stats=self.stats)
-        self.agent = AgentManager(params.agent_params, example_state=self.grid.get_example_state(), example_action=self.physics.get_example_action(),
-                               stats=self.stats)
+        self.agent = AgentManager(params.agent_params, example_state=self.grid.get_example_state(),
+                                  example_action=self.physics.get_example_action(),
+                                  stats=self.stats)
 
     def train_episode(self):
         '''
@@ -52,7 +53,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
     def run(self):
 
-        # self.fill_replay_memory()
+        self.fill_replay_memory()
 
         print('Running ', self.stats.params.log_file_name)
 
@@ -70,7 +71,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
         self.stats.training_ended()
 
-    def step(self, state, random=False):
+    def step(self, state, random=False, test=False):
         if random:
             action = self.agent.get_random_action()
         else:

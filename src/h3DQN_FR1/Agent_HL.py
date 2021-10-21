@@ -97,7 +97,7 @@ class HL_DDQNAgent(object):
 
         # Define Q* in min(Q - (r + gamma_terminated * Q*))^2
         max_action_hl = tf.argmax(q_values_hl, axis=1, name='max_action',
-                                  output_type=tf.int64)  # TODO: on mask output not defined properly
+                                  output_type=tf.int64)
         max_action_target_hl = tf.argmax(q_target_values_hl, axis=1, name='max_action', output_type=tf.int64)
         one_hot_max_action_hl = tf.one_hot(max_action_hl, depth=self.num_actions_hl, dtype=float, on_value=0.0,
                                            off_value=1.0)
@@ -217,6 +217,8 @@ class HL_DDQNAgent(object):
         arr[:1] = 1
         np.random.shuffle(arr)
         print('rand goal:', arr.shape)
+
+        arr = np.random.choice(range(self.num_actions_hl), size=1)
         return arr
 
     def get_exploitation_goal(self, state):
@@ -224,6 +226,7 @@ class HL_DDQNAgent(object):
         float_map_in = state.get_float_map()[tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         goal = self.exploit_model_hl([boolean_map_in, float_map_in, scalars]).numpy()[0]
+        # goal = tf.one_hot(goal, depth=self.num_actions_hl)
         return goal
 
     def get_soft_max_exploration(self, state):
@@ -232,7 +235,7 @@ class HL_DDQNAgent(object):
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         p = self.soft_explore_model_hl([boolean_map_in, float_map_in, scalars]).numpy()[0]
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
-        a = tf.one_hot(a, depth=self.num_actions_hl)
+        # a = tf.one_hot(a, depth=self.num_actions_hl)
         return a
 
     def hard_update_hl(self):

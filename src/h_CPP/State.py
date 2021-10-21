@@ -64,7 +64,7 @@ class H_CPPState(CPPState):
 
         return lm_as_tm_size.astype(bool)
 
-    def goal_not_present(self):
+    def goal_not_active(self):
         return not self.goal_active
 
     def get_remaining_h_target_cells(self):
@@ -80,6 +80,7 @@ class H_CPPState(CPPState):
         return not bool(self.h_target is not None or self.get_remaining_h_target_cells() or self.current_ll_mb >= 0)
 
     def reset_ll_mb(self):
+        # TODO: set to min(mb, ll_mb)
         self.current_ll_mb = self.initial_ll_movement_budget
 
     def get_boolean_map_ll(self):

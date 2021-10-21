@@ -6,7 +6,7 @@ class H_CPPRewardParams(GridRewardParams):
     def __init__(self):
         super().__init__()
         self.cell_multiplier = 0.4
-        self.invalid_goal_penalty = -10
+        self.invalid_goal_penalty = -1.
 
 
 # Class used to track rewards

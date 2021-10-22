@@ -43,7 +43,7 @@ class H_CPPEnvironment(BaseEnvironment):
         state = copy.deepcopy(self.init_episode())
         self.stats.on_episode_begin(self.episode_count)
         while not state.is_terminal():
-            state = self.step(state)
+            state = self.agent.step(state)
             self.agent.train_agent()
 
         self.stats.on_episode_end(self.episode_count)
@@ -71,17 +71,15 @@ class H_CPPEnvironment(BaseEnvironment):
 
         self.stats.training_ended()
 
-    def step(self, state, random=False, test=False):
-        if random:
-            action = self.agent.get_random_action()
-        else:
-            action = self.agent.act(state)
-        next_state = self.physics.step(GridActions(action))
-        reward = self.agent.calculate_reward(state, GridActions(action), next_state)
-        self.agent.add_experience(state, action, reward, next_state)
-        self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))
-        self.step_count += 1
-        return copy.deepcopy(next_state)
+
+    # def step(self, state, random=False, test=False):
+    #     action = self.agent.act(state, random) # TODO: return both actions, hover ll if goal invalid
+    #     next_state = self.physics.step(GridActions(action))
+    #     reward = self.agent.calculate_reward(state, GridActions(action), next_state) #TODO: calculate both rewards, check coverage and set goal_active in state
+    #     self.agent.add_experience(state, action, reward, next_state) #TODO: Check which experience to add
+    #     self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))
+    #     self.step_count += 1
+    #     return copy.deepcopy(next_state)
 
     def test_episode(self, scenario=None):
         state = copy.deepcopy(self.init_episode(scenario))

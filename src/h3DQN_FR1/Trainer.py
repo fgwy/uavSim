@@ -24,7 +24,7 @@ class H_DDQNTrainer:
         self.params = params
         self.replay_memory_ll = ReplayMemory(size=params.rm_size_ll)
         self.replay_memory_hl = ReplayMemory(size=params.rm_size_hl)
-        self.l_terminated = False
+        self.smdp_terminated = False
 
         self.agent_ll = agent_ll
         self.agent_hl = agent_hl

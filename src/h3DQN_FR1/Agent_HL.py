@@ -209,14 +209,14 @@ class HL_DDQNAgent(object):
 
     def get_goal(self, state):
         goal = self.get_soft_max_exploration(state)
-        print('soft goal:', goal.shape, goal)
+        print(f'### soft goal:{goal}')
         return goal
 
     def get_random_goal(self):
         arr = np.zeros(self.params.local_map_size)
         arr[:1] = 1
         np.random.shuffle(arr)
-        print('rand goal:', arr.shape)
+        # print('rand goal:', arr.shape)
 
         arr = np.random.choice(range(self.num_actions_hl), size=1)
         return arr
@@ -234,7 +234,9 @@ class HL_DDQNAgent(object):
         float_map_in = state.get_float_map()[tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         p = self.soft_explore_model_hl([boolean_map_in, float_map_in, scalars]).numpy()[0]
+        # print(p)
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
+
         # a = tf.one_hot(a, depth=self.num_actions_hl)
         return a
 

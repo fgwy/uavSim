@@ -10,6 +10,10 @@
             100,
             200
         ],
+        "movement_range_ll": [
+            20,
+            50
+        ],
         "map_path": "res/manhattan32.png",
         "local_map_size": 17,
         "generator_params": {

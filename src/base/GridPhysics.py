@@ -35,6 +35,10 @@ class GridPhysics:
         self.state.decrement_movement_budget()
         self.state.set_terminal(self.state.landed or (self.state.movement_budget == 0))
 
+        # Added code
+        self.state.decrement_ll_mb()
+        self.state.set_terminal_h(self.state.landed or (self.state.current_ll_mb == 0))
+
         return x, y
 
     def reset(self, state):

@@ -10,6 +10,7 @@ class H_CPPScenario:
         self.target_path = ""
         self.position_idx = 0
         self.movement_budget = 100
+        self.ll_movement_budget = 30
 
 
 class H_CPPState(CPPState):
@@ -19,9 +20,10 @@ class H_CPPState(CPPState):
         self.initial_h_target_cell_count = 0
         self.h_coverage = 0
         self.initial_ll_movement_budget = 50
-        self.current_ll_mb = 0
+        self.current_ll_mb = None
         self.h_terminal = False
         self.goal_active = False
+        self.movement_budget = 100
 
     def reset_h_target(self, h_target):
         # print(h_target)
@@ -29,6 +31,7 @@ class H_CPPState(CPPState):
         self.h_target = self.pad_lm_to_total_size(h_target)
         self.initial_h_target_cell_count = np.sum(h_target)
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
+        self.reset_ll_mb()
 
     def pad_lm_to_total_size(self, h_target):
         """
@@ -60,7 +63,7 @@ class H_CPPState(CPPState):
         # print(int((shape_htarget[0]-1)/2), int((padded.shape[0]-(shape_htarget[0]-1)/2)))
 
         lm_as_tm_size = padded[int((shape_htarget[0] - 1) / 2):int(padded.shape[0] - (shape_htarget[0] - 1) / 2),
-                 int((shape_htarget[1] - 1) / 2):int(padded.shape[1] - (shape_htarget[1] - 1) / 2)]
+                        int((shape_htarget[1] - 1) / 2):int(padded.shape[1] - (shape_htarget[1] - 1) / 2)]
 
         return lm_as_tm_size.astype(bool)
 
@@ -135,3 +138,7 @@ class H_CPPState(CPPState):
 
     def is_terminal_h(self):
         return self.h_terminal
+
+    def goal_terminated(self):
+        self.set_terminal_h(True)
+        self.goal_active = False

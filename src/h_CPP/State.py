@@ -23,8 +23,12 @@ class h_CPPState(CPPState):
         self.h_terminal = False
 
     def reset_h_target(self, h_target):
+        # TODO: create padded target of size total-map
+        shape = self.get_boolean_map_shape()
+        shape =
+        padded_h_target = np.pad(h_target, )
         self.h_target = h_target
-        self.initial_h_target_cell_count = np.sum(h_target)
+        self.initial_h_target_cell_count = np.sum(padded_h_target)
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
 
     def get_remaining_h_target_cells(self):
@@ -44,6 +48,8 @@ class h_CPPState(CPPState):
     def get_boolean_map_ll(self):
         padded_red = pad_centered(self, np.concatenate([np.expand_dims(self.no_fly_zone, -1),
                                                         np.expand_dims(self.obstacles, -1)], axis=-1), 1)
+        ###### Pad h-target to total map #########
+
         padded_rest = pad_centered(self, np.concatenate([np.expand_dims(self.landing_zone, -1),
                                                          np.expand_dims(self.h_target, -1)], axis=-1), 0)
         return np.concatenate([padded_red, padded_rest], axis=-1)

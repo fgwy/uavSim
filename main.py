@@ -23,7 +23,7 @@ def main_dh(p):
 def main_h(p):
     env = H_CPPEnvironment(p)
 
-    env.run_h()
+    env.run()
 
 
 def main_dh_multi(p):
@@ -76,12 +76,13 @@ if __name__ == "__main__":
         params.model_stats_params.save_model = "models/" + args.id
         params.model_stats_params.log_file_name = args.id
 
-    if args.cpp:
-        main_cpp(params)
-    elif args.h_cpp:
-        main_h(params)
-    elif args.dh:
-        if args.multi:
-            main_dh_multi(params)
-        else:
-            main_dh(params)
+    # if args.cpp:
+    #     main_cpp(params)
+    # elif args.h_cpp:
+    #     main_h(params)
+    # elif args.dh:
+    #     if args.multi:
+    #         main_dh_multi(params)
+    #     else:
+    #         main_dh(params)
+    main_h(params)

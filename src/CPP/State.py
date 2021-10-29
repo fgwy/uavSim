@@ -16,7 +16,7 @@ class CPPState(BaseState):
     def __init__(self, map_init: Map):
         super().__init__(map_init)
         self.target = None
-        self.position = None
+        self.position = [17, 17]
         self.movement_budget = None
         self.landed = False
         self.terminal = False

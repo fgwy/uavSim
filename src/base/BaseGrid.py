@@ -5,6 +5,7 @@ import src.Map.Map as Map
 class BaseGridParams:
     def __init__(self):
         self.movement_range = (100, 200)
+        self.movement_range_ll = (20, 50)
         self.map_path = 'res/downtown.png'
 
 

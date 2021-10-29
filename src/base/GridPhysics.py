@@ -11,6 +11,7 @@ class GridPhysics:
         old_position = self.state.position
         x, y = old_position
 
+        # position seems to be initialized as 0 at bottom left corner
         if action == GridActions.NORTH:
             y += 1
         elif action == GridActions.SOUTH:
@@ -33,6 +34,10 @@ class GridPhysics:
 
         self.state.decrement_movement_budget()
         self.state.set_terminal(self.state.landed or (self.state.movement_budget == 0))
+
+        # Added code
+        self.state.decrement_ll_mb()
+        self.state.set_terminal_h(self.state.landed or (self.state.current_ll_mb == 0))
 
         return x, y
 

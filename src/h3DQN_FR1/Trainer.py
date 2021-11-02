@@ -56,7 +56,7 @@ class H_DDQNTrainer:
     def is_h_terminated(self, state: H_CPPState, next_state: H_CPPState):
         # TODO: change check for termination
         # return not bool(state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
-        return state.is_terminal_h()
+        return next_state.is_terminal_h()
 
 
     def train_h(self):

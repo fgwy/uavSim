@@ -101,21 +101,29 @@ class AgentManager():
         # while state.goal_not_active():
         # print("reached new goal")
         self.state_hl = copy.deepcopy(state)
-        self.current_goal_idx = self.agent_hl.get_goal(state)
+        if random:
+            self.current_goal_idx = self.agent_hl.get_random_goal()
+        elif exploit:
+            self.current_goal_idx = self.agent_hl.get_exploitation_goal(state)
+        else:
+            self.current_goal_idx = self.agent_hl.get_goal(state)
+
         self.current_goal = tf.one_hot(self.current_goal_idx,
-                                       depth=self.agent_hl.num_actions_hl).numpy().reshape(
-            (self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
+                                           depth=self.agent_hl.num_actions_hl).numpy().reshape(
+                (self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
         print(self.current_goal_idx, self.current_goal.shape)
 
         print('##### htarget reset #############')
-        state.goal_active = True
-        state.reset_h_target(self.current_goal)
-        state.reset_ll_mb()
+        # state.goal_active = True
+        # state.reset_h_target(self.current_goal)
+        # state.reset_ll_mb()
 
         return self.current_goal, self.current_goal_idx
 
     def act_l(self, state, exploit=False, random=False, A_star=False):
         print('########### act_l ################')
+        if random:
+            return self.agent_ll.get_random_action()
         return self.agent_ll.get_soft_max_exploration(state)
 
     def check_valid_target(self, target_lm, state):

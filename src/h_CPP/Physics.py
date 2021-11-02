@@ -61,6 +61,10 @@ class H_CPPPhysics(GridPhysics):
     def get_example_action_h(self):
         return None
 
+    def set_terminal_h(self, terminal):
+        self.state.set_terminal_h(terminal)
+        return self.state
+
     def is_in_landing_zone(self):
         return self.state.is_in_landing_zone()
 
@@ -69,6 +73,9 @@ class H_CPPPhysics(GridPhysics):
 
     def get_movement_budget_used(self):
         return self.state.initial_movement_budget - self.state.movement_budget
+
+    def get_movement_budget_used_ll(self):
+        return self.state.initial_movement_budget_ll - self.state.current_mb_ll
 
     def get_cral(self):
         return self.get_coverage_ratio() * self.landed
@@ -82,5 +89,12 @@ class H_CPPPhysics(GridPhysics):
     def get_movement_ratio(self):
         return float(self.get_movement_budget_used()) / float(self.state.initial_movement_budget)
 
+    def get_movement_ratio_ll(self):
+        return float(self.get_movement_budget_used_ll()) / float(self.state.initial_movement_budget_ll)
+
     def has_landed(self):
         return self.landed
+
+    def reset_h_target(self, goal):
+        self.state.reset_h_target(goal)
+        return self.state

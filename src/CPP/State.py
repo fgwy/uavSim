@@ -78,6 +78,8 @@ class CPPState(BaseState):
         self.coverage |= view
 
     def set_terminal(self, terminal):
+        if terminal:
+            print('################## state terminal !!!!!!!!!!')
         self.terminal = terminal
 
     def set_landed(self, landed):

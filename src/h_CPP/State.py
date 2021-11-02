@@ -19,7 +19,7 @@ class H_CPPState(CPPState):
         self.h_target = np.zeros((17, 17))
         self.initial_h_target_cell_count = 0
         self.h_coverage = 0
-        self.initial_ll_movement_budget = 50
+        self.initial_ll_movement_budget = 30
         self.current_ll_mb = None
         self.h_terminal = False
         self.goal_active = False
@@ -31,8 +31,10 @@ class H_CPPState(CPPState):
 
         self.h_target = self.pad_lm_to_total_size(h_target)
         self.initial_h_target_cell_count = np.sum(h_target)
+        print(self.initial_h_target_cell_count)
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
         self.reset_ll_mb()
+        self.set_terminal_h(False)
 
     def pad_lm_to_total_size(self, h_target):
         """

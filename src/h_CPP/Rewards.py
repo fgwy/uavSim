@@ -20,8 +20,8 @@ class H_CPPRewards(GridRewards):
         self.l_cumulative_reward: float = 0.0
         self.h_cumulative_reward: float = 0.0
 
-    def calculate_reward_h(self, state: H_CPPState, action, next_state: H_CPPState, valid):
-        reward = 0.0
+    def calculate_reward_h(self, state: H_CPPState, action, next_state: H_CPPState, valid, reward_h):
+        reward = reward_h
         if not valid:
             reward += self.invalid_goal_penalty()
 

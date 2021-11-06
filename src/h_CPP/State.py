@@ -4,12 +4,16 @@ from src.Map.Map import Map
 from src.StateUtils import pad_centered
 from src.CPP.State import CPPState
 
+import tensorflow.image.central_crop as central_crp
+
 
 class H_CPPScenario:
     def __init__(self):
         self.target_path = ""
         self.position_idx = 0
         self.movement_budget = 100
+        self.ll_movement_budget = 30
+
 
 
 class H_CPPState(CPPState):
@@ -18,17 +22,22 @@ class H_CPPState(CPPState):
         self.h_target = np.zeros((17, 17))
         self.initial_h_target_cell_count = 0
         self.h_coverage = 0
-        self.initial_ll_movement_budget = 50
-        self.current_ll_mb = 0
+        self.initial_ll_movement_budget = 30
+        self.current_ll_mb = None
         self.h_terminal = False
         self.goal_active = False
+        self.movement_budget = 100
+        self.local_map_size = 17
 
     def reset_h_target(self, h_target):
-        # print(h_target)
 
+        # print(h_target)
         self.h_target = self.pad_lm_to_total_size(h_target)
-        self.initial_h_target_cell_count = np.sum(h_target)
+        self.initial_h_target_cell_count = np.sum(self.h_target)
+        # print(self.initial_h_target_cell_count)
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
+        self.reset_ll_mb()
+        self.set_terminal_h(False)
 
     def pad_lm_to_total_size(self, h_target):
         """
@@ -41,26 +50,15 @@ class H_CPPState(CPPState):
             x, y = 0, 0
         else:
             x, y = self.position
-
-        # outline = (shape_htarget[0]-1)/2
-
-        # try:
-        #     no_fly_border = int((shape_htarget[0]-1)/2)
-        # except ValueError:
-        #     print("Division does not yield a valid integer!")
-
-        # padding htarget to total-map shape: x and y are 0 at bottom left corner
-        # TODO: check how x and y are initialized (0 at bottom left?)
         pad_left = x
         pad_right = shape_map[0] - x - 1
-        pad_up = shape_map[1] - y - 1
-        pad_down = y
+        pad_up = y
+        pad_down = shape_map[1] - y - 1
 
         padded = np.pad(h_target, ((pad_up, pad_down), (pad_left, pad_right)))
-        # print(int((shape_htarget[0]-1)/2), int((padded.shape[0]-(shape_htarget[0]-1)/2)))
 
         lm_as_tm_size = padded[int((shape_htarget[0] - 1) / 2):int(padded.shape[0] - (shape_htarget[0] - 1) / 2),
-                 int((shape_htarget[1] - 1) / 2):int(padded.shape[1] - (shape_htarget[1] - 1) / 2)]
+                        int((shape_htarget[1] - 1) / 2):int(padded.shape[1] - (shape_htarget[1] - 1) / 2)]
 
         return lm_as_tm_size.astype(bool)
 
@@ -87,6 +85,7 @@ class H_CPPState(CPPState):
         # print("reached bool map ll")
         padded_red = pad_centered(self, np.concatenate([np.expand_dims(self.no_fly_zone, -1),
                                                         np.expand_dims(self.obstacles, -1)], axis=-1), 1)
+
 
         ##### use this if h_target is of shape map (h_targets outside of map are not seen by ll-ag)####
         padded_rest = pad_centered(self, np.concatenate([np.expand_dims(self.landing_zone, -1),
@@ -115,6 +114,11 @@ class H_CPPState(CPPState):
     def get_goal_target_shape(self):
         return self.h_target.shape
 
+    def get_local_map(self, conv_in):
+        crop_frac = float(self.local_map_size) / float(self.get_boolean_map_ll_shape()[0])
+        local_map = central_crp(conv_in, crop_frac)
+        return local_map
+
     def get_boolean_map_ll_shape(self):
         return self.get_boolean_map_ll().shape
 
@@ -135,3 +139,7 @@ class H_CPPState(CPPState):
 
     def is_terminal_h(self):
         return self.h_terminal
+
+    def goal_terminated(self):
+        self.set_terminal_h(True)
+        self.goal_active = False

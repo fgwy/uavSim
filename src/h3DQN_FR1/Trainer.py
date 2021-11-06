@@ -17,6 +17,7 @@ class H_DDQNTrainerParams:
         self.rm_size_ll = 50000
         self.rm_size_hl = 10000
         self.load_model = ""
+        self.use_astar = True
 
 
 class H_DDQNTrainer:
@@ -24,7 +25,7 @@ class H_DDQNTrainer:
         self.params = params
         self.replay_memory_ll = ReplayMemory(size=params.rm_size_ll)
         self.replay_memory_hl = ReplayMemory(size=params.rm_size_hl)
-        self.l_terminated = False
+        self.smdp_terminated = False
 
         self.agent_ll = agent_ll
         self.agent_hl = agent_hl
@@ -32,20 +33,20 @@ class H_DDQNTrainer:
         self.prefill_bar = None
 
     def add_experience_ll(self, state, action, reward, next_state):
-        self.replay_memory_ll.store((state.get_boolean_map(),
-                                  state.get_float_map(),
-                                  state.get_scalars(),
+        self.replay_memory_ll.store((state.get_boolean_map_ll(),
+                                  # state.get_float_map_ll(),
+                                  # state.get_scalars_ll(),
                                   action,
                                   reward,
                                   next_state.get_boolean_map_ll(),
-                                  next_state.get_float_map(),
-                                  next_state.get_scalars_ll(),
+                                  # next_state.get_float_map_ll(),
+                                  # next_state.get_scalars_ll(),
                                   next_state.h_terminal))
 
     def add_experience_hl(self, state, action, reward, next_state):
         self.replay_memory_hl.store((state.get_boolean_map(),
                                   state.get_float_map(),
-                                  state.get_scalars(),
+                                  state.get_scalars_hl(),
                                   action,
                                   reward,
                                   next_state.get_boolean_map(),
@@ -54,26 +55,26 @@ class H_DDQNTrainer:
                                   next_state.terminal))
         
     def is_h_terminated(self, state: H_CPPState, next_state: H_CPPState):
+        # TODO: change check for termination
+        # return not bool(state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
+        return next_state.is_terminal_h()
 
-        return not bool(state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
 
+    def train_h(self):
 
-    def train_agent(self):
-        # train low-level agent
+        # print('######### training hl ########')
+        if self.params.batch_size_h > self.replay_memory_hl.get_size():
+            return
+        mini_batch = self.replay_memory_hl.sample(self.params.batch_size_h)
+
+        self.agent_hl.train_hl(mini_batch)
+
+    def train_l(self):
         if self.params.batch_size_l > self.replay_memory_ll.get_size():
             return
         mini_batch = self.replay_memory_ll.sample(self.params.batch_size_l)
 
         self.agent_ll.train_ll(mini_batch)
-
-        # train high-level agent
-        if self.is_h_terminated:
-            # print('######### training hl ########')
-            if self.params.batch_size_h > self.replay_memory_hl.get_size():
-                return
-            mini_batch = self.replay_memory_hl.sample(self.params.batch_size_h)
-
-            self.agent_hl.train_hl(mini_batch)
 
     def should_fill_replay_memory(self):
         target_size = self.replay_memory_ll.get_max_size() * self.params.rm_pre_fill_ratio

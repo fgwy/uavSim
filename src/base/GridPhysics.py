@@ -28,12 +28,21 @@ class GridPhysics:
         self.state.set_position([x, y])
         if self.state.is_in_no_fly_zone():
             # Reset state
+            print('@@@@@@@@ in nfz @@@@@@@@@@')
             self.boundary_counter += 1
             x, y = old_position
             self.state.set_position([x, y])
 
         self.state.decrement_movement_budget()
         self.state.set_terminal(self.state.landed or (self.state.movement_budget == 0))
+
+        # Added code
+        self.state.decrement_ll_mb()
+        self.state.set_terminal_h(self.state.landed or (self.state.current_ll_mb == 0) or (self.state.movement_budget == 0) or not (bool(self.state.get_remaining_h_target_cells())))
+        if self.state.is_terminal():
+            print(f'################## state terminal !!!!!!!!!! \n remaining target: {self.state.get_remaining_cells()}')
+        if self.state.is_terminal_h():
+            print(f'Remaining h-target: {self.state.get_remaining_h_target_cells()} \n remaining target: {self.state.get_remaining_cells()}')
 
         return x, y
 

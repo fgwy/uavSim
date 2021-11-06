@@ -4,6 +4,8 @@ from src.Map.Map import Map
 from src.StateUtils import pad_centered
 from src.CPP.State import CPPState
 
+import tensorflow.image.central_crop as central_crp
+
 
 class H_CPPScenario:
     def __init__(self):
@@ -11,6 +13,7 @@ class H_CPPScenario:
         self.position_idx = 0
         self.movement_budget = 100
         self.ll_movement_budget = 30
+
 
 
 class H_CPPState(CPPState):
@@ -24,14 +27,14 @@ class H_CPPState(CPPState):
         self.h_terminal = False
         self.goal_active = False
         self.movement_budget = 100
+        self.local_map_size = 17
 
     def reset_h_target(self, h_target):
 
         # print(h_target)
-
         self.h_target = self.pad_lm_to_total_size(h_target)
-        self.initial_h_target_cell_count = np.sum(h_target)
-        print(self.initial_h_target_cell_count)
+        self.initial_h_target_cell_count = np.sum(self.h_target)
+        # print(self.initial_h_target_cell_count)
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
         self.reset_ll_mb()
         self.set_terminal_h(False)
@@ -47,23 +50,12 @@ class H_CPPState(CPPState):
             x, y = 0, 0
         else:
             x, y = self.position
-
-        # outline = (shape_htarget[0]-1)/2
-
-        # try:
-        #     no_fly_border = int((shape_htarget[0]-1)/2)
-        # except ValueError:
-        #     print("Division does not yield a valid integer!")
-
-        # padding htarget to total-map shape: x and y are 0 at bottom left corner
-        # TODO: check how x and y are initialized (0 at bottom left?)
         pad_left = x
         pad_right = shape_map[0] - x - 1
-        pad_up = shape_map[1] - y - 1
-        pad_down = y
+        pad_up = y
+        pad_down = shape_map[1] - y - 1
 
         padded = np.pad(h_target, ((pad_up, pad_down), (pad_left, pad_right)))
-        # print(int((shape_htarget[0]-1)/2), int((padded.shape[0]-(shape_htarget[0]-1)/2)))
 
         lm_as_tm_size = padded[int((shape_htarget[0] - 1) / 2):int(padded.shape[0] - (shape_htarget[0] - 1) / 2),
                         int((shape_htarget[1] - 1) / 2):int(padded.shape[1] - (shape_htarget[1] - 1) / 2)]
@@ -121,6 +113,11 @@ class H_CPPState(CPPState):
 
     def get_goal_target_shape(self):
         return self.h_target.shape
+
+    def get_local_map(self, conv_in):
+        crop_frac = float(self.local_map_size) / float(self.get_boolean_map_ll_shape()[0])
+        local_map = central_crp(conv_in, crop_frac)
+        return local_map
 
     def get_boolean_map_ll_shape(self):
         return self.get_boolean_map_ll().shape

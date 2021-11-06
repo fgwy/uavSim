@@ -209,7 +209,7 @@ class HL_DDQNAgent(object):
 
     def get_goal(self, state):
         goal = self.get_soft_max_exploration(state)
-        print(f'### soft goal:{goal}')
+        # print(f'### soft goal:{goal}')
         return goal
 
     def get_random_goal(self):

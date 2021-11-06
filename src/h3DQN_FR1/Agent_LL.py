@@ -40,7 +40,7 @@ class LL_DDQNAgentParams:
         # Global-Local Map
         self.use_global_local = True
         self.global_map_scaling = 3
-        self.local_map_size = 17
+        # self.local_map_size = 17
 
         # Printing
         self.print_summary = False
@@ -57,6 +57,7 @@ class LL_DDQNAgent(object):
         self.boolean_map_shape = example_state.get_boolean_map_shape()
         self.boolean_map_ll_shape = example_state.get_boolean_map_ll_shape()
         self.float_map_shape = example_state.get_float_map_shape()
+        self.local_map_size = example_state.local_map_size
         self.float_map_ll_shape = example_state.get_float_map_ll_shape()
         self.scalars = example_state.get_num_scalars()
         self.goal_target_shape = example_state.get_goal_target_shape()
@@ -76,10 +77,10 @@ class LL_DDQNAgent(object):
         termination_input = Input(shape=(), name='termination_input', dtype=tf.bool)
         q_star_ll_input = Input(shape=(), name='q_star_ll_input', dtype=tf.float32)
 
-        states_ll = [boolean_map_ll_input,
-                     float_map_ll_input,
-                     # goal_mask_input,
-                     scalars_ll_input]
+        states_ll = [boolean_map_ll_input]
+                     # float_map_ll_input,
+                     # # goal_mask_input,
+                     # scalars_ll_input]
 
 
         map_cast_ll = tf.cast(boolean_map_ll_input, dtype=tf.float32)
@@ -156,41 +157,9 @@ class LL_DDQNAgent(object):
 
         return model
 
-    def create_map_proc(self, conv_in, name):
-
-        if self.params.use_global_local:
-            # Forking for global and local map
-            # Global Map
-            global_map = tf.stop_gradient(
-                AvgPool2D((self.params.global_map_scaling, self.params.global_map_scaling))(conv_in))
-
-            self.global_map = global_map
-
-            for k in range(self.params.conv_layers):
-                global_map = Conv2D(self.params.conv_kernels, self.params.conv_kernel_size, activation='relu',
-                                    strides=(1, 1),
-                                    name=name + 'global_conv_' + str(k + 1))(global_map)
-
-            flatten_global = Flatten(name=name + 'global_flatten')(global_map)
-
-            # Local Map
-            flatten_local = self.create_local_map_proc_ll(conv_in, name)
-
-            return Concatenate(name=name + 'concat_flatten')([flatten_global, flatten_local])
-        else:
-            conv_map = Conv2D(self.params.conv_kernels, self.params.conv_kernel_size, activation='relu', strides=(1, 1),
-                              name=name + 'map_conv_0')(conv_in)
-            for k in range(self.params.conv_layers - 1):
-                conv_map = Conv2D(self.params.conv_kernels, self.params.conv_kernel_size, activation='relu',
-                                  strides=(1, 1),
-                                  name=name + 'map_conv_' + str(k + 1))(conv_map)
-
-            flatten_map = Flatten(name=name + 'flatten')(conv_map)
-            return flatten_map
-
     def create_local_map_proc_ll(self, conv_in, name):
         # Local Map_LL
-        crop_frac = float(self.params.local_map_size) / float(self.boolean_map_shape[0])
+        crop_frac = float(self.local_map_size) / float(self.boolean_map_shape[0])
         local_map = tf.stop_gradient(tf.image.central_crop(conv_in, crop_frac))
         self.local_map_ll = local_map
 
@@ -243,23 +212,30 @@ class LL_DDQNAgent(object):
             [w_new * alpha + w_old * (1. - alpha) for w_new, w_old in zip(weights, target_weights)])
 
     def train_ll(self, experiences):
-        boolean_map = experiences[0]
-        float_map = experiences[1]
-        scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
-        action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
-        reward = experiences[4]
-        next_boolean_map = experiences[5]
-        next_float_map = experiences[6]
-        next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
-        terminated = experiences[8]
+        boolean_map = experiences[0] # TODO: convert to tf.tensor
+        action = tf.convert_to_tensor(experiences[1], dtype=tf.int64)
+        reward = experiences[2]
+        next_boolean_map = experiences[3]
+        terminated = experiences[4]
+        # float_map = experiences[1]
+        # scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
+        # action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
+        # reward = experiences[4]
+        # next_boolean_map = experiences[5]
+        # next_float_map = experiences[6]
+        # next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
+        # terminated = experiences[8]
+        self._train_ll()
 
+    @tf.function
+    def _train_ll(self, boolean_map, action, reward, next_ ): # TODO: ghet's tensor objects
         q_star = self.q_star_model_ll(
-            [next_boolean_map, next_float_map, next_scalars])
+            [next_boolean_map])
 
         # Train Value network
         with tf.GradientTape() as tape:
             q_loss = self.q_loss_model_ll(
-                [boolean_map, float_map, scalars, action, reward,
+                [boolean_map, action, reward,
                  terminated, q_star])
         q_grads = tape.gradient(q_loss, self.q_network_ll.trainable_variables)
         self.q_optimizer_ll.apply_gradients(zip(q_grads, self.q_network_ll.trainable_variables))

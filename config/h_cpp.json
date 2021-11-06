@@ -45,7 +45,8 @@
         "eval_period": 5,
         "rm_size_h": 1000,
         "rm_size_l": 10000,
-        "load_model": ""
+        "load_model": "",
+        "use_astar": true
     },
     "agent_params": {
         "conv_layers": 2,
@@ -56,12 +57,12 @@
         "learning_rate": 3e-05,
         "alpha": 0.005,
         "gamma": 0.95,
-        "soft_max_scaling": 0.1,
+        "soft_max_scaling": 0.5,
         "use_global_local": true,
         "global_map_scaling": 3,
         "local_map_size": 17,
         "print_summary": true,
-        "ll_movement_budget": 50
+        "ll_movement_budget": 30
     },
     "physics_params": {
         "camera_params": {

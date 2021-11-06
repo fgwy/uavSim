@@ -44,6 +44,8 @@ class H_CPPPhysics(GridPhysics):
 
         if self.state.landed:
             self.landed = True
+        if self.state.get_remaining_h_target_cells() == 0:
+            self.state.set_terminal_h(self.state.get_remaining_h_target_cells() == 0)
 
         return self.state
 

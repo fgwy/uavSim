@@ -17,6 +17,7 @@ class H_DDQNTrainerParams:
         self.rm_size_ll = 50000
         self.rm_size_hl = 10000
         self.load_model = ""
+        self.use_astar = True
 
 
 class H_DDQNTrainer:
@@ -32,14 +33,14 @@ class H_DDQNTrainer:
         self.prefill_bar = None
 
     def add_experience_ll(self, state, action, reward, next_state):
-        self.replay_memory_ll.store((state.get_boolean_map(),
-                                  state.get_float_map_ll(),
-                                  state.get_scalars_ll(),
+        self.replay_memory_ll.store((state.get_boolean_map_ll(),
+                                  # state.get_float_map_ll(),
+                                  # state.get_scalars_ll(),
                                   action,
                                   reward,
                                   next_state.get_boolean_map_ll(),
-                                  next_state.get_float_map_ll(),
-                                  next_state.get_scalars_ll(),
+                                  # next_state.get_float_map_ll(),
+                                  # next_state.get_scalars_ll(),
                                   next_state.h_terminal))
 
     def add_experience_hl(self, state, action, reward, next_state):

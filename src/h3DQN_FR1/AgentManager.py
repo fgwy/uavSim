@@ -5,6 +5,7 @@ from src.h3DQN_FR1.Agent_HL import HL_DDQNAgent, HL_DDQNAgentParams
 from src.h3DQN_FR1.Agent_LL import LL_DDQNAgent, LL_DDQNAgentParams
 from src.h3DQN_FR1.Trainer import H_DDQNTrainer, H_DDQNTrainerParams
 from src.h_CPP.Rewards import H_CPPRewardParams, H_CPPRewards
+from src.a_star.A_star import A_star
 
 import tensorflow as tf
 
@@ -22,6 +23,7 @@ class AgentManager():
         self.agent_hl = HL_DDQNAgent(HL_DDQNAgentParams(), example_state, example_action[0], stats)
         self.trainer = H_DDQNTrainer(H_DDQNTrainerParams(), self.agent_ll, self.agent_hl)
         self.rewards = H_CPPRewards(H_CPPRewardParams(), self.stats)
+        self.astar = A_star()
 
         self.next_state_hl = None
         self.state_hl = None
@@ -98,9 +100,6 @@ class AgentManager():
         return self.step(state, exploit=True)
 
     def generate_goal(self, state=None, exploit=False, random=False):
-        # while state.goal_not_active():
-        # print("reached new goal")
-        self.state_hl = copy.deepcopy(state)
         if random:
             self.current_goal_idx = self.agent_hl.get_random_goal()
         elif exploit:
@@ -111,33 +110,48 @@ class AgentManager():
         self.current_goal = tf.one_hot(self.current_goal_idx,
                                            depth=self.agent_hl.num_actions_hl).numpy().reshape(
                 (self.agent_ll.params.local_map_size, self.agent_ll.params.local_map_size))
-        print(self.current_goal_idx, self.current_goal.shape)
-
-        print('##### htarget reset #############')
-        # state.goal_active = True
-        # state.reset_h_target(self.current_goal)
-        # state.reset_ll_mb()
+        print(f'Goal idx and shape: {self.current_goal_idx} / {self.current_goal.shape}')
 
         return self.current_goal, self.current_goal_idx
 
-    def act_l(self, state, exploit=False, random=False, A_star=False):
-        print('########### act_l ################')
+    def act_l(self, state, steps_in_smdp, exploit=False, random=False, use_astar=False):
+        # print('########### act_l ################')
         if random:
             return self.agent_ll.get_random_action()
-        return self.agent_ll.get_soft_max_exploration(state)
+        if use_astar:
+            print(f'Using A_star!')
+            return self.astar.get_A_star_action(copy.deepcopy(state), steps_in_smdp)
+            # return self.agent_ll.get_random_action()
+        if exploit:
+            return self.agent_ll.get_exploitation_action(state)
+        else:
+            return self.agent_ll.get_soft_max_exploration(state)
 
-    def check_valid_target(self, target_lm, state):
-        total_goal = state.pad_lm_to_total_size(target_lm)
+    def check_valid_target(self, state):
+        # total_goal = state.pad_lm_to_total_size(target_lm)
+        total_goal = state.h_target*1
+        # if np.sum(total_goal) == 0:
+        #     print('######################## Goal Not Valid ####################################')
+        #     return False
         # nfz = np.logical_not(state.no_fly_zone)
         # obs = np.logical_not(state.obstacles)
-        nfz = state.no_fly_zone
-        obs = state.obstacles
-        valid1 = total_goal * nfz
-        valid2 = total_goal * obs
-        valid = np.all(valid1 == 0) or np.all(valid2 == 0)
+        position = np.zeros(total_goal.shape)
+        x, y = state.position
+        position[y, x] = 1
+        nfz = state.no_fly_zone*1
+        obs = state.obstacles*1
+        on_nfz = np.any(total_goal * nfz) == 1
+        on_obs = np.any(total_goal * obs) == 1
+        inside_bounds = bool(np.sum(total_goal))
+        on_position = total_goal*position
+        valid = not on_nfz and not on_obs and inside_bounds and not on_position
         # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
-        print('Goal on obs: ', not np.all(valid2 == 0), '# On nfz: ', not np.all(valid1 == 0), '# Goal valid: ', valid)
+        print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')
 
         if not valid:
             print('######################## Goal Not Valid ####################################')
         return valid
+
+    def find_h_target_idx(self, state):
+        end = np.where(state.h_target == 1)
+        return end

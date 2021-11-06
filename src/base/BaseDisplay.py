@@ -4,12 +4,15 @@ from tqdm import tqdm
 
 from src.Map.Map import Map
 import numpy as np
-import matplotlib.pyplot as plt
 from skimage.color import rgb2hsv, hsv2rgb
 from matplotlib import patches
 import cv2
 
 from PIL import Image
+
+import matplotlib.pyplot as plt
+import matplotlib as mtplt
+import time
 
 
 class BaseDisplay:
@@ -164,3 +167,22 @@ class BaseDisplay:
 
     def display_state(self, env_map, initial_state, state, plot=False) -> tf.Tensor:
         pass
+
+    def plot_map(self, state): # , h_target_idx):
+        colors = 'white blue lime red yellow'.split()
+        cmap = mtplt.colors.ListedColormap(colors, name='colors', N=None)
+        data = state.no_fly_zone
+        target = ~data*state.target
+        target = ~state.h_target*target
+        data = data*1
+        # data[h_target_idx[0], h_target_idx[1]] = 2
+        data += state.h_target*2
+        data[state.position[1], state.position[0]] = 3
+        data += target*4
+        [m, n] = np.shape(data)
+        plt.imshow(data, alpha=1, cmap=cmap, vmin=0, vmax=4)
+        plt.xticks(np.arange(n))
+        plt.yticks(np.arange(m))
+        plt.draw()
+        plt.pause(0.05)
+        plt.clf()

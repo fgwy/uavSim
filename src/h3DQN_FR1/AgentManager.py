@@ -108,8 +108,8 @@ class AgentManager():
             self.current_goal_idx = self.agent_hl.get_goal(state)
 
         self.current_goal = tf.one_hot(self.current_goal_idx,
-                                           depth=self.agent_hl.num_actions_hl).numpy().reshape(
-                (self.agent_ll.local_map_size, self.agent_ll.local_map_size))
+                                           depth=self.agent_hl.num_actions_hl).numpy().reshape(17,17)
+                # (self.agent_ll.local_map_size, self.agent_ll.local_map_size))
         print(f'Goal idx and shape: {self.current_goal_idx} / {self.current_goal.shape}')
 
         return self.current_goal, self.current_goal_idx
@@ -142,8 +142,8 @@ class AgentManager():
         obs = state.obstacles*1
         on_nfz = np.any(total_goal * nfz) == 1
         on_obs = np.any(total_goal * obs) == 1
-        inside_bounds = bool(np.sum(total_goal))
-        on_position = total_goal*position
+        inside_bounds = np.sum(total_goal)
+        on_position = np.any(total_goal*position) == 1
         valid = not on_nfz and not on_obs and inside_bounds and not on_position
         # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
         print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')

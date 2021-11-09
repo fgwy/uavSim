@@ -82,8 +82,8 @@ class H_CPPEnvironment(BaseEnvironment):
             if not test:
                 reward_h += self.agent.rewards.calculate_reward_h(state_h, goal_idx, next_state, valid, reward_h)
 
-                self.agent.trainer.add_experience_hl(state_h, goal_idx, reward_h, next_state)
-                self.agent.trainer.train_h()
+                # self.agent.trainer.add_experience_hl(state_h, goal_idx, reward_h, next_state)
+                # self.agent.trainer.train_h()
 
             self.step_count += 1
 
@@ -129,8 +129,9 @@ class H_CPPEnvironment(BaseEnvironment):
                 reward_h += self.agent.rewards.calculate_reward_h_per_step(state, GridActions(action), next_state,
                                                                            valid)
                 if not test:
-                    self.agent.trainer.add_experience_ll(state, action, reward, next_state)
-                    self.agent.train_l()
+                    # self.agent.trainer.add_experience_ll(state, action, reward, next_state)
+                    # self.agent.train_l()
+                    pass
 
                 self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
 

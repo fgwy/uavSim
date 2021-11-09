@@ -169,18 +169,19 @@ class BaseDisplay:
         pass
 
     def plot_map(self, state): # , h_target_idx):
-        colors = 'white blue lime red yellow'.split()
+        colors = 'white blue lime red yellow cyan'.split()
         cmap = mtplt.colors.ListedColormap(colors, name='colors', N=None)
         data = state.no_fly_zone
         target = ~data*state.target
         target = ~state.h_target*target
         data = data*1
+        data += state.landing_zone * 5
         # data[h_target_idx[0], h_target_idx[1]] = 2
         data += state.h_target*2
         data[state.position[1], state.position[0]] = 3
         data += target*4
         [m, n] = np.shape(data)
-        plt.imshow(data, alpha=1, cmap=cmap, vmin=0, vmax=4)
+        plt.imshow(data, alpha=1, cmap=cmap, vmin=0, vmax=5)
         plt.xticks(np.arange(n))
         plt.yticks(np.arange(m))
         plt.draw()

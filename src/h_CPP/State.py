@@ -4,7 +4,7 @@ from src.Map.Map import Map
 from src.StateUtils import pad_centered
 from src.CPP.State import CPPState
 
-import tensorflow.image.central_crop as central_crp
+from tensorflow.image import central_crop
 
 
 class H_CPPScenario:
@@ -116,7 +116,7 @@ class H_CPPState(CPPState):
 
     def get_local_map(self, conv_in):
         crop_frac = float(self.local_map_size) / float(self.get_boolean_map_ll_shape()[0])
-        local_map = central_crp(conv_in, crop_frac)
+        local_map = central_crop(conv_in, crop_frac)
         return local_map
 
     def get_boolean_map_ll_shape(self):

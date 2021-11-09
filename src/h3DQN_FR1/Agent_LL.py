@@ -76,15 +76,17 @@ class LL_DDQNAgent(object):
         reward_ll_input = Input(shape=(), name='reward_ll_input', dtype=tf.float32)
         termination_input = Input(shape=(), name='termination_input', dtype=tf.bool)
         q_star_ll_input = Input(shape=(), name='q_star_ll_input', dtype=tf.float32)
+        local_map = Input(shape=(), name='local_map_input', dtype=tf.float32)
 
-        states_ll = [boolean_map_ll_input]
-                     # float_map_ll_input,
-                     # # goal_mask_input,
-                     # scalars_ll_input]
+        states_ll = [boolean_map_ll_input,
+                     float_map_ll_input,
+                     # goal_mask_input,
+                     scalars_ll_input]
 
 
         map_cast_ll = tf.cast(boolean_map_ll_input, dtype=tf.float32)
         padded_map_ll = tf.concat([map_cast_ll, float_map_ll_input], axis=3)
+        print(f'padded map shape: {padded_map_ll.shape} castmap shape: {map_cast_ll.shape} padded map shape: {padded_map_ll.shape} float map input shape: {float_map_ll_input.shape}')
 
         self.q_network_ll = self.build_model_ll(padded_map_ll, scalars_ll_input, states_ll)
         self.target_network_ll = self.build_model_ll(padded_map_ll, scalars_ll_input, states_ll, 'target_ll_')
@@ -212,11 +214,11 @@ class LL_DDQNAgent(object):
             [w_new * alpha + w_old * (1. - alpha) for w_new, w_old in zip(weights, target_weights)])
 
     def train_ll(self, experiences):
-        boolean_map = experiences[0] # TODO: convert to tf.tensor
+        boolean_map = tf.convert_to_tensor(experiences[0]) # TODO: convert to tf.tensor
         action = tf.convert_to_tensor(experiences[1], dtype=tf.int64)
-        reward = experiences[2]
-        next_boolean_map = experiences[3]
-        terminated = experiences[4]
+        reward = tf.convert_to_tensor(experiences[2])
+        next_boolean_map = tf.convert_to_tensor(experiences[3])
+        terminated = tf.convert_to_tensor(experiences[4])
         # float_map = experiences[1]
         # scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
         # action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
@@ -228,7 +230,7 @@ class LL_DDQNAgent(object):
         self._train_ll(boolean_map, action, reward, next_boolean_map, terminated)
 
     @tf.function
-    def _train_ll(self, boolean_map, action, reward, next_boolean_map, terminated): # TODO: ghet's tensor objects
+    def _train_ll(self, boolean_map, action, reward, next_boolean_map, terminated):
         q_star = self.q_star_model_ll(
             [next_boolean_map])
 

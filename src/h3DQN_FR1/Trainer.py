@@ -21,7 +21,7 @@ class H_DDQNTrainerParams:
 
 
 class H_DDQNTrainer:
-    def __init__(self, params: H_DDQNTrainerParams, agent_ll: LL_DDQNAgent, agent_hl: HL_DDQNAgent):
+    def __init__(self, params: H_DDQNTrainerParams, agent_ll, agent_hl: HL_DDQNAgent): # : LL_DDQNAgent
         self.params = params
         self.replay_memory_ll = ReplayMemory(size=params.rm_size_ll)
         self.replay_memory_hl = ReplayMemory(size=params.rm_size_hl)

@@ -67,7 +67,7 @@ class H_CPPEnvironment(BaseEnvironment):
         """
 
         while not state.is_terminal():
-            goal, goal_idx = self.agent.generate_goal(state)
+            goal, goal_idx, try_landing = self.agent.generate_goal(state)
             # print(f'fresh goal count: {np.sum(goal)}')
             state = copy.deepcopy(self.physics.reset_h_target(goal))
             # print(f'fresh goal count: {state.get_remaining_h_target_cells()}')
@@ -77,19 +77,19 @@ class H_CPPEnvironment(BaseEnvironment):
             # print('check same shape:', state.target.shape, state.h_target.shape)
 
             ## sub MDP
-            reward_h, next_state, last_step = self.run_subMDP(state, valid, bar, last_step, test)
+            reward_h, next_state, last_step = self.run_subMDP(state, valid, bar, last_step, test, try_landing)
 
             if not test:
                 reward_h += self.agent.rewards.calculate_reward_h(state_h, goal_idx, next_state, valid, reward_h)
 
-                # self.agent.trainer.add_experience_hl(state_h, goal_idx, reward_h, next_state)
-                # self.agent.trainer.train_h()
+                self.agent.trainer.add_experience_hl(state_h, goal_idx, reward_h, next_state)
+                self.agent.trainer.train_h()
 
             self.step_count += 1
 
             state = copy.deepcopy(next_state)
 
-    def run_subMDP(self, state, valid, bar, last_step, test):
+    def run_subMDP(self, state, valid, bar, last_step, test, try_landing):
         """
         Runs subMDP: low-level interaction loop
         """
@@ -99,8 +99,16 @@ class H_CPPEnvironment(BaseEnvironment):
         # print(f'######### hterminal? {state.is_terminal_h()}')
         while not state.is_terminal_h() and not state.is_terminal():
             i += 1
-            if not valid:
-                # print('###### invalid')
+            if test:
+                self.display.plot_map(copy.deepcopy(state))
+            if try_landing:
+                print('########## tried landing!')
+                action = 4  # Landing action
+                next_state = copy.deepcopy(self.physics.step(GridActions(action)))
+                bar.update(self.step_count - last_step)
+                last_step = self.step_count
+            elif not valid:
+                print('###### invalid')
                 action = 5  # Hover such that state changes (mb is decreased and different goal generated)
                 self.physics.step(GridActions(action))
                 next_state = copy.deepcopy(self.physics.set_terminal_h(True))
@@ -111,95 +119,38 @@ class H_CPPEnvironment(BaseEnvironment):
             else:
                 bar.update(self.step_count - last_step)
                 last_step = self.step_count
-                if test:
-                    # print('Displaying!!!!!')
-                    self.display.plot_map(copy.deepcopy(state))
-                    # print('Displaying doneeee!!!!!')
+
                 action = self.agent.act_l(state, i, use_astar=self.agent.trainer.params.use_astar)
+                # print(f'use astar: {self.agent.trainer.params.use_astar}')
                 # print(f'GridAction: {GridActions(action)}')
                 next_state = self.physics.step(GridActions(action))
                 # print('stepping done!!!!!!!!!')
-                if next_state.get_remaining_h_target_cells() == 0:
-                    print(f'Subgoal reached!!!!  {next_state.get_remaining_h_target_cells()}')
-                if test:
-                    self.display.plot_map(copy.deepcopy(next_state))
-
-                print(f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
+                # if next_state.get_remaining_h_target_cells() == 0:
+                    # print(f'Subgoal reached!!!!  {next_state.get_remaining_h_target_cells()}')
+                # print(f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
                 reward = self.agent.rewards.calculate_reward_l(state, GridActions(action), next_state)
                 reward_h += self.agent.rewards.calculate_reward_h_per_step(state, GridActions(action), next_state,
                                                                            valid)
                 if not test:
-                    # self.agent.trainer.add_experience_ll(state, action, reward, next_state)
-                    # self.agent.train_l()
-                    pass
+                    self.agent.trainer.add_experience_ll(state, action, reward, next_state)
+                    self.agent.train_l()
 
                 self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
 
-
+            if test:
+                plt = self.display.plot_map(copy.deepcopy(next_state))
+            print(
+                f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
 
             state = copy.deepcopy(next_state)
+        if test:
+            # self.display.close_plot(plt)
+            try:
+                plt.close
+            except:
+                pass
         return reward_h, state, last_step
 
-    # def step(self, state, random=False, test=False):
-    #     action = self.agent.act_l(state, random)  # TODO: return both actions, hover ll if goal invalid
-    #     next_state = self.physics.step(GridActions(action))
-    #     reward = self.agent.calculate_reward(state, GridActions(action),
-    #                                          next_state)  # TODO: calculate both rewards, check coverage and set goal_active in state
-    #     self.agent.add_experience(state, action, reward, next_state)  # TODO: Check which experience to add
-    #     self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))
-    #     self.step_count += 1
-    #     return copy.deepcopy(next_state)
-
-    def train_episode(self):
-        '''
-        function trains one episode for given agent
-        '''
-        state = copy.deepcopy(self.init_episode())
-        self.stats.on_episode_begin(self.episode_count)
-        while not state.is_terminal():
-            goal = self.agent.generate_goal(state)
-            # state.reset_h_target(goal)
-            while not state.is_terminal_h():
-                state = self.agent.act(state)
-                self.agent.train_agent()
-
-        self.stats.on_episode_end(self.episode_count)
-        self.stats.log_training_data(step=self.step_count)
-
-        self.episode_count += 1
-
-    # def run(self):
-    #
-    #     self.fill_replay_memory()
-    #
-    #     print('Running ', self.stats.params.log_file_name)
-    #
-    #     bar = tqdm.tqdm(total=int(self.agent.trainer.params.num_steps))
-    #     last_step = 0
-    #     while self.step_count < self.agent.trainer.params.num_steps:
-    #         bar.update(self.step_count - last_step)
-    #         last_step = self.step_count
-    #         self.train_episode()
-    #
-    #         if self.episode_count % self.agent.trainer.params.eval_period == 0:
-    #             self.test_episode()
-    #
-    #         self.stats.save_if_best()
-    #
-    #     self.stats.training_ended()
-
-    def test_episode(self, scenario=None):
-        state = copy.deepcopy(self.init_episode(scenario))
-        self.stats.on_episode_begin(self.episode_count)
-        while not state.terminal:
-            action = self.agent.get_exploitation_action_target(state)
-            next_state = self.physics.step(GridActions(action))
-            reward = self.agent.calculate_reward(state, GridActions(action), next_state)
-            self.stats.add_experience((copy.deepcopy(state), action, reward, copy.deepcopy(next_state)))
-            state = copy.deepcopy(next_state)
-
-        self.stats.on_episode_end(self.episode_count)
-        self.stats.log_testing_data(step=self.step_count)
 
     def fill_replay_memory(self):
 

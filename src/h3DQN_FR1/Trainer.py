@@ -13,7 +13,7 @@ class H_DDQNTrainerParams:
         self.num_steps = 1e6
         self.rm_pre_fill_ratio = 0.5
         self.rm_pre_fill_random = True
-        self.eval_period = 5
+        self.eval_period = 1
         self.rm_size_ll = 50000
         self.rm_size_hl = 10000
         self.load_model = ""
@@ -21,7 +21,7 @@ class H_DDQNTrainerParams:
 
 
 class H_DDQNTrainer:
-    def __init__(self, params: H_DDQNTrainerParams, agent_ll, agent_hl: HL_DDQNAgent): # : LL_DDQNAgent
+    def __init__(self, params: H_DDQNTrainerParams, agent_ll: LL_DDQNAgent, agent_hl: HL_DDQNAgent):
         self.params = params
         self.replay_memory_ll = ReplayMemory(size=params.rm_size_ll)
         self.replay_memory_hl = ReplayMemory(size=params.rm_size_hl)
@@ -33,24 +33,26 @@ class H_DDQNTrainer:
         self.prefill_bar = None
 
     def add_experience_ll(self, state, action, reward, next_state):
+        # print(f'action: {action}')
         self.replay_memory_ll.store((state.get_boolean_map_ll(),
-                                  # state.get_float_map_ll(),
-                                  # state.get_scalars_ll(),
+                                  state.get_float_map_ll(),
+                                  state.get_scalars_ll(),
                                   action,
                                   reward,
                                   next_state.get_boolean_map_ll(),
-                                  # next_state.get_float_map_ll(),
-                                  # next_state.get_scalars_ll(),
+                                  next_state.get_float_map_ll(),
+                                  next_state.get_scalars_ll(),
                                   next_state.h_terminal))
 
     def add_experience_hl(self, state, action, reward, next_state):
-        self.replay_memory_hl.store((state.get_boolean_map(),
-                                  state.get_float_map(),
+        # print(f'state get local map: {state.get_local_map().shape, state.get_local_map()}')
+        self.replay_memory_hl.store((state.get_local_map(),
+                                  state.get_global_map(self.agent_hl.params.global_map_scaling),
                                   state.get_scalars_hl(),
                                   action,
                                   reward,
-                                  next_state.get_boolean_map(),
-                                  next_state.get_float_map(),
+                                  next_state.get_local_map(),
+                                  next_state.get_global_map(self.agent_hl.params.global_map_scaling),
                                   next_state.get_scalars_hl(),
                                   next_state.terminal))
         

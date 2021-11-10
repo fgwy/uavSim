@@ -58,7 +58,7 @@ class H_CPPPhysics(GridPhysics):
         return [self.get_example_action_h(), self.get_example_action_l()]
 
     def get_example_action_l(self):
-        return GridActionsNoHover.LAND
+        return GridActionsNoHover.WEST
 
     def get_example_action_h(self):
         return None

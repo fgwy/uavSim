@@ -5,6 +5,8 @@ from src.StateUtils import pad_centered
 from src.CPP.State import CPPState
 
 from tensorflow.image import central_crop
+from tensorflow.keras.layers import AvgPool2D
+import tensorflow as tf
 
 
 class H_CPPScenario:
@@ -38,6 +40,7 @@ class H_CPPState(CPPState):
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
         self.reset_ll_mb()
         self.set_terminal_h(False)
+        # self.global_map = np.zeros_like(self.get_global_map(global))
 
     def pad_lm_to_total_size(self, h_target):
         """
@@ -73,13 +76,15 @@ class H_CPPState(CPPState):
         self.h_target &= ~view
         self.h_coverage |= view
 
+    def get_local_map_shape(self):
+        return self.get_local_map().shape
+
     def goal_ultimated(self):
 
         return not bool(self.h_target is not None or self.get_remaining_h_target_cells() or self.current_ll_mb >= 0)
 
     def reset_ll_mb(self):
-        # TODO: set to min(mb, ll_mb)
-        self.current_ll_mb = self.initial_ll_movement_budget
+        self.current_ll_mb = min(self.initial_ll_movement_budget, self.movement_budget)
 
     def get_boolean_map_ll(self):
         # print("reached bool map ll")
@@ -105,6 +110,24 @@ class H_CPPState(CPPState):
         float_map = np.zeros(tuple(shape), dtype=float)
         return float_map
 
+    def get_padded_map(self):
+        bm = self.get_boolean_map()
+        fm = self.get_float_map()
+        map_cast_hl = tf.cast(bm, dtype=tf.float32)
+        padded_map_hl = tf.concat([map_cast_hl, fm], axis=2).numpy()
+        return padded_map_hl
+
+    def get_local_map(self):  # TODO: create local map in state to exclude computation from graph
+        conv_in = self.get_padded_map()
+        crop_frac = float(self.local_map_size) / float(self.get_boolean_map_ll_shape()[0])
+        local_map = central_crop(conv_in, crop_frac)
+        return local_map.numpy()
+
+    def get_global_map(self, global_map_scaling):
+        pm = self.get_padded_map()[tf.newaxis, ...]
+        self.global_map = AvgPool2D((global_map_scaling, global_map_scaling))(pm)
+        return self.global_map.numpy()
+
     def get_float_map_ll_shape(self):
         return self.get_float_map_ll().shape
 
@@ -114,13 +137,14 @@ class H_CPPState(CPPState):
     def get_goal_target_shape(self):
         return self.h_target.shape
 
-    def get_local_map(self, conv_in):
-        crop_frac = float(self.local_map_size) / float(self.get_boolean_map_ll_shape()[0])
-        local_map = central_crop(conv_in, crop_frac)
-        return local_map
-
     def get_boolean_map_ll_shape(self):
         return self.get_boolean_map_ll().shape
+
+
+
+    def get_global_map_shape(self, gms):
+        return self.get_global_map(gms).shape
+
 
     def get_example_goal(self):
         return self.h_target

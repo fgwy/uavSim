@@ -174,12 +174,14 @@ class BaseDisplay:
         data = state.no_fly_zone
         target = ~data*state.target
         target = ~state.h_target*target
+        lz = state.landing_zone*~state.h_target
         data = data*1
-        data += state.landing_zone * 5
+        data += lz * 5
         # data[h_target_idx[0], h_target_idx[1]] = 2
         data += state.h_target*2
+        data += target * 4
         data[state.position[1], state.position[0]] = 3
-        data += target*4
+
         [m, n] = np.shape(data)
         plt.imshow(data, alpha=1, cmap=cmap, vmin=0, vmax=5)
         plt.xticks(np.arange(n))
@@ -187,3 +189,11 @@ class BaseDisplay:
         plt.draw()
         plt.pause(0.05)
         plt.clf()
+        return plt
+
+    def close_plot(self, plt):
+        plt.close()
+
+    def save_plot_map(self, trajectory): # TODO: save a plot of a whole episode in one map with trail etc..
+        pass
+

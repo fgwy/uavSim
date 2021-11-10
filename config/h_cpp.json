@@ -42,7 +42,7 @@
         "num_steps": 1000,
         "rm_pre_fill_ratio": 0.0,
         "rm_pre_fill_random": true,
-        "eval_period": 5,
+        "eval_period": 1,
         "rm_size_h": 1000,
         "rm_size_l": 10000,
         "load_model": "",

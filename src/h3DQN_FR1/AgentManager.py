@@ -100,6 +100,7 @@ class AgentManager():
     #     return self.step(state, exploit=True)
 
     def generate_goal(self, state=None, exploit=False, random=False):
+        try_landing = False
         if random:
             self.current_goal_idx = self.agent_hl.get_random_goal()
         elif exploit:
@@ -107,12 +108,15 @@ class AgentManager():
         else:
             self.current_goal_idx = self.agent_hl.get_goal(state)
 
-        self.current_goal = tf.one_hot(self.current_goal_idx,
-                                           depth=self.agent_hl.num_actions_hl).numpy().reshape(17,17)
-                # (self.agent_ll.local_map_size, self.agent_ll.local_map_size))
-        print(f'Goal idx and shape: {self.current_goal_idx} / {self.current_goal.shape}')
+        if self.current_goal_idx == (self.agent_hl.num_actions_hl**2)+1:
+            try_landing = True
 
-        return self.current_goal, self.current_goal_idx
+        self.current_goal = tf.one_hot(self.current_goal_idx,
+                                           depth=self.agent_hl.num_actions_hl-1).numpy().reshape(17,17)
+                # (self.agent_ll.local_map_size, self.agent_ll.local_map_size))
+        print(f'Goal idx and shape: {self.current_goal_idx} / {self.current_goal.shape} # Try landing: {try_landing}')
+
+        return self.current_goal, self.current_goal_idx, try_landing
 
     def act_l(self, state, steps_in_smdp, exploit=False, random=False, use_astar=False):
         # print('########### act_l ################')
@@ -142,7 +146,7 @@ class AgentManager():
         obs = state.obstacles*1
         on_nfz = np.any(total_goal * nfz) == 1
         on_obs = np.any(total_goal * obs) == 1
-        inside_bounds = np.sum(total_goal)
+        inside_bounds = bool(np.sum(total_goal))
         on_position = np.any(total_goal*position) == 1
         valid = not on_nfz and not on_obs and inside_bounds and not on_position
         # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)

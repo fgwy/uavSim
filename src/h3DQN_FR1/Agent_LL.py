@@ -62,7 +62,7 @@ class LL_DDQNAgent(object):
         self.scalars = example_state.get_num_scalars()
         self.goal_target_shape = example_state.get_goal_target_shape()
         self.num_actions_ll = len(type(example_action_ll))
-        print(f'## len actions ll: {self.num_actions_ll}')
+        # print(f'## len actions ll: {self.num_actions_ll}')
         self.example_goal = example_state.get_example_goal()
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
         self.ll_mb = example_state.initial_ll_movement_budget
@@ -214,30 +214,27 @@ class LL_DDQNAgent(object):
             [w_new * alpha + w_old * (1. - alpha) for w_new, w_old in zip(weights, target_weights)])
 
     def train_ll(self, experiences):
+        # print(f'action shape: {experiences[3]}')
         boolean_map = tf.convert_to_tensor(experiences[0]) # TODO: convert to tf.tensor
-        action = tf.convert_to_tensor(experiences[1], dtype=tf.int64)
-        reward = tf.convert_to_tensor(experiences[2])
-        next_boolean_map = tf.convert_to_tensor(experiences[3])
-        terminated = tf.convert_to_tensor(experiences[4])
-        # float_map = experiences[1]
-        # scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
-        # action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
-        # reward = experiences[4]
-        # next_boolean_map = experiences[5]
-        # next_float_map = experiences[6]
-        # next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
-        # terminated = experiences[8]
-        self._train_ll(boolean_map, action, reward, next_boolean_map, terminated)
+        float_map = tf.convert_to_tensor(experiences[1])
+        scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
+        action = tf.convert_to_tensor(np.asarray(experiences[3]).astype(np.int64), dtype=tf.int64)
+        reward = tf.convert_to_tensor(experiences[4])
+        next_boolean_map = tf.convert_to_tensor(experiences[5])
+        next_float_map = tf.convert_to_tensor(experiences[6])
+        next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
+        terminated = tf.convert_to_tensor(experiences[8])
+        self._train_ll(boolean_map, float_map, scalars, action, reward, next_boolean_map, next_float_map, next_scalars, terminated)
 
-    @tf.function
-    def _train_ll(self, boolean_map, action, reward, next_boolean_map, terminated):
+    # @tf.function
+    def _train_ll(self, boolean_map, float_map, scalars, action, reward, next_boolean_map, next_float_map, next_scalars, terminated):
         q_star = self.q_star_model_ll(
-            [next_boolean_map])
+            [next_boolean_map, next_float_map, next_scalars])
 
         # Train Value network
         with tf.GradientTape() as tape:
             q_loss = self.q_loss_model_ll(
-                [boolean_map, action, reward,
+                [boolean_map, float_map, scalars, action, reward,
                  terminated, q_star])
         q_grads = tape.gradient(q_loss, self.q_network_ll.trainable_variables)
         self.q_optimizer_ll.apply_gradients(zip(q_grads, self.q_network_ll.trainable_variables))

@@ -146,8 +146,8 @@ class HL_DDQNAgent(object):
 
         self.q_optimizer_hl = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
 
-        # if self.params.print_summary:
-        self.q_loss_model_hl.summary()
+        if self.params.print_summary:
+            self.q_loss_model_hl.summary()
 
         if stats:
             stats.set_model(self.target_network_hl)
@@ -200,10 +200,10 @@ class HL_DDQNAgent(object):
 
         layer_1 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(0))(
             layer)
-        layer_2 = tf.keras.layers.Dense(512, activation='elu', name=name + 'hidden_layer_all_hl_' + str(1))(
-            layer_1)
+        # layer_2 = tf.keras.layers.Dense(512, activation='elu', name=name + 'hidden_layer_all_hl_' + str(1))(
+        #     layer_1)
         layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
-            layer_2)
+            layer_1)
 
         output = tf.keras.layers.Dense(units=300, activation='linear', name=name + 'last_dense_layer_hl')(
             layer)

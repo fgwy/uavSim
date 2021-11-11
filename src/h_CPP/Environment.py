@@ -19,9 +19,10 @@ class H_CPPEnvironmentParams(BaseEnvironmentParams):
         super().__init__()
         self.grid_params = H_CPPGridParams()
         self.reward_params = H_CPPRewardParams()
-        self.trainer_params = H_DDQNTrainerParams()
+        # self.trainer_params = H_DDQNTrainerParams()
         self.agent_params = AgentManager_Params()
         self.physics_params = H_CPPPhysicsParams()
+
 
 
 
@@ -30,12 +31,14 @@ class H_CPPEnvironment(BaseEnvironment):
     def __init__(self, params: H_CPPEnvironmentParams):
         self.display = CPPDisplay()
         super().__init__(params, self.display)
+        self.params = params
         self.grid = H_CPPGrid(params.grid_params, self.stats)
         self.rewards = H_CPPRewards(params.reward_params, stats=self.stats)
         self.physics = H_CPPPhysics(params=params.physics_params, stats=self.stats)
         self.agent = AgentManager(params.agent_params, example_state=self.grid.get_example_state(),
                                   example_action=self.physics.get_example_action(),
                                   stats=self.stats)
+        self.draw = False
 
     def run(self):
         # self.fill_replay_memory()
@@ -45,14 +48,15 @@ class H_CPPEnvironment(BaseEnvironment):
         last_step = 0
 
         while self.step_count < self.agent.trainer.params.num_steps:
-            print('########### starting new episode ##########')
+            # print('########### starting new episode ##########')
             state = copy.deepcopy(self.init_episode())
             self.stats.on_episode_begin(self.episode_count)
 
             ## run_MDP
             test = True if self.episode_count % self.agent.trainer.params.eval_period == 0 and self.episode_count != 0 else False
             if test:
-                print('################################### testing !!!!!!!!!!!!! ######################################################')
+                # print('################################### testing !!!!!!!!!!!!! ######################################################')
+                pass
             self.run_MDP(state, last_step, bar, test=test)
 
             self.stats.on_episode_end(self.episode_count)
@@ -100,15 +104,18 @@ class H_CPPEnvironment(BaseEnvironment):
         while not state.is_terminal_h() and not state.is_terminal():
             i += 1
             if test:
-                self.display.plot_map(copy.deepcopy(state))
+                if self.draw:
+                    self.display.plot_map(copy.deepcopy(state))
+                else:
+                    pass
             if try_landing:
-                print('########## tried landing!')
+                # print('########## tried landing!')
                 action = 4  # Landing action
                 next_state = copy.deepcopy(self.physics.step(GridActions(action)))
                 bar.update(self.step_count - last_step)
                 last_step = self.step_count
             elif not valid:
-                print('###### invalid')
+                # print('###### invalid')
                 action = 5  # Hover such that state changes (mb is decreased and different goal generated)
                 self.physics.step(GridActions(action))
                 next_state = copy.deepcopy(self.physics.set_terminal_h(True))
@@ -138,9 +145,12 @@ class H_CPPEnvironment(BaseEnvironment):
                 self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
 
             if test:
-                plt = self.display.plot_map(copy.deepcopy(next_state))
-            print(
-                f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
+                if self.draw:
+                    plt = self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
+                else:
+                    pass
+            # print(
+                # f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
 
             state = copy.deepcopy(next_state)
         if test:

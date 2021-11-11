@@ -86,7 +86,7 @@ class LL_DDQNAgent(object):
 
         map_cast_ll = tf.cast(boolean_map_ll_input, dtype=tf.float32)
         padded_map_ll = tf.concat([map_cast_ll, float_map_ll_input], axis=3)
-        print(f'padded map shape: {padded_map_ll.shape} castmap shape: {map_cast_ll.shape} padded map shape: {padded_map_ll.shape} float map input shape: {float_map_ll_input.shape}')
+        # print(f'padded map shape: {padded_map_ll.shape} castmap shape: {map_cast_ll.shape} padded map shape: {padded_map_ll.shape} float map input shape: {float_map_ll_input.shape}')
 
         self.q_network_ll = self.build_model_ll(padded_map_ll, scalars_ll_input, states_ll)
         self.target_network_ll = self.build_model_ll(padded_map_ll, scalars_ll_input, states_ll, 'target_ll_')

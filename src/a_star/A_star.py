@@ -118,7 +118,7 @@ class A_star:
             end = np.where(state.h_target == 1)
             try:
                 self.path = self.astar(obstacles, start, end)
-                print(f'path: {self.path}')
+                # print(f'path: {self.path}')
             except:
                 return np.random.randint(0, 4)
 

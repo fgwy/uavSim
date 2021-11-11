@@ -15,13 +15,17 @@ class AgentManager_Params():
         self.hierarchical = False
 
 
+
 class AgentManager():
     def __init__(self, params: AgentManager_Params, example_state, example_action, stats):
         self.params = params
         self.stats = stats
-        self.agent_ll = LL_DDQNAgent(LL_DDQNAgentParams(), example_state, example_action[1], stats)
-        self.agent_hl = HL_DDQNAgent(HL_DDQNAgentParams(), example_state, example_action[0], stats)
-        self.trainer = H_DDQNTrainer(H_DDQNTrainerParams(), self.agent_ll, self.agent_hl)
+        self.trainer_params = H_DDQNTrainerParams()
+        self.ll_agent_params = LL_DDQNAgentParams()
+        self.hl_agent_params = HL_DDQNAgentParams()
+        self.agent_ll = LL_DDQNAgent(self.ll_agent_params, example_state, example_action[1], stats)
+        self.agent_hl = HL_DDQNAgent(self.hl_agent_params, example_state, example_action[0], stats)
+        self.trainer = H_DDQNTrainer(self.trainer_params, self.agent_ll, self.agent_hl)
         self.rewards = H_CPPRewards(H_CPPRewardParams(), self.stats)
         self.astar = A_star()
 
@@ -114,7 +118,7 @@ class AgentManager():
         self.current_goal = tf.one_hot(self.current_goal_idx,
                                            depth=self.agent_hl.num_actions_hl-1).numpy().reshape(17,17)
                 # (self.agent_ll.local_map_size, self.agent_ll.local_map_size))
-        print(f'Goal idx and shape: {self.current_goal_idx} / {self.current_goal.shape} # Try landing: {try_landing}')
+        # print(f'Goal idx and shape: {self.current_goal_idx} / {self.current_goal.shape} # Try landing: {try_landing}')
 
         return self.current_goal, self.current_goal_idx, try_landing
 
@@ -123,7 +127,7 @@ class AgentManager():
         if random:
             return self.agent_ll.get_random_action()
         if use_astar:
-            print(f'Using A_star!')
+            # print(f'Using A_star!')
             return self.astar.get_A_star_action(copy.deepcopy(state), steps_in_smdp)
             # return self.agent_ll.get_random_action()
         if exploit:
@@ -150,10 +154,11 @@ class AgentManager():
         on_position = np.any(total_goal*position) == 1
         valid = not on_nfz and not on_obs and inside_bounds and not on_position
         # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
-        print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')
+        # print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')
 
         if not valid:
-            print('######################## Goal Not Valid ####################################')
+            # print('######################## Goal Not Valid ####################################')
+            pass
         return valid
 
     def find_h_target_idx(self, state):

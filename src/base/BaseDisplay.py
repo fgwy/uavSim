@@ -186,11 +186,13 @@ class BaseDisplay:
         plt.imshow(data, alpha=1, cmap=cmap, vmin=0, vmax=5)
         plt.xticks(np.arange(n))
         plt.yticks(np.arange(m))
-        plt.draw()
-        plt.pause(0.05)
+        plt.show(block=False)
+        plt.pause(0.1)
         plt.clf()
         if terminal:
-            plt.close()
+            plt.gcf()
+            plt.close('all')
+
 
 
     def save_plot_map(self, trajectory): # TODO: save a plot of a whole episode in one map with trail etc..

@@ -38,7 +38,8 @@ class H_CPPEnvironment(BaseEnvironment):
         self.agent = AgentManager(params.agent_params, example_state=self.grid.get_example_state(),
                                   example_action=self.physics.get_example_action(),
                                   stats=self.stats)
-        self.draw = False
+        self.draw = True
+        self.random = False
 
     def run(self):
         # self.fill_replay_memory()
@@ -49,6 +50,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
         while self.step_count < self.agent.trainer.params.num_steps:
             # print('########### starting new episode ##########')
+            print(f'episode count: {self.episode_count}, {self.agent.trainer.params.eval_period}, {self.draw}')
             state = copy.deepcopy(self.init_episode())
             self.stats.on_episode_begin(self.episode_count)
 
@@ -103,11 +105,9 @@ class H_CPPEnvironment(BaseEnvironment):
         # print(f'######### hterminal? {state.is_terminal_h()}')
         while not state.is_terminal_h() and not state.is_terminal():
             i += 1
-            if test:
-                if self.draw:
-                    self.display.plot_map(copy.deepcopy(state))
-                else:
-                    pass
+            if test and self.draw:
+                self.display.plot_map(copy.deepcopy(state))
+
             if try_landing:
                 # print('########## tried landing!')
                 action = 4  # Landing action
@@ -119,7 +119,6 @@ class H_CPPEnvironment(BaseEnvironment):
                 action = 5  # Hover such that state changes (mb is decreased and different goal generated)
                 self.physics.step(GridActions(action))
                 next_state = copy.deepcopy(self.physics.set_terminal_h(True))
-                # print(f'ist state truly terminal? {next_state.is_terminal()}')
                 bar.update(self.step_count - last_step)
                 last_step = self.step_count
 
@@ -127,38 +126,28 @@ class H_CPPEnvironment(BaseEnvironment):
                 bar.update(self.step_count - last_step)
                 last_step = self.step_count
 
-                action = self.agent.act_l(state, i, use_astar=self.agent.trainer.params.use_astar)
-                # print(f'use astar: {self.agent.trainer.params.use_astar}')
-                # print(f'GridAction: {GridActions(action)}')
+                action = self.agent.act_l(state, i, use_astar=self.agent.trainer.params.use_astar, random=self.random)
                 next_state = self.physics.step(GridActions(action))
-                # print('stepping done!!!!!!!!!')
                 # if next_state.get_remaining_h_target_cells() == 0:
                     # print(f'Subgoal reached!!!!  {next_state.get_remaining_h_target_cells()}')
                 # print(f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
                 reward = self.agent.rewards.calculate_reward_l(state, GridActions(action), next_state)
                 reward_h += self.agent.rewards.calculate_reward_h_per_step(state, GridActions(action), next_state,
                                                                            valid)
-                if not test:
+                if not test and not self.agent.trainer.params.use_astar and not self.random:
+                    # print('training llag')
                     self.agent.trainer.add_experience_ll(state, action, reward, next_state)
                     self.agent.train_l()
 
                 self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
 
-            if test:
-                if self.draw:
-                    plt = self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
-                else:
-                    pass
+            if test and self.draw:
+                    self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
             # print(
                 # f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
 
             state = copy.deepcopy(next_state)
-        if test:
-            # self.display.close_plot(plt)
-            try:
-                plt.close
-            except:
-                pass
+
         return reward_h, state, last_step
 
 

@@ -9,7 +9,7 @@ class CPPScenario:
     def __init__(self):
         self.target_path = ""
         self.position_idx = 0
-        self.movement_budget = 100
+        self.movement_budget = 30
 
 
 class CPPState(BaseState):

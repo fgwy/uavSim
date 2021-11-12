@@ -262,7 +262,7 @@ class HL_DDQNAgent(object):
         local_map_in = state.get_local_map()[tf.newaxis, ...]
         global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
         scalars_in = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
-        if np.any(np.isnan(local_map_in)) == True or np.any(np.isnan(global_map_in)) == True or np.any(np.isnan(scalars_in)) == True:
+        if np.any(np.isnan(local_map_in)) or np.any(np.isnan(global_map_in)) or np.any(np.isnan(scalars_in)):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
         p = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in]).numpy()[0]
         # print(p)
@@ -293,9 +293,9 @@ class HL_DDQNAgent(object):
                np.any(np.isnan(experiences[6])),
                np.any(np.isnan(experiences[7])),
                np.any(np.isnan(experiences[8]))]
-        if np.any(nan) == True:
+        if np.any(nan):
             print(f'###################### Nan in experiences: {np.isnan(experiences)}')
-        local_map = tf.convert_to_tensor(np.asarray(experiences[0]).astype(np.float32))
+        local_map = tf.convert_to_tensor(experiences[0]) # np.asarray(experiences[0]).astype(np.float32))
         global_map = tf.convert_to_tensor(experiences[1])
         scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
         action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
@@ -317,6 +317,17 @@ class HL_DDQNAgent(object):
                 [local_map, global_map, scalars, action, reward,
                  terminated, q_star])
         q_grads = tape.gradient(q_loss, self.q_network_hl.trainable_variables)
+        for grad in q_grads:
+            if np.isnan(grad.numpy().any()): # == 'Nan':
+                print(f'Nan in grads!! {grad}')
+        # grad_check = tf.debugging.check_numerics(q_grads, message='checking grads')
+        # with tf.control_dependencies([grad_check]):
+        #     self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
+        # try:
+        #     tf.debugging.check_numerics(q_grads, message='Checking grads')
+        # except Exception as e:
+        #     # assert "Checking grads : Tensor had NaN values" in e.message
+        #     print(f"Checking grads: Tensor had bad values {e}")
         # if np.any(tf.math.is_nan(q_loss))==True or np.any(tf.math.is_nan(q_grads))==True:
         #     print(f'###################### Nan in grads: {np.isnan(q_loss)}')
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
@@ -332,6 +343,43 @@ class HL_DDQNAgent(object):
     def load_weights_hl(self, path_to_weights):
         self.q_network_hl.load_weights(path_to_weights)
         self.hard_update_hl()
+
+    @tf.RegisterGradient("ZeroGrad")
+    def _zero_grad(self, unused_op, grad):
+        return tf.zeros_like(grad)
+
+    # this is added for gradient check of NaNs
+    def check_numerics_with_exception(self, grad, var):
+        try:
+            tf.debugging.check_numerics(grad, message='Gradient %s check failed, possible NaNs' % var.name)
+        except:
+            return tf.constant(False, shape=())
+        else:
+            return tf.constant(True, shape=())
+
+    # def conditional_node(self):
+    #     num_nans_grads = tf.Variable(1.0, name='num_nans_grads')
+    #     check_all_numeric_op = tf.reduce_sum(
+    #         tf.cast(tf.stack([tf.logical_not(check_numerics_with_exception(grad, var)) for grad, var in grads]),
+    #                 dtype=tf.float32))
+    #
+    #     with tf.control_dependencies([tf.assign(num_nans_grads, check_all_numeric_op)]):
+    #         # Apply the gradients to adjust the shared variables.
+    #         def fn_true_apply_grad(grads, global_step):
+    #             apply_gradients_true = opt.apply_gradients(grads, global_step=global_step)
+    #             return apply_gradients_true
+    #
+    #         def fn_false_ignore_grad(grads, global_step):
+    #             # print('batch update ignored due to nans, fake update is applied')
+    #             g = tf.get_default_graph()
+    #             with g.gradient_override_map({"Identity": "ZeroGrad"}):
+    #                 for (grad, var) in grads:
+    #                     tf.assign(var, tf.identity(var, name="Identity"))
+    #                     apply_gradients_false = opt.apply_gradients(grads, global_step=global_step)
+    #             return apply_gradients_false
+
+            # apply_gradient_op = tf.cond(tf.equal(num_nans_grads, 0.), lambda: fn_true_apply_grad(grads, global_step),
+            #                             lambda: fn_false_ignore_grad(grads, global_step))
 
     # def get_global_map(self, state):
     #     boolean_map_in = state.get_boolean_map()[tf.newaxis, ...]

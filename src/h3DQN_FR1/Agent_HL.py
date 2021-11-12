@@ -262,7 +262,7 @@ class HL_DDQNAgent(object):
         local_map_in = state.get_local_map()[tf.newaxis, ...]
         global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
         scalars_in = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
-        if any(np.isnan(local_map_in)) or any(np.isnan(global_map_in)) or any(np.isnan(scalars_in)):
+        if np.any(np.isnan(local_map_in)) == True or np.any(np.isnan(global_map_in)) == True or np.any(np.isnan(scalars_in)) == True:
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
         p = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in]).numpy()[0]
         # print(p)
@@ -276,15 +276,24 @@ class HL_DDQNAgent(object):
 
     def soft_update_hl(self, alpha):
         weights = self.q_network_hl.get_weights()
-        if any(np.isnan(weights)):
-            print(f'###################### Nan in experiences: {np.isnan(weights)}')
+        # if np.any(tf.math.is_nan(weights)) == True:
+        #     print(f'###################### Nan in experiences: {np.isnan(weights)}')
         target_weights = self.target_network_hl.get_weights()
         self.target_network_hl.set_weights(
             [w_new * alpha + w_old * (1. - alpha) for w_new, w_old in zip(weights, target_weights)])
 
     def train_hl(self, experiences):
         # print(f'local map shape: {experiences[0].shape, experiences[0][0].shape, experiences[0]}')
-        if any(np.isnan(experiences)):
+        nan = [np.any(np.isnan(experiences[0])),
+               np.any(np.isnan(experiences[1])),
+               np.any(np.isnan(experiences[2])),
+               np.any(np.isnan(experiences[3])),
+               np.any(np.isnan(experiences[4])),
+               np.any(np.isnan(experiences[5])),
+               np.any(np.isnan(experiences[6])),
+               np.any(np.isnan(experiences[7])),
+               np.any(np.isnan(experiences[8]))]
+        if np.any(nan) == True:
             print(f'###################### Nan in experiences: {np.isnan(experiences)}')
         local_map = tf.convert_to_tensor(np.asarray(experiences[0]).astype(np.float32))
         global_map = tf.convert_to_tensor(experiences[1])
@@ -308,8 +317,8 @@ class HL_DDQNAgent(object):
                 [local_map, global_map, scalars, action, reward,
                  terminated, q_star])
         q_grads = tape.gradient(q_loss, self.q_network_hl.trainable_variables)
-        if any(np.isnan(q_loss)) or any(np.isnan(q_grads)):
-            print(f'###################### Nan in grads: {np.isnan(q_loss)}')
+        # if np.any(tf.math.is_nan(q_loss))==True or np.any(tf.math.is_nan(q_grads))==True:
+        #     print(f'###################### Nan in grads: {np.isnan(q_loss)}')
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
 
         self.soft_update_hl(self.params.alpha)

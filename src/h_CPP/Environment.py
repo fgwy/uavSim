@@ -3,7 +3,7 @@ import tqdm
 import numpy as np
 
 from src.h3DQN_FR1.AgentManager import AgentManager_Params, AgentManager
-from src.CPP.Display import CPPDisplay
+from src.h_CPP.Display import h_CPPDisplay
 from src.h_CPP.Grid import H_CPPGrid, H_CPPGridParams
 from src.h_CPP.Physics import H_CPPPhysics, H_CPPPhysicsParams
 from src.h_CPP.State import H_CPPState
@@ -29,7 +29,7 @@ class H_CPPEnvironmentParams(BaseEnvironmentParams):
 class H_CPPEnvironment(BaseEnvironment):
 
     def __init__(self, params: H_CPPEnvironmentParams):
-        self.display = CPPDisplay()
+        self.display = h_CPPDisplay()
         super().__init__(params, self.display)
         self.params = params
         self.grid = H_CPPGrid(params.grid_params, self.stats)
@@ -39,7 +39,7 @@ class H_CPPEnvironment(BaseEnvironment):
                                   example_action=self.physics.get_example_action(),
                                   stats=self.stats)
         self.draw = True
-        self.random = False
+        # self.random = False
 
     def run(self):
         # self.fill_replay_memory()
@@ -55,10 +55,8 @@ class H_CPPEnvironment(BaseEnvironment):
             self.stats.on_episode_begin(self.episode_count)
 
             ## run_MDP
+            # test = True if self.episode_count % self.agent.trainer.params.eval_period == 0 else False #  and self.episode_count != 0
             test = True if self.episode_count % self.agent.trainer.params.eval_period == 0 and self.episode_count != 0 else False
-            if test:
-                # print('################################### testing !!!!!!!!!!!!! ######################################################')
-                pass
             self.run_MDP(state, last_step, bar, test=test)
 
             self.stats.on_episode_end(self.episode_count)
@@ -67,7 +65,7 @@ class H_CPPEnvironment(BaseEnvironment):
             self.episode_count += 1
         self.stats.training_ended()
 
-    def run_MDP(self, state, last_step, bar, test=False):
+    def run_MDP(self, state, last_step, bar, test=False, prefill=False, random=False):
         """
         Runs MDP: High level interaction loop
         """
@@ -83,7 +81,7 @@ class H_CPPEnvironment(BaseEnvironment):
             # print('check same shape:', state.target.shape, state.h_target.shape)
 
             ## sub MDP
-            reward_h, next_state, last_step = self.run_subMDP(state, valid, bar, last_step, test, try_landing)
+            reward_h, next_state, last_step = self.run_subMDP(state, valid, bar, last_step, try_landing, test=test, random=random, prefill=prefill)
 
             if not test:
                 reward_h += self.agent.rewards.calculate_reward_h(state_h, goal_idx, next_state, valid, reward_h)
@@ -95,7 +93,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
             state = copy.deepcopy(next_state)
 
-    def run_subMDP(self, state, valid, bar, last_step, test, try_landing):
+    def run_subMDP(self, state, valid, bar, last_step, try_landing, test=False, random=False, prefill=False):
         """
         Runs subMDP: low-level interaction loop
         """
@@ -126,7 +124,7 @@ class H_CPPEnvironment(BaseEnvironment):
                 bar.update(self.step_count - last_step)
                 last_step = self.step_count
 
-                action = self.agent.act_l(state, i, use_astar=self.agent.trainer.params.use_astar, random=self.random)
+                action = self.agent.act_l(state, i, exploit=test, use_astar=self.agent.trainer.params.use_astar, random=random)
                 next_state = self.physics.step(GridActions(action))
                 # if next_state.get_remaining_h_target_cells() == 0:
                     # print(f'Subgoal reached!!!!  {next_state.get_remaining_h_target_cells()}')
@@ -134,10 +132,10 @@ class H_CPPEnvironment(BaseEnvironment):
                 reward = self.agent.rewards.calculate_reward_l(state, GridActions(action), next_state)
                 reward_h += self.agent.rewards.calculate_reward_h_per_step(state, GridActions(action), next_state,
                                                                            valid)
-                if not test and not self.agent.trainer.params.use_astar and not self.random:
+                if not test and not self.agent.trainer.params.use_astar:
                     # print('training llag')
                     self.agent.trainer.add_experience_ll(state, action, reward, next_state)
-                    self.agent.train_l()
+                    self.agent.trainer.train_l()
 
                 self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
 

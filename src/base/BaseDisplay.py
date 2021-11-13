@@ -168,33 +168,3 @@ class BaseDisplay:
     def display_state(self, env_map, initial_state, state, plot=False) -> tf.Tensor:
         pass
 
-    def plot_map(self, state, terminal=False): # , h_target_idx):
-        colors = 'white blue lime red yellow cyan'.split()
-        cmap = mtplt.colors.ListedColormap(colors, name='colors', N=None)
-        data = state.no_fly_zone
-        target = ~data*state.target
-        target = ~state.h_target*target
-        lz = state.landing_zone*~state.h_target
-        data = data*1
-        data += lz * 5
-        # data[h_target_idx[0], h_target_idx[1]] = 2
-        data += state.h_target*2
-        data += target * 4
-        data[state.position[1], state.position[0]] = 3
-
-        [m, n] = np.shape(data)
-        plt.imshow(data, alpha=1, cmap=cmap, vmin=0, vmax=5)
-        plt.xticks(np.arange(n))
-        plt.yticks(np.arange(m))
-        plt.show(block=False)
-        plt.pause(0.1)
-        plt.clf()
-        if terminal:
-            plt.gcf()
-            plt.close('all')
-
-
-
-    def save_plot_map(self, trajectory): # TODO: save a plot of a whole episode in one map with trail etc..
-        pass
-

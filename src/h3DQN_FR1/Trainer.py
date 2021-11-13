@@ -8,16 +8,16 @@ import tqdm
 
 class H_DDQNTrainerParams:
     def __init__(self):
-        self.batch_size_h = 64
+        self.batch_size_h = 128
         self.batch_size_l = 128
         self.num_steps = 1e6
         self.rm_pre_fill_ratio = 0.5
         self.rm_pre_fill_random = True
         self.eval_period = 100
         self.rm_size_ll = 50000
-        self.rm_size_hl = 10000
+        self.rm_size_hl = 50000
         self.load_model = ""
-        self.use_astar = True
+        self.use_astar = False
 
 
 class H_DDQNTrainer:
@@ -31,6 +31,8 @@ class H_DDQNTrainer:
         self.agent_hl = agent_hl
 
         self.prefill_bar = None
+        self.i = 0
+        self.n = 0
 
     def add_experience_ll(self, state, action, reward, next_state):
         # print(f'action: {action}')
@@ -65,17 +67,23 @@ class H_DDQNTrainer:
     def train_h(self):
 
         # print('######### training hl ########')
-        if self.params.batch_size_h > self.replay_memory_hl.get_size():
+        if self.params.batch_size_h*10 > self.replay_memory_hl.get_size():
+            # print("Filling replay memory to get enough data")
             return
         mini_batch = self.replay_memory_hl.sample(self.params.batch_size_h)
-
+        if self.n == 0:
+            self.n+=1
+            print('############# training h')
         self.agent_hl.train_hl(mini_batch)
 
     def train_l(self):
-        if self.params.batch_size_l > self.replay_memory_ll.get_size():
+        if self.params.batch_size_l*10 > self.replay_memory_ll.get_size():
+            # print("Filling replay memory to get enough data")
             return
         mini_batch = self.replay_memory_ll.sample(self.params.batch_size_l)
-
+        if self.i == 0:
+            self.i+=1
+            print('########### training l')
         self.agent_ll.train_ll(mini_batch)
 
     def should_fill_replay_memory(self):

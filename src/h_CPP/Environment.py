@@ -50,7 +50,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
         while self.step_count < self.agent.trainer.params.num_steps:
             # print('########### starting new episode ##########')
-            print(f'episode count: {self.episode_count}, {self.agent.trainer.params.eval_period}, {self.draw}')
+            print(f'episode count: {self.episode_count}, eval period: {self.agent.trainer.params.eval_period}, draw: {self.draw}')
             state = copy.deepcopy(self.init_episode())
             self.stats.on_episode_begin(self.episode_count)
 
@@ -130,14 +130,14 @@ class H_CPPEnvironment(BaseEnvironment):
                     # print(f'Subgoal reached!!!!  {next_state.get_remaining_h_target_cells()}')
                 # print(f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
                 reward = self.agent.rewards.calculate_reward_l(state, GridActions(action), next_state)
-                reward_h += self.agent.rewards.calculate_reward_h_per_step(state, GridActions(action), next_state,
-                                                                           valid)
                 if not test and not self.agent.trainer.params.use_astar:
                     # print('training llag')
                     self.agent.trainer.add_experience_ll(state, action, reward, next_state)
                     self.agent.trainer.train_l()
 
                 self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
+            reward_h += self.agent.rewards.calculate_reward_h_per_step(state, GridActions(action), next_state,
+                                                                       valid)
 
             if test and self.draw:
                     self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())

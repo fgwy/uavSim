@@ -6,7 +6,9 @@ class H_CPPRewardParams(GridRewardParams):
     def __init__(self):
         super().__init__()
         self.cell_multiplier = 0.4
+        self.cell_multiplier_ll = 1
         self.invalid_goal_penalty = -1.
+        self.goal_reached_bonus = 2.
 
 
 # Class used to track rewards
@@ -24,6 +26,8 @@ class H_CPPRewards(GridRewards):
         reward = reward_h
         if not valid:
             reward += self.invalid_goal_penalty()
+        if next_state.goal_covered:
+            reward += self.params.goal_reached_bonus
 
         # Cumulative reward
         self.h_cumulative_reward += reward
@@ -45,7 +49,7 @@ class H_CPPRewards(GridRewards):
         reward = self.calculate_motion_rewards_l(state, action, next_state)
 
         #reward collected target area
-        reward += self.params.cell_multiplier * (state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
+        reward += self.params.cell_multiplier_ll * (state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
 
         #cumulative reward_l
         self.l_cumulative_reward += reward
@@ -54,7 +58,7 @@ class H_CPPRewards(GridRewards):
 
     def invalid_goal_penalty(self):
         reward = self.params.invalid_goal_penalty
-        self.h_cumulative_reward += reward
+        # self.h_cumulative_reward += reward
 
         return reward
 

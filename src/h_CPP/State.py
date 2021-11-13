@@ -30,6 +30,7 @@ class H_CPPState(CPPState):
         self.goal_active = False
         self.movement_budget = 100
         self.local_map_size = 17
+        self.goal_covered = False
 
     def reset_h_target(self, h_target):
 
@@ -40,6 +41,7 @@ class H_CPPState(CPPState):
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
         self.reset_ll_mb()
         self.set_terminal_h(False)
+        self.goal_covered = False
         # self.global_map = np.zeros_like(self.get_global_map(global))
 
     def pad_lm_to_total_size(self, h_target):
@@ -167,3 +169,6 @@ class H_CPPState(CPPState):
     def goal_terminated(self):
         self.set_terminal_h(True)
         self.goal_active = False
+
+    def set_goal_covered(self, covered):
+        self.goal_covered = covered

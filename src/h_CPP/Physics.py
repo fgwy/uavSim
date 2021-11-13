@@ -38,14 +38,17 @@ class H_CPPPhysics(GridPhysics):
         self.camera = SimpleSquareCamera(self.params.camera_params)
 
     def step(self, action: GridActions):
+        h_term_before = self.state.get_remaining_h_target_cells() == 0
         self.movement_step(action)
         if not self.state.terminal:
             self.vision_step()
 
         if self.state.landed:
             self.landed = True
-        if self.state.get_remaining_h_target_cells() == 0:
-            self.state.set_terminal_h(self.state.get_remaining_h_target_cells() == 0)
+
+        self.state.set_terminal_h(self.state.get_remaining_h_target_cells() == 0)
+        if h_term_before == False and self.state.get_remaining_h_target_cells() == 0:
+            self.state.set_goal_covered(True)
 
         return self.state
 

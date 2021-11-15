@@ -13,7 +13,7 @@ class H_DDQNTrainerParams:
         self.num_steps = 1e6
         self.rm_pre_fill_ratio = 0.5
         self.rm_pre_fill_random = True
-        self.eval_period = 100
+        self.eval_period = 1
         self.rm_size_ll = 50000
         self.rm_size_hl = 50000
         self.load_model = ""

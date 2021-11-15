@@ -65,13 +65,13 @@ class H_CPPEnvironment(BaseEnvironment):
             self.episode_count += 1
         self.stats.training_ended()
 
-    def run_MDP(self, state, last_step, bar, test=False, prefill=False, random=False):
+    def run_MDP(self, state, last_step, bar, test=False, prefill=False, random=True):
         """
         Runs MDP: High level interaction loop
         """
 
         while not state.is_terminal():
-            goal, goal_idx, try_landing = self.agent.generate_goal(state)
+            goal, goal_idx, try_landing = self.agent.generate_goal(state, random)
             # print(f'fresh goal count: {np.sum(goal)}')
             state = copy.deepcopy(self.physics.reset_h_target(goal))
             # print(f'fresh goal count: {state.get_remaining_h_target_cells()}')
@@ -86,6 +86,7 @@ class H_CPPEnvironment(BaseEnvironment):
             if not test:
                 reward_h += self.agent.rewards.calculate_reward_h(state_h, goal_idx, next_state, valid, reward_h)
 
+                print(f'reward h: {reward_h}')
                 self.agent.trainer.add_experience_hl(state_h, goal_idx, reward_h, next_state)
                 self.agent.trainer.train_h()
 
@@ -130,6 +131,7 @@ class H_CPPEnvironment(BaseEnvironment):
                     # print(f'Subgoal reached!!!!  {next_state.get_remaining_h_target_cells()}')
                 # print(f"step {i} in Sub MDP, \n ############ current ll_mb:{next_state.current_ll_mb} \n ########### current mb: {next_state.movement_budget}")
                 reward = self.agent.rewards.calculate_reward_l(state, GridActions(action), next_state)
+                print(f'reward l: {reward}')
                 if not test and not self.agent.trainer.params.use_astar:
                     # print('training llag')
                     self.agent.trainer.add_experience_ll(state, action, reward, next_state)

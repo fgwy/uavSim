@@ -118,6 +118,7 @@ class HL_DDQNAgent(object):
         #                                     outputs=self.total_map_hl)
 
         q_values_hl = self.q_network_hl.output
+        tf.debugging.assert_all_finite(q_values_hl, message='Nan in qvalues')
         # print(q_values_hl.shape)
         q_target_values_hl = self.target_network_hl.output
         # print(q_target_values_hl.shape)
@@ -161,8 +162,11 @@ class HL_DDQNAgent(object):
         self.exploit_model_target_hl = Model(inputs=states_hl, outputs=max_action_target_hl)
 
         # Softmax explore model
+        tf.debugging.assert_all_finite(self.params.soft_max_scaling, message='Nan in softmax_scaling_factor')
         softmax_scaling_hl = tf.divide(q_values_hl, tf.constant(self.params.soft_max_scaling, dtype=float))
+        tf.debugging.assert_all_finite(softmax_scaling_hl, message='Nan in softmax_scaling')
         softmax_action_hl = tf.math.softmax(softmax_scaling_hl, name='softmax_action')
+        tf.debugging.assert_all_finite(softmax_action_hl, message='Nan in softmax_action')
         self.soft_explore_model_hl = Model(inputs=states_hl, outputs=softmax_action_hl)
 
         self.q_optimizer_hl = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)

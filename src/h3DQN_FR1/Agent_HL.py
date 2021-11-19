@@ -382,6 +382,7 @@ class HL_DDQNAgent(object):
                 [local_map, global_map, scalars, action, reward,
                  terminated, tf.stop_gradient(q_prime)])
         tf.debugging.assert_all_finite(q_loss, message='Nan in qloss')
+        print_node(f'q_loss: {q_loss}')
         q_grads = tape.gradient(q_loss, self.q_network_hl.trainable_variables)
         tf.debugging.assert_all_finite(q_grads, message='Nan in qgrads')
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))

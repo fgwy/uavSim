@@ -238,7 +238,9 @@ class LL_DDQNAgent(object):
             q_loss = self.q_loss_model_ll(
                 [boolean_map, float_map, scalars, action, reward,
                  terminated, q_star])
+        print_node(f'q_loss: {q_loss}')
         q_grads = tape.gradient(q_loss, self.q_network_ll.trainable_variables)
+        tf.debugging.assert_all_finite(q_grads, message='Nan in qgrads')
         self.q_optimizer_ll.apply_gradients(zip(q_grads, self.q_network_ll.trainable_variables))
 
     def save_weights_ll(self, path_to_weights):

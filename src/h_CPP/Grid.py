@@ -66,8 +66,8 @@ class H_CPPGrid(BaseGrid):
         state.reset_target(self.target_zone)
         state.reset_h_target(np.zeros((self.params.local_map_size, self.params.local_map_size)))
         state.position = [0, 0]
-        state.movement_budget = 0
-        state.initial_movement_budget = 0
+        state.movement_budget = self.params.movement_range[1]
+        state.initial_movement_budget = self.params.movement_range[1]
         return state
 
     def get_target_zone(self):

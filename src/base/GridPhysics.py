@@ -21,6 +21,7 @@ class GridPhysics:
         elif action == GridActions.EAST:
             x += 1
         elif action == GridActions.LAND:
+            print('action landing!!!!!')
             self.landing_attempts += 1
             if self.state.is_in_landing_zone():
                 self.state.set_landed(True)

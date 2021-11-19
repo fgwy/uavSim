@@ -12,27 +12,30 @@ import tensorflow as tf
 
 class AgentManager_Params():
     def __init__(self):
-        self.hierarchical = False
-
+        self.hierarchical = True
+        self.h_trainer = H_DDQNTrainerParams()
+        self.ll_agent = LL_DDQNAgentParams()
+        self.hl_agent = HL_DDQNAgentParams()
 
 
 class AgentManager():
-    def __init__(self, params: AgentManager_Params, example_state, example_action, stats):
+    def __init__(self, params: AgentManager_Params, camera, example_state, example_action, stats):
         self.params = params
         self.stats = stats
-        self.trainer_params = H_DDQNTrainerParams()
-        self.ll_agent_params = LL_DDQNAgentParams()
-        self.hl_agent_params = HL_DDQNAgentParams()
+        self.trainer_params = params.h_trainer
+        self.ll_agent_params = params.ll_agent
+        self.hl_agent_params = params.hl_agent
         self.agent_ll = LL_DDQNAgent(self.ll_agent_params, example_state, example_action[1], stats)
         self.agent_hl = HL_DDQNAgent(self.hl_agent_params, example_state, example_action[0], stats)
         self.trainer = H_DDQNTrainer(self.trainer_params, self.agent_ll, self.agent_hl)
-        self.rewards = H_CPPRewards(H_CPPRewardParams(), self.stats)
+        # self.rewards = H_CPPRewards(H_CPPRewardParams(), self.stats)
         self.astar = A_star()
 
         self.next_state_hl = None
         self.state_hl = None
         self.current_goal_idx = None
         self.current_goal = None
+        self.camera = camera
 
         if self.trainer.params.load_model != "":
             print("Loading model", self.trainer.params.load_model, "for agent")
@@ -69,10 +72,10 @@ class AgentManager():
     #     else:
     #         return self.step(state=state)
 
-    def calculate_reward(self, state, action, next_state):
-        reward_h = self.rewards.calculate_reward_h(state, action, next_state)
-        reward_l = self.rewards.calculate_reward_l(state, action, next_state)
-        return
+    # def calculate_reward(self, state, action, next_state):
+    #     reward_h = self.rewards.calculate_reward_h(state, action, next_state)
+    #     reward_l = self.rewards.calculate_reward_l(state, action, next_state)
+    #     return
 
     # def add_experience(self, state, action, reward, next_state):
     #     valid = self.check_valid_target(self.current_goal,
@@ -112,12 +115,13 @@ class AgentManager():
         else:
             self.current_goal_idx = self.agent_hl.get_goal(state)
 
-        if self.current_goal_idx == (self.agent_hl.num_actions_hl**2)+1:
+        if self.current_goal_idx == self.agent_hl.num_actions_hl - 1:
             try_landing = True
-
-        self.current_goal = tf.one_hot(self.current_goal_idx,
-                                           depth=self.agent_hl.num_actions_hl-1).numpy().reshape(17,17)
-                # (self.agent_ll.local_map_size, self.agent_ll.local_map_size))
+            self.current_goal = np.zeros((17, 17))  # todo please
+        else:
+            self.current_goal = tf.one_hot(self.current_goal_idx,
+                                           depth=self.agent_hl.num_actions_hl - 1).numpy().reshape(17, 17)
+        # (self.agent_ll.local_map_size, self.agent_ll.local_map_size))
         # print(f'Goal idx and shape: {self.current_goal_idx} / {self.current_goal.shape} # Try landing: {try_landing}')
 
         return self.current_goal, self.current_goal_idx, try_landing
@@ -137,21 +141,20 @@ class AgentManager():
 
     def check_valid_target(self, state):
         # total_goal = state.pad_lm_to_total_size(target_lm)
-        total_goal = state.h_target*1
+        total_goal = state.h_target * 1
         # if np.sum(total_goal) == 0:
         #     print('######################## Goal Not Valid ####################################')
         #     return False
         # nfz = np.logical_not(state.no_fly_zone)
         # obs = np.logical_not(state.obstacles)
-        position = np.zeros(total_goal.shape)
-        x, y = state.position
-        position[y, x] = 1
-        nfz = state.no_fly_zone*1
-        obs = state.obstacles*1
+
+        view = self.camera.computeView(state.position, 0)
+        nfz = state.no_fly_zone * 1
+        obs = state.obstacles * 1
         on_nfz = np.any(total_goal * nfz) == 1
         on_obs = np.any(total_goal * obs) == 1
         inside_bounds = bool(np.sum(total_goal))
-        on_position = np.any(total_goal*position) == 1
+        on_position = np.any(total_goal * view) == 1
         valid = not on_nfz and not on_obs and inside_bounds and not on_position
         # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
         # print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')

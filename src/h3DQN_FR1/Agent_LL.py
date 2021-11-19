@@ -61,11 +61,11 @@ class LL_DDQNAgent(object):
         self.float_map_ll_shape = example_state.get_float_map_ll_shape()
         self.scalars = example_state.get_num_scalars()
         self.goal_target_shape = example_state.get_goal_target_shape()
-        self.num_actions_ll = len(type(example_action_ll))
-        # print(f'## len actions ll: {self.num_actions_ll}')
+        self.num_actions_ll = 4 # len(type(example_action_ll))
+        print(f'## len actions ll: {self.num_actions_ll}')
         self.example_goal = example_state.get_example_goal()
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
-        self.ll_mb = example_state.initial_ll_movement_budget
+        self.ll_mb = example_state.get_initial_ll_movement_budget()
 
         # Create shared inputs
         boolean_map_ll_input = Input(shape=self.boolean_map_ll_shape, name='boolean_map_ll_input', dtype=tf.bool)
@@ -226,7 +226,9 @@ class LL_DDQNAgent(object):
         terminated = tf.convert_to_tensor(experiences[8])
         self._train_ll(boolean_map, float_map, scalars, action, reward, next_boolean_map, next_float_map, next_scalars, terminated)
 
-    # @tf.function
+        self.soft_update_ll(self.params.alpha)
+
+    @tf.function
     def _train_ll(self, boolean_map, float_map, scalars, action, reward, next_boolean_map, next_float_map, next_scalars, terminated):
         q_star = self.q_star_model_ll(
             [next_boolean_map, next_float_map, next_scalars])
@@ -238,8 +240,6 @@ class LL_DDQNAgent(object):
                  terminated, q_star])
         q_grads = tape.gradient(q_loss, self.q_network_ll.trainable_variables)
         self.q_optimizer_ll.apply_gradients(zip(q_grads, self.q_network_ll.trainable_variables))
-
-        self.soft_update_ll(self.params.alpha)
 
     def save_weights_ll(self, path_to_weights):
         self.target_network_ll.save_weights(path_to_weights)

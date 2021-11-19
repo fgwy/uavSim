@@ -16,7 +16,7 @@ class BaseEnvironment:
     def __init__(self, params: BaseEnvironmentParams, display: BaseDisplay):
         self.stats = ModelStats(params.model_stats_params, display=display)
         self.trainer = None
-        self.agent = None
+        self.agent_manager = None
         self.grid = None
         self.rewards = None
         self.physics = None
@@ -67,9 +67,9 @@ class BaseEnvironment:
 
     def step(self, state, random=False):
         if random:
-            action = self.agent.get_random_action()
+            action = self.agent_manager.get_random_action()
         else:
-            action = self.agent.act(state)
+            action = self.agent_manager.act(state)
         next_state = self.physics.step(GridActions(action))
         reward = self.rewards.calculate_reward(state, GridActions(action), next_state)
         self.trainer.add_experience(state, action, reward, next_state)
@@ -81,7 +81,7 @@ class BaseEnvironment:
         state = copy.deepcopy(self.init_episode(scenario))
         self.stats.on_episode_begin(self.episode_count)
         while not state.terminal:
-            action = self.agent.get_exploitation_action_target(state)
+            action = self.agent_manager.get_exploitation_action_target(state)
             next_state = self.physics.step(GridActions(action))
             reward = self.rewards.calculate_reward(state, GridActions(action), next_state)
             self.stats.add_experience((copy.deepcopy(state), action, reward, copy.deepcopy(next_state)))
@@ -93,7 +93,7 @@ class BaseEnvironment:
     def test_scenario(self, scenario):
         state = copy.deepcopy(self.init_episode(scenario))
         while not state.terminal:
-            action = self.agent.get_exploitation_action_target(state)
+            action = self.agent_manager.get_exploitation_action_target(state)
             state = self.physics.step(GridActions(action))
 
     def init_episode(self, init_state=None):

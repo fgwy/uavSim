@@ -17,6 +17,7 @@ class ModelStatsParams:
         self.moving_average_length = moving_average_length
         self.log_file_name = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         self.training_images = False
+        self.draw = True
 
 
 class ModelStats:

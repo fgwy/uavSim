@@ -2,12 +2,13 @@ from src.h_CPP.State import H_CPPState
 from src.base.GridActions import GridActions
 from src.base.GridRewards import GridRewardParams, GridRewards
 
+
 class H_CPPRewardParams(GridRewardParams):
     def __init__(self):
         super().__init__()
         self.cell_multiplier = 0.4
         self.cell_multiplier_ll = 1
-        self.invalid_goal_penalty = -1.
+        self.invalid_goal_penalty = 1.
         self.goal_reached_bonus = 2.
 
 
@@ -22,43 +23,62 @@ class H_CPPRewards(GridRewards):
         self.l_cumulative_reward: float = 0.0
         self.h_cumulative_reward: float = 0.0
 
-    def calculate_reward_h(self, state: H_CPPState, action, next_state: H_CPPState, valid, reward_h):
-        reward = reward_h
+    def calculate_reward_h(self, state: H_CPPState, action, next_state: H_CPPState, valid, tried_landing_and_succeeded):
+        reward = self.params.cell_multiplier * (state.get_remaining_cells() - next_state.get_remaining_cells())
+
         if not valid:
-            reward += self.invalid_goal_penalty()
+            reward -= self.params.invalid_goal_penalty
+
         if next_state.goal_covered:
             reward += self.params.goal_reached_bonus
 
+        if tried_landing_and_succeeded == None:
+            # print(f'Landing reward: passing {landed_and_succeded}')
+            pass
+        elif tried_landing_and_succeeded == True:
+            print(f'Landing reward: succeded {tried_landing_and_succeeded}')
+            # reward += 2
+        elif tried_landing_and_succeeded == False:
+            print(f'Landing reward: failed {tried_landing_and_succeeded}')
+            reward -= self.params.boundary_penalty
+
         # Cumulative reward
         self.h_cumulative_reward += reward
 
-        return reward
 
-    def calculate_reward_h_per_step(self, state: H_CPPState, action: GridActions, next_state: H_CPPState, valid):
-        reward = self.calculate_motion_rewards(state, action, next_state)
-
-        # Reward the collected data
-        reward += self.params.cell_multiplier * (state.get_remaining_cells() - next_state.get_remaining_cells())
-
-        # Cumulative reward
-        self.h_cumulative_reward += reward
 
         return reward
+
+    # def calculate_reward_h_per_step(self, state: H_CPPState, action: GridActions, next_state: H_CPPState, valid,
+    #                                 landed_and_succeeded):
+    #
+    #     # Reward the collected data
+    #     # reward = self.params.cell_multiplier * (state.get_remaining_cells() - next_state.get_remaining_cells())
+    #
+    #     if landed_and_succeeded == None:
+    #         # print(f'Landing reward: passing {landed_and_succeded}')
+    #         pass
+    #     elif landed_and_succeeded == True:
+    #         print(f'Landing reward: succeded {landed_and_succeeded}')
+    #         # reward += 2
+    #     elif landed_and_succeeded == False:
+    #         print(f'Landing reward: failed {landed_and_succeeded}')
+    #         # reward -= 2
+    #
+    #     # Cumulative reward
+    #     self.h_cumulative_reward += reward
+    #
+    #     return reward
 
     def calculate_reward_l(self, state: H_CPPState, action: GridActions, next_state: H_CPPState):
         reward = self.calculate_motion_rewards_l(state, action, next_state)
 
-        #reward collected target area
-        reward += self.params.cell_multiplier_ll * (state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
+        # reward collected target area
+        reward += self.params.cell_multiplier_ll * (
+                    state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
 
-        #cumulative reward_l
+        # cumulative reward_l
         self.l_cumulative_reward += reward
-
-        return reward
-
-    def invalid_goal_penalty(self):
-        reward = self.params.invalid_goal_penalty
-        # self.h_cumulative_reward += reward
 
         return reward
 
@@ -72,8 +92,7 @@ class H_CPPRewards(GridRewards):
             reward -= self.params.boundary_penalty
 
         # Penalize battery dead
-        if next_state.movement_budget == 0 and not next_state.landed:
+        if next_state.current_ll_mb == 0 and not next_state.landed:
             reward -= self.params.empty_battery_penalty
 
         return reward
-

@@ -172,3 +172,9 @@ class H_CPPState(CPPState):
 
     def set_goal_covered(self, covered):
         self.goal_covered = covered
+
+    def get_initial_ll_movement_budget(self):
+        return self.initial_ll_movement_budget
+
+    def get_initial_mb(self):
+        return self.initial_movement_budget

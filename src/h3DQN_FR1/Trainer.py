@@ -13,11 +13,13 @@ class H_DDQNTrainerParams:
         self.num_steps = 1e6
         self.rm_pre_fill_ratio = 0.5
         self.rm_pre_fill_random = True
-        self.eval_period = 1
+        self.eval_period = 100
         self.rm_size_ll = 50000
         self.rm_size_hl = 50000
         self.load_model = ""
         self.use_astar = False
+        self.rm_pre_fill_multiplier_ll = 10
+        self.rm_pre_fill_multiplier_hl = 5
 
 
 class H_DDQNTrainer:
@@ -67,7 +69,7 @@ class H_DDQNTrainer:
     def train_h(self):
 
         # print('######### training hl ########')
-        if self.params.batch_size_h*10 > self.replay_memory_hl.get_size():
+        if self.params.batch_size_h*self.params.rm_pre_fill_multiplier_hl > self.replay_memory_hl.get_size():
             # print("Filling replay memory to get enough data")
             return
         mini_batch = self.replay_memory_hl.sample(self.params.batch_size_h)
@@ -77,7 +79,7 @@ class H_DDQNTrainer:
         self.agent_hl.train_hl(mini_batch)
 
     def train_l(self):
-        if self.params.batch_size_l*10 > self.replay_memory_ll.get_size():
+        if self.params.batch_size_l*self.params.rm_pre_fill_multiplier_ll > self.replay_memory_ll.get_size():
             # print("Filling replay memory to get enough data")
             return
         mini_batch = self.replay_memory_ll.sample(self.params.batch_size_l)

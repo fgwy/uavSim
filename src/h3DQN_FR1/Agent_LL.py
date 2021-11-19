@@ -123,6 +123,7 @@ class LL_DDQNAgent(object):
         q_update_hot = tf.multiply(q_update, one_hot_rm_action)
         q_new = tf.add(q_update_hot, q_old)
         q_loss = tf.losses.MeanSquaredError()(q_new, q_values_ll)
+        tf.debugging.assert_all_finite(q_loss, message='Nan in qgrads')
         self.q_loss_model_ll = Model(
             inputs=[boolean_map_ll_input, float_map_ll_input, scalars_ll_input, action_input, reward_ll_input,
                     termination_input, q_star_ll_input],
@@ -217,12 +218,12 @@ class LL_DDQNAgent(object):
         # print(f'action shape: {experiences[3]}')
         boolean_map = tf.convert_to_tensor(experiences[0]) # TODO: convert to tf.tensor
         float_map = tf.convert_to_tensor(experiences[1])
-        scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
+        scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float64)
         action = tf.convert_to_tensor(np.asarray(experiences[3]).astype(np.int64), dtype=tf.int64)
         reward = tf.convert_to_tensor(experiences[4])
         next_boolean_map = tf.convert_to_tensor(experiences[5])
         next_float_map = tf.convert_to_tensor(experiences[6])
-        next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
+        next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float64)
         terminated = tf.convert_to_tensor(experiences[8])
         self._train_ll(boolean_map, float_map, scalars, action, reward, next_boolean_map, next_float_map, next_scalars, terminated)
 
@@ -240,7 +241,7 @@ class LL_DDQNAgent(object):
                  terminated, q_star])
         print_node(f'q_loss: {q_loss}')
         q_grads = tape.gradient(q_loss, self.q_network_ll.trainable_variables)
-        tf.debugging.assert_all_finite(q_grads, message='Nan in qgrads')
+
         self.q_optimizer_ll.apply_gradients(zip(q_grads, self.q_network_ll.trainable_variables))
 
     def save_weights_ll(self, path_to_weights):

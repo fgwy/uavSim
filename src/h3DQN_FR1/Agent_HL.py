@@ -68,6 +68,8 @@ class HL_DDQNAgent(object):
         gamma = tf.constant(self.params.gamma, dtype=float)
         self.align_counter = 0
 
+        self.i = 0
+
         self.boolean_map_shape = example_state.get_boolean_map_shape()
         self.float_map_shape = example_state.get_float_map_shape()
         self.scalars = example_state.get_num_scalars()
@@ -181,7 +183,7 @@ class HL_DDQNAgent(object):
         # global_map_in = tf.stop_gradient(global_map_in)
         # states_proc_in = tf.stop_gradient(states_proc_in)
 
-        states_proc = states_proc_in / self.initial_mb
+        states_proc = states_proc_in / self.initial_mb + 1e-6
 
         self.local_map_model = self.build_lm_preproc_model(local_map_in, name)
         if self.params.use_pretrained_local_map_preproc:
@@ -191,15 +193,15 @@ class HL_DDQNAgent(object):
 
         # global map processing layers
 
-        global_map_1 = tf.keras.layers.Conv2D(4, 5, activation='ReLU',
+        global_map_1 = tf.keras.layers.Conv2D(4, 5, activation='swish',
                                               strides=(1, 1),
                                               name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
         norm = tf.keras.layers.BatchNormalization()(global_map_1)
-        global_map_2 = tf.keras.layers.Conv2D(8, 5, activation='ReLU',
+        global_map_2 = tf.keras.layers.Conv2D(8, 5, activation='swish',
                                               strides=(1, 1),
                                               name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
         norm = tf.keras.layers.BatchNormalization()(global_map_2)
-        global_map_3 = tf.keras.layers.Conv2D(16, 5, activation='ReLU',
+        global_map_3 = tf.keras.layers.Conv2D(16, 5, activation='swish',
                                               strides=(1, 1),
                                               name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
         norm = tf.keras.layers.BatchNormalization()(global_map_3)
@@ -217,76 +219,123 @@ class HL_DDQNAgent(object):
         # layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
         #     layer_1)
 
-        output = tf.keras.layers.Dense(units=300, activation='ReLU', name=name + 'last_dense_layer_hl')(
+        output = tf.keras.layers.Dense(units=300, activation='swish', name=name + 'last_dense_layer_hl')(
             layer_1)
         norm_out = tf.keras.layers.BatchNormalization()(output)
 
         reshape = tf.keras.layers.Reshape((5, 5, 12), name=name + 'last_dense_layer')(norm_out)
 
-        landing = tf.keras.layers.Dense(units=128, activation='ReLU', name=name + 'landing_layer_proc_hl')(
+        landing = tf.keras.layers.Dense(units=128, activation='swish', name=name + 'landing_layer_proc_hl')(
             layer_1)
         landing = tf.keras.layers.Dense(units=1, activation='linear', name=name + 'landing_layer_hl')(landing)
 
         # deconvolutional part aiming at 17x17
+        # self.dec_model = self.build_goal_decoder(reshape, local_map_2, local_map_3, local_map_4, name=name)
+        # deconv_4 = self.dec_model(reshape, local_map_2, local_map_3, local_map_4)
+
         if self.params.use_skip:
-            deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='ReLU',
+            deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='swish',
                                                        name=name + 'deconv_' + str(1))(reshape)
             skip_1 = tf.keras.layers.Concatenate(name=name + '1st_skip_connection_concat', axis=3)(
                 [deconv_1, local_map_4])
             norm = tf.keras.layers.BatchNormalization()(skip_1)
-            deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='ReLU',
+            deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
                                                        name=name + 'deconv_' + str(2))(norm)
             skip_2 = tf.keras.layers.Concatenate(name=name + '2nd_skip_connection_concat', axis=3)(
                 [deconv_2, local_map_3])
             norm = tf.keras.layers.BatchNormalization()(skip_2)
-            deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='ReLU',
+            deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='swish',
                                                          name=name + 'deconv_' + str(2.1))(norm)
             skip_3 = tf.keras.layers.Concatenate(name=name + '3rd_skip_connection_concat', axis=3)(
                 [deconv_2_1, local_map_2])
             norm = tf.keras.layers.BatchNormalization()(skip_3)
-            deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='ReLU',
+            deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='swish',
                                                        name=name + 'deconv_' + str(3))(norm)
             deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
                                                        name=name + 'deconv_' + str(4))(deconv_3)
 
         else:
-            deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='ReLU',
+            deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='swish',
                                                        name=name + 'deconv_' + str(1))(reshape)
             norm = tf.keras.layers.BatchNormalization()(deconv_1)
-            deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='ReLU',
+            deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
                                                        name=name + 'deconv_' + str(2))(norm)
             norm = tf.keras.layers.BatchNormalization()(deconv_2)
-            deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='ReLU',
+            deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='swish',
                                                          name=name + 'deconv_' + str(2.1))(norm)
             norm = tf.keras.layers.BatchNormalization()(deconv_2_1)
-            deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='ReLU',
+            deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='swish',
                                                        name=name + 'deconv_' + str(3))(norm)
             norm = tf.keras.layers.BatchNormalization()(deconv_3)
             deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
-                                                       name=name + 'deconv_' + str(4))(norm)
+                                                       name=name + 'deconv_' + str(4), dtype=tf.float64)(norm)
+
+
         flatten_deconv = tf.keras.layers.Flatten(name=name + 'deconv_flatten')(deconv_4)
         concat_final = tf.keras.layers.Concatenate(name=name + 'concat_final')([flatten_deconv, landing])
+        concat_final = tf.keras.layers.BatchNormalization(name=name + 'final_norm')(concat_final)
 
         model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=concat_final)
         return model
 
+    # def build_goal_decoder(self, reshape, local_map_2, local_map_3, local_map_4, name=''):
+    #     if self.params.use_skip:
+    #         deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='swish',
+    #                                                    name=name + 'deconv_' + str(1))(reshape)
+    #         skip_1 = tf.keras.layers.Concatenate(name=name + '1st_skip_connection_concat', axis=3)(
+    #             [deconv_1, local_map_4])
+    #         norm = tf.keras.layers.BatchNormalization()(skip_1)
+    #         deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
+    #                                                    name=name + 'deconv_' + str(2))(norm)
+    #         skip_2 = tf.keras.layers.Concatenate(name=name + '2nd_skip_connection_concat', axis=3)(
+    #             [deconv_2, local_map_3])
+    #         norm = tf.keras.layers.BatchNormalization()(skip_2)
+    #         deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='swish',
+    #                                                      name=name + 'deconv_' + str(2.1))(norm)
+    #         skip_3 = tf.keras.layers.Concatenate(name=name + '3rd_skip_connection_concat', axis=3)(
+    #             [deconv_2_1, local_map_2])
+    #         norm = tf.keras.layers.BatchNormalization()(skip_3)
+    #         deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='swish',
+    #                                                    name=name + 'deconv_' + str(3))(norm)
+    #         deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
+    #                                                    name=name + 'deconv_' + str(4))(deconv_3)
+    #
+    #     else:
+    #         deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='swish',
+    #                                                    name=name + 'deconv_' + str(1))(reshape)
+    #         norm = tf.keras.layers.BatchNormalization()(deconv_1)
+    #         deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
+    #                                                    name=name + 'deconv_' + str(2))(norm)
+    #         norm = tf.keras.layers.BatchNormalization()(deconv_2)
+    #         deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='swish',
+    #                                                      name=name + 'deconv_' + str(2.1))(norm)
+    #         norm = tf.keras.layers.BatchNormalization()(deconv_2_1)
+    #         deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='swish',
+    #                                                    name=name + 'deconv_' + str(3))(norm)
+    #         norm = tf.keras.layers.BatchNormalization()(deconv_3)
+    #         deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
+    #                                                    name=name + 'deconv_' + str(4), dtype=tf.float64)(norm)
+    #
+    #     model = Model(inputs=(reshape, local_map_2, local_map_3, local_map_4), outputs=deconv_4)
+    #     return model
+
     def build_lm_preproc_model(self, local_map_in, name=''):
-        local_map_1 = tf.keras.layers.Conv2D(4, 3, activation='ReLU',
+        local_map_1 = tf.keras.layers.Conv2D(4, 3, activation='swish',
                                              strides=(1, 1),
                                              name=name + 'local_conv_' + str(0 + 1))(
             local_map_in)  # out:(None, 1, 15, 15, 4) 1156->
         norm = tf.keras.layers.BatchNormalization()(local_map_1)
-        local_map_2 = tf.keras.layers.Conv2D(8, 3, activation='ReLU',
+        local_map_2 = tf.keras.layers.Conv2D(8, 3, activation='swish',
                                              strides=(1, 1),
                                              name=name + 'local_conv_' + str(1 + 1))(
             norm)  # out:(None, 1, 13, 13, 8)
         norm = tf.keras.layers.BatchNormalization()(local_map_2)
-        local_map_3 = tf.keras.layers.Conv2D(16, 3, activation='ReLU',
+        local_map_3 = tf.keras.layers.Conv2D(16, 3, activation='swish',
                                              strides=(1, 1),
                                              name=name + 'local_conv_' + str(2 + 1))(
             norm)  # out:(None, 1, 11, 11, 16)
         norm = tf.keras.layers.BatchNormalization()(local_map_3)
-        local_map_4 = tf.keras.layers.Conv2D(16, 3, activation='ReLU',
+        local_map_4 = tf.keras.layers.Conv2D(16, 3, activation='swish',
                                              strides=(1, 1),
                                              name=name + 'local_conv_' + str(3 + 1))(
             norm)  # out:(None, 1, 9, 9, 16)
@@ -356,14 +405,14 @@ class HL_DDQNAgent(object):
         nan = [np.any(np.isnan(experiences[i])) for i in range(len(experiences))]
         if np.any(nan):
             print(f'###################### Nan in experiences: {np.isnan(experiences)}')
-        local_map = tf.convert_to_tensor(experiences[0])  # np.asarray(experiences[0]).astype(np.float32))
-        global_map = tf.convert_to_tensor(experiences[1])
+        local_map = tf.convert_to_tensor(experiences[0], dtype=tf.float64)  # np.asarray(experiences[0]).astype(np.float32))
+        global_map = tf.convert_to_tensor(experiences[1], dtype=tf.float64)
         scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
         action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
-        reward = tf.convert_to_tensor(experiences[4])
-        next_local_map = tf.convert_to_tensor(experiences[5])
-        next_global_map = tf.convert_to_tensor(experiences[6])
-        next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
+        reward = tf.convert_to_tensor(experiences[4], dtype=tf.float64)
+        next_local_map = tf.convert_to_tensor(experiences[5], dtype=tf.float64)
+        next_global_map = tf.convert_to_tensor(experiences[6], dtype=tf.float64)
+        next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float64)
         terminated = tf.convert_to_tensor(experiences[8])
         self._train_hl(local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                        next_scalars)
@@ -373,6 +422,7 @@ class HL_DDQNAgent(object):
     def _train_hl(self, local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                   next_scalars):
 
+
         q_prime = self.q_prime_model_hl(
             [next_local_map, next_global_map, next_scalars])
         tf.debugging.assert_all_finite(q_prime, message='Nan in qprime')
@@ -381,10 +431,15 @@ class HL_DDQNAgent(object):
             q_loss = self.q_loss_model_hl(
                 [local_map, global_map, scalars, action, reward,
                  terminated, tf.stop_gradient(q_prime)])
-        tf.debugging.assert_all_finite(q_loss, message='Nan in qloss')
+        tf.debugging.assert_all_finite(q_loss, message='Nan in q_loss')
         print_node(f'q_loss: {q_loss}')
+
         q_grads = tape.gradient(q_loss, self.q_network_hl.trainable_variables)
-        tf.debugging.assert_all_finite(q_grads, message='Nan in qgrads')
+        grad_avg = tf.reduce_mean([tf.reduce_mean(tf.abs(grads)) for grads in q_grads])
+        tf.summary.scalar("grad/avg_actor", grad_avg, self.i)
+        self.i += 1
+        [tf.debugging.assert_all_finite(grads, message='Nan in grads') for grads in q_grads]
+        # tf.debugging.assert_all_finite(q_grads, message='Nan in qgrads')
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
 
     def save_weights_hl(self, path_to_weights):

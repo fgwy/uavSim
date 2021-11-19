@@ -371,7 +371,7 @@ class HL_DDQNAgent(object):
         # goal = tf.one_hot(goal, depth=self.num_actions_hl)
         return goal
 
-    @tf.function
+    # @tf.function
     def _get_exploitation_goal(self, local_map_in, global_map_in, scalars):
         a = self.exploit_model_hl([local_map_in, global_map_in, scalars])
         tf.debugging.assert_all_finite(a, message='Nan in exploitation goal')
@@ -387,7 +387,7 @@ class HL_DDQNAgent(object):
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
         return a
 
-    @tf.function
+    # @tf.function
     def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars_in):
         p = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in])
         tf.debugging.assert_all_finite(p, message='Nan in soft explore output')
@@ -422,7 +422,7 @@ class HL_DDQNAgent(object):
                        next_scalars)
         self.soft_update_hl(self.params.alpha)
 
-    @tf.function
+    # @tf.function
     def _train_hl(self, local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                   next_scalars):
 

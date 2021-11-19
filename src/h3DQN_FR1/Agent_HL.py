@@ -139,19 +139,16 @@ class HL_DDQNAgent(object):
                                            dtype=float)
         # print(one_cold_rm_action_hl.shape, one_hot_rm_action_hl.shape, q_values_hl.shape)
         q_old_hl = tf.stop_gradient(tf.multiply(q_values_hl, one_cold_rm_action_hl))
-        # check_is_nan_in_here(q_old_hl,'qoldhl')
-        # if np.any(tf.math.is_nan(q_old_hl)) == True:
-        #     print(f'nan in qoldh: {q_old_hl}')
+        tf.debugging.assert_all_finite(q_old_hl)
         gamma_terminated_hl = tf.multiply(tf.cast(tf.math.logical_not(termination_input), tf.float32), gamma)
-        # check_is_nan_in_here(gamma_terminated_hl, 'gammaterm')
+        tf.debugging.assert_all_finite(gamma_terminated_hl)
         q_update_hl = tf.expand_dims(tf.add(reward_hl_input, tf.multiply(q_prime_hl_input, gamma_terminated_hl)), 1)
-        # check_is_nan_in_here('qupdatehl')
+        tf.debugging.assert_all_finite(q_update_hl)
         q_update_hot_hl = tf.multiply(q_update_hl, one_hot_rm_action_hl)
-        # check_is_nan_in_here(q_update_hot_hl, 'qupdatehothl')
+        tf.debugging.assert_all_finite(q_update_hot_hl)
         q_new_hl = tf.add(q_update_hot_hl, q_old_hl)
-        # check_is_nan_in_here(q_new_hl, 'Qnewhl')
         q_loss_hl = tf.losses.MeanSquaredError()(q_new_hl, q_values_hl)
-        # check_is_nan_in_here(q_loss_hl, 'Qlosshl')
+        tf.debugging.assert_all_finite(q_loss_hl)
         self.q_loss_model_hl = Model(
             inputs=[local_map_input, global_map_input, scalars_input, action_input, reward_hl_input,
                     termination_input, q_prime_hl_input],
@@ -317,9 +314,15 @@ class HL_DDQNAgent(object):
         local_map_in = state.get_local_map()[tf.newaxis, ...]
         global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
-        goal = self.exploit_model_hl([local_map_in, global_map_in, scalars]).numpy()[0]
+        goal = self._get_exploitation_goal(local_map_in, global_map_in, scalars).numpy()[0]
         # goal = tf.one_hot(goal, depth=self.num_actions_hl)
         return goal
+
+    @tf.function
+    def _get_exploitation_goal(self, local_map_in, global_map_in, scalars):
+        a = self.exploit_model_hl([local_map_in, global_map_in, scalars])
+        tf.debugging.assert_all_finite(a)
+        return a
 
     def get_soft_max_exploration(self, state):
         local_map_in = state.get_local_map()[tf.newaxis, ...]
@@ -327,18 +330,15 @@ class HL_DDQNAgent(object):
         scalars_in = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         if np.any(np.isnan(local_map_in)) or np.any(np.isnan(global_map_in)) or np.any(np.isnan(scalars_in)):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
-        p = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in]).numpy()[0]
-
-        if np.any(np.isnan(p)):
-            print(p)
-
-        # p = np.zeros_like(p)
-        # p[289] = 1
-        # print(p, '\n', p.shape)
+        p = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in).numpy()[0]
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
-
-        # a = tf.one_hot(a, depth=self.num_actions_hl)
         return a
+
+    @tf.function
+    def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars_in):
+        p = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in])
+        tf.debugging.assert_all_finite(p)
+        return p
 
     def hard_update_hl(self):
         self.target_network_hl.set_weights(self.q_network_hl.get_weights())
@@ -375,36 +375,16 @@ class HL_DDQNAgent(object):
 
         q_prime = self.q_prime_model_hl(
             [next_local_map, next_global_map, next_scalars])
+        tf.debugging.assert_all_finite(q_prime)
         # Train Value network
         with tf.GradientTape() as tape:
             q_loss = self.q_loss_model_hl(
                 [local_map, global_map, scalars, action, reward,
                  terminated, tf.stop_gradient(q_prime)])
+        tf.debugging.assert_all_finite(q_loss)
         q_grads = tape.gradient(q_loss, self.q_network_hl.trainable_variables)
-        # for grad in q_grads:
-        # for g in grad:
-        # print(f'grad {grad}')
-        # if np.isnan(grad.numpy().any()): # == 'Nan':
-        #     print(f'Nan in grads!! {grad}')
-        # grad_check = tf.debugging.check_numerics(q_grads, message='checking grads')
-        # with tf.control_dependencies([grad_check]):
-        #     self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
-        # try:
-        #     tf.debugging.check_numerics(q_grads, message='Checking grads')
-        # except Exception as e:
-        #     # assert "Checking grads : Tensor had NaN values" in e.message
-        #     print(f"Checking grads: Tensor had bad values {e}")
-        # if np.any(tf.math.is_nan(q_loss))==True or np.any(tf.math.is_nan(q_grads))==True:
-        #     print(f'###################### Nan in grads: {np.isnan(q_loss)}')
-
-        # tf.debugging.enable_check_numerics()
+        tf.debugging.assert_all_finite(q_grads)
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
-
-        # self.conditional_node(q_grads)
-
-        # apply_gradient_op = tf.cond(tf.equal(num_nans_grads, 0.), lambda: self.fn_true_apply_grad(grads, global_step),
-        #                             lambda: self.fn_false_ignore_grad(grads, global_step)
-        # self.q_optimizer_hl.apply_gradient_op(zip(q_grads, self.q_network_hl.trainable_variables))
 
     def save_weights_hl(self, path_to_weights):
         self.target_network_hl.save_weights(path_to_weights)

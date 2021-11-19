@@ -49,7 +49,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
         while self.step_count < self.agent_manager.trainer.params.num_steps:
             print(
-                f'episode count: {self.episode_count}, eval period: {self.agent_manager.trainer.params.eval_period}, draw: {self.stats.params.draw}')
+                f'\nepisode count: {self.episode_count}, eval period: {self.agent_manager.trainer.params.eval_period}, draw: {self.stats.params.draw}')
             state = copy.deepcopy(self.init_episode())
             self.stats.on_episode_begin(self.episode_count)
 

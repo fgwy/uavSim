@@ -123,7 +123,6 @@ class LL_DDQNAgent(object):
         q_update_hot = tf.multiply(q_update, one_hot_rm_action)
         q_new = tf.add(q_update_hot, q_old)
         q_loss = tf.losses.MeanSquaredError()(q_new, q_values_ll)
-        tf.debugging.assert_all_finite(q_loss, message='Nan in qgrads')
         self.q_loss_model_ll = Model(
             inputs=[boolean_map_ll_input, float_map_ll_input, scalars_ll_input, action_input, reward_ll_input,
                     termination_input, q_star_ll_input],
@@ -229,7 +228,7 @@ class LL_DDQNAgent(object):
 
         self.soft_update_ll(self.params.alpha)
 
-    @tf.function
+    # @tf.function
     def _train_ll(self, boolean_map, float_map, scalars, action, reward, next_boolean_map, next_float_map, next_scalars, terminated):
         q_star = self.q_star_model_ll(
             [next_boolean_map, next_float_map, next_scalars])
@@ -239,7 +238,7 @@ class LL_DDQNAgent(object):
             q_loss = self.q_loss_model_ll(
                 [boolean_map, float_map, scalars, action, reward,
                  terminated, q_star])
-        print_node(f'q_loss: {q_loss}')
+        # print(f'q_prime_ll: {q_star} \nq_loss_ll: {q_loss}')
         q_grads = tape.gradient(q_loss, self.q_network_ll.trainable_variables)
 
         self.q_optimizer_ll.apply_gradients(zip(q_grads, self.q_network_ll.trainable_variables))

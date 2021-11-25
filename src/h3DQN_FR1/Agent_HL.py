@@ -45,7 +45,7 @@ class HL_DDQNAgentParams:
         self.gamma = 0.95
 
         # Exploration strategy
-        self.soft_max_scaling = 0.3
+        self.soft_max_scaling = 0.1
 
         # Global-Local Map
         self.use_global_local = True
@@ -60,6 +60,11 @@ class HL_DDQNAgentParams:
         self.use_pretrained_local_map_preproc = False
         self.path_to_local_pretrained_weights = ''
 
+        # epsilon
+        self.initial_epsilon = 0.3
+        self.final_epsilon = 0.0005
+        self.eps_steps = 20000
+
 class HL_DDQNAgent(object):
 
     def __init__(self, params: HL_DDQNAgentParams, example_state, example_action_hl, stats=None):
@@ -68,7 +73,15 @@ class HL_DDQNAgent(object):
         gamma = tf.constant(self.params.gamma, dtype=float)
         self.align_counter = 0
 
+        self.training = False
+
         self.i = 0
+
+        self.var = True
+
+        self.epsilon = self.params.initial_epsilon
+
+        self.counter = 0
 
         self.boolean_map_shape = example_state.get_boolean_map_shape()
         self.float_map_shape = example_state.get_float_map_shape()
@@ -104,8 +117,11 @@ class HL_DDQNAgent(object):
         # self.target_network_hl = self.build_model_hl(padded_map_hl, scalars_input, states_hl, 'target_hl_')
 
         self.q_network_hl = self.build_hl_model(states_hl, self.params.path_to_local_pretrained_weights, 'soft_updated_hl_model_')
-        # self.q_network_hl.summary()
+        self.q_network_hl.summary()
         self.target_network_hl = self.build_hl_model(states_hl, 'target_hl_')
+
+        # self.q_network_hl = self.build_dummy_model(states_hl)
+        # self.target_network_hl = self.build_dummy_model(states_hl)
 
         self.hard_update_hl()
 
@@ -118,7 +134,7 @@ class HL_DDQNAgent(object):
         #                                     outputs=self.total_map_hl)
 
         q_values_hl = self.q_network_hl.output
-        tf.debugging.assert_all_finite(q_values_hl, message='Nan in qvalues')
+        # tf.debugging.assert_all_finite(q_values_hl, message='Nan in qvalues')
         # print(q_values_hl.shape)
         q_target_values_hl = self.target_network_hl.output
         # print(q_target_values_hl.shape)
@@ -130,9 +146,10 @@ class HL_DDQNAgent(object):
         max_action_target_hl = tf.argmax(q_target_values_hl, axis=1, name='max_action', output_type=tf.int64)
         one_hot_max_action_hl = tf.one_hot(max_action_hl, depth=self.num_actions_hl, dtype=float, on_value=0.0,
                                            off_value=1.0)
-        one_hot_max_action_hl = tf.squeeze(one_hot_max_action_hl)
+        # one_hot_max_action_hl = tf.squeeze(one_hot_max_action_hl)
         q_prime_hl = tf.reduce_sum(tf.multiply(one_hot_max_action_hl, q_target_values_hl, name='mul_hot_target'), axis=1,
                                   name='q_prime_hl')
+        print_node(q_prime_hl)
         self.q_prime_model_hl = Model(inputs=states_hl, outputs=q_prime_hl)
 
         # Define Bellman loss
@@ -142,26 +159,26 @@ class HL_DDQNAgent(object):
                                            dtype=float)
         # print(one_cold_rm_action_hl.shape, one_hot_rm_action_hl.shape, q_values_hl.shape)
         q_old_hl = tf.stop_gradient(tf.multiply(q_values_hl, one_cold_rm_action_hl))
-        print_node(f'q_old: {q_old_hl}')
-        tf.debugging.assert_all_finite(q_old_hl, message='Nan in qold')
+        print_node(q_old_hl)
+        # tf.debugging.assert_all_finite(q_old_hl, message='Nan in qold')
         gamma_terminated_hl = tf.multiply(tf.cast(tf.math.logical_not(termination_input), tf.float32), gamma)
-        tf.debugging.assert_all_finite(gamma_terminated_hl, message='Nan in gamma')
+        # tf.debugging.assert_all_finite(gamma_terminated_hl, message='Nan in gamma')
         q_update_hl = tf.expand_dims(tf.add(reward_hl_input, tf.multiply(q_prime_hl_input, gamma_terminated_hl)), 1)
-        tf.debugging.assert_all_finite(q_update_hl, message='Nan in qupdate')
+        # tf.debugging.assert_all_finite(q_update_hl, message='Nan in qupdate')
         q_update_hot_hl = tf.multiply(q_update_hl, one_hot_rm_action_hl)
-        print_node(f'q_updh: {q_update_hot_hl}')
-        tf.debugging.assert_all_finite(q_update_hot_hl, message='Nan in qupdatehot')
+        # print_node(q_update_hot_hl)
+        # tf.debugging.assert_all_finite(q_update_hot_hl, message='Nan in qupdatehot')
         q_new_hl = tf.add(q_update_hot_hl, q_old_hl)
-        print_node(f'q_new: {q_new_hl}')
+        print_node(q_new_hl)
         q_loss_hl = tf.losses.MeanSquaredError()(q_new_hl, q_values_hl)
-        tf.debugging.assert_all_finite(q_loss_hl, message='Nan in q_loss')
+        # tf.debugging.assert_all_finite(q_loss_hl, message='Nan in q_loss')
         self.q_loss_model_hl = Model(
             inputs=[local_map_input, global_map_input, scalars_input, action_input, reward_hl_input,
                     termination_input, q_prime_hl_input],
-            outputs=q_loss_hl)
+            outputs=[q_loss_hl, q_new_hl, q_update_hot_hl, q_old_hl])
 
         # Exploit act model
-        self.exploit_model_hl = Model(inputs=states_hl, outputs=max_action_hl)
+        self.exploit_model_hl = Model(inputs=states_hl, outputs=(max_action_hl, q_values_hl))
         self.exploit_model_target_hl = Model(inputs=states_hl, outputs=max_action_target_hl)
 
         # Softmax explore model
@@ -170,7 +187,7 @@ class HL_DDQNAgent(object):
         tf.debugging.assert_all_finite(softmax_scaling_hl, message='Nan in softmax_scaling')
         softmax_action_hl = tf.math.softmax(softmax_scaling_hl, name='softmax_action')
         tf.debugging.assert_all_finite(softmax_action_hl, message='Nan in softmax_action')
-        self.soft_explore_model_hl = Model(inputs=states_hl, outputs=softmax_action_hl)
+        self.soft_explore_model_hl = Model(inputs=states_hl, outputs=(softmax_action_hl, q_values_hl, max_action_hl))
 
         self.q_optimizer_hl = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
 
@@ -180,29 +197,48 @@ class HL_DDQNAgent(object):
         if stats:
             stats.set_model(self.target_network_hl)
 
+
+    def build_dummy_model(self, states_in):
+        local_map_in, global_map_in, states_proc_in = states_in
+        states_proc = states_proc_in / self.initial_mb + 1e-6
+
+        local_map_proc = Flatten()(local_map_in)
+        local_map_proc = Dense(128)(local_map_proc)
+
+        global_map_proc = Flatten()(global_map_in)
+        global_map_proc = Dense(128)(global_map_proc)
+
+        concat = Concatenate()([local_map_proc, global_map_proc, states_proc])
+        out = Dense(self.num_actions_hl, activation='linear')(concat)
+        model = Model(inputs=states_in, outputs=out)
+        return model
+
+
+
+
     def build_hl_model(self, states_in, path_to_local_pretrained_weights, name=''):  # local:17,17,4; global:21:21,4
         '''
          usage: model = build_hl_model(lm[tf.newaxis, ...], gm[tf.newaxis, ...], states_proc[tf.newaxis, ...])
         '''
 
         local_map_in, global_map_in, states_proc_in = states_in
-        # local_map_in = tf.stop_gradient(local_map_in)
-        # global_map_in = tf.stop_gradient(global_map_in)
-        # states_proc_in = tf.stop_gradient(states_proc_in)
+        local_map_in_sg = tf.stop_gradient(local_map_in)
+        global_map_in_sg = tf.stop_gradient(global_map_in)
+        states_proc_in_sg = tf.stop_gradient(states_proc_in)
 
-        states_proc = states_proc_in / self.initial_mb + 1e-6
+        states_proc = states_proc_in_sg / self.initial_mb + 1e-6
 
-        self.local_map_model = self.build_lm_preproc_model(local_map_in, name)
+        self.local_map_model = self.build_lm_preproc_model(local_map_in_sg, name)
         if self.params.use_pretrained_local_map_preproc:
             self.local_map_model.load_weights(path_to_weights=path_to_local_pretrained_weights)
-        flatten_local, local_map_2, local_map_3, local_map_4 = self.local_map_model(local_map_in)
+        flatten_local, local_map_2, local_map_3, local_map_4 = self.local_map_model(local_map_in_sg)
 
 
         # global map processing layers
 
         global_map_1 = tf.keras.layers.Conv2D(4, 5, activation='swish',
                                               strides=(1, 1),
-                                              name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
+                                              name=name + 'global_conv_' + str(0 + 1))(global_map_in_sg)  # out:17
         norm = tf.keras.layers.BatchNormalization()(global_map_1)
         global_map_2 = tf.keras.layers.Conv2D(8, 5, activation='swish',
                                               strides=(1, 1),
@@ -221,20 +257,27 @@ class HL_DDQNAgent(object):
 
         layer_1 = tf.keras.layers.Dense(256, activation='ReLU', name=name + 'hidden_layer_all_hl_' + str(0))(
             flatten_map)
-        # layer_2 = tf.keras.layers.Dense(512, activation='elu', name=name + 'hidden_layer_all_hl_' + str(1))(
-        #     layer_1)
+        norm = tf.keras.layers.BatchNormalization()(layer_1)
+        layer_2 = tf.keras.layers.Dense(512, activation='elu', name=name + 'hidden_layer_all_hl_' + str(1))(
+            norm)
+        norm = tf.keras.layers.BatchNormalization()(layer_2)
         # layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
         #     layer_1)
 
         output = tf.keras.layers.Dense(units=300, activation='swish', name=name + 'last_dense_layer_hl')(
-            layer_1)
+            norm)
         norm_out = tf.keras.layers.BatchNormalization()(output)
+
+        # value for dueling ddqn
+        val = tf.keras.layers.Dense(units=256, activation='swish', name=name + 'value_dense1')(norm)
+        val = tf.keras.layers.BatchNormalization()(val)
+        value = tf.keras.layers.Dense(units=1, activation='linear', name=name + 'value_out')(val)
 
         reshape = tf.keras.layers.Reshape((5, 5, 12), name=name + 'last_dense_layer')(norm_out)
 
-        landing = tf.keras.layers.Dense(units=128, activation='swish', name=name + 'landing_layer_proc_hl')(
-            layer_1)
-        landing = tf.keras.layers.Dense(units=1, activation='linear', name=name + 'landing_layer_hl')(landing)
+        # landing = tf.keras.layers.Dense(units=128, activation='swish', name=name + 'landing_layer_proc_hl')(
+        #     layer_1)
+        landing = tf.keras.layers.Dense(units=1, activation='linear', name=name + 'landing_layer_hl')(norm)
 
         # deconvolutional part aiming at 17x17
         # self.dec_model = self.build_goal_decoder(reshape, local_map_2, local_map_3, local_map_4, name=name)
@@ -279,10 +322,13 @@ class HL_DDQNAgent(object):
 
 
         flatten_deconv = tf.keras.layers.Flatten(name=name + 'deconv_flatten')(deconv_4)
-        concat_final = tf.keras.layers.Concatenate(name=name + 'concat_final')([flatten_deconv, landing])
-        concat_final = tf.keras.layers.BatchNormalization(name=name + 'final_norm')(concat_final)
+        adv = tf.keras.layers.Concatenate(name=name + 'concat_final')([flatten_deconv, landing])
+        # adv = tf.keras.layers.BatchNormalization(name=name + 'final_norm')(adv)
+        advAverage = tf.reduce_mean(adv, axis=1, keepdims=True)
 
-        model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=concat_final)
+        Q_vals = value + tf.subtract(adv, advAverage)
+
+        model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
         return model
 
     # def build_goal_decoder(self, reshape, local_map_2, local_map_3, local_map_4, name=''):
@@ -352,7 +398,7 @@ class HL_DDQNAgent(object):
 
         return model
 
-    def get_goal(self, state):
+    def get_softmax_goal(self, state):
         goal = self.get_soft_max_exploration(state)
         # print(f'### soft goal:{goal}')
         return goal
@@ -370,29 +416,54 @@ class HL_DDQNAgent(object):
         local_map_in = state.get_local_map()[tf.newaxis, ...]
         global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
-        goal = self._get_exploitation_goal(local_map_in, global_map_in, scalars).numpy()[0]
+        goal, q = self._get_exploitation_goal(local_map_in, global_map_in, scalars) #.numpy()[0]
+        goal = goal.numpy()[0]
         # goal = tf.one_hot(goal, depth=self.num_actions_hl)
+
+        print(f'goal: {goal}')
+        print(f'qval: {q[0].numpy()[goal]}')
+        # highest_qval = q[a]
+        # print(f'highest qval: {highest_qval}')
+
         return goal
 
-    # @tf.function
+    @tf.function
     def _get_exploitation_goal(self, local_map_in, global_map_in, scalars):
-        a = self.exploit_model_hl([local_map_in, global_map_in, scalars])
-        tf.debugging.assert_all_finite(a, message='Nan in exploitation goal')
+        a, q = self.exploit_model_hl([local_map_in, global_map_in, scalars])
+        # tf.debugging.assert_all_finite(a, message='Nan in exploitation goal')
+        return a, q
+
+    def get_eps_greedy_action(self, state):
+
+        p = np.random.random()
+        if p < self.epsilon:
+            a = np.random.choice(range(self.num_actions_hl), size=1)
+        else:
+            a = self.get_exploitation_goal(state)
+
+        if self.epsilon > self.params.final_epsilon:
+            self.epsilon -= (self.params.initial_epsilon - self.params.final_epsilon) / self.params.eps_steps
+
         return a
 
     def get_soft_max_exploration(self, state):
         local_map_in = state.get_local_map()[tf.newaxis, ...]
         global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
         scalars_in = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
+        # if self.training:
+        #     print(f'sum inputs: {tf.reduce_sum(local_map_in)} {tf.reduce_sum(global_map_in)} {tf.reduce_sum(scalars_in)/self.initial_mb}')
         if np.any(np.isnan(local_map_in)) or np.any(np.isnan(global_map_in)) or np.any(np.isnan(scalars_in)):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
         p = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in).numpy()[0]
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
+        print(f'choosen act: {a}')
         return a
 
     # @tf.function
     def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars_in):
-        p = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in])
+        p, q, max = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in])
+        print(f' sum Q vals: {tf.reduce_sum(q)}')
+              #f'\nHighest IDX: {max}\nhighest prob idx: {np.argmax(p.numpy()[0])}')
         tf.debugging.assert_all_finite(p, message='Nan in soft explore output')
         return p
 
@@ -421,30 +492,42 @@ class HL_DDQNAgent(object):
         next_global_map = tf.convert_to_tensor(experiences[6], dtype=tf.float64)
         next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float64)
         terminated = tf.convert_to_tensor(experiences[8])
+        if self.var ==True:
+            for i in range(len(experiences)):
+                print(f'experiences {i}: {experiences[i]}')
+            self.var = False
+
         self._train_hl(local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                        next_scalars)
+
         self.soft_update_hl(self.params.alpha)
+
+        if self.counter%500 == 0:
+            print(f'###################### hard updating target #################################')
+            self.hard_update_hl()
+            self.counter = 1
+        self.counter += 1
 
     # @tf.function
     def _train_hl(self, local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                   next_scalars):
-
-
+        self.training=True
         q_prime = self.q_prime_model_hl(
             [next_local_map, next_global_map, next_scalars])
         tf.debugging.assert_all_finite(q_prime, message='Nan in qprime')
         # Train Value network
         with tf.GradientTape() as tape:
-            q_loss = self.q_loss_model_hl(
+            q_loss, q_new_hl, q_update_hot_hl, q_old_hl = self.q_loss_model_hl(
                 [local_map, global_map, scalars, action, reward,
                  terminated, tf.stop_gradient(q_prime)])
         tf.debugging.assert_all_finite(q_loss, message='Nan in q_loss')
         print_node(f'q_loss: {q_loss}')
+        # print_node(f'q_prime: {q_prime}\nq_loss: {q_loss},\n q_new: {q_new_hl},\n q_upd: {q_update_hot_hl},\n q_old: {q_old_hl}')
 
         q_grads = tape.gradient(q_loss, self.q_network_hl.trainable_variables)
-        grad_avg = tf.reduce_mean([tf.reduce_mean(tf.abs(grads)) for grads in q_grads])
-        tf.summary.scalar("grad/avg_actor", grad_avg, self.i)
-        self.i += 1
+        # grad_avg = tf.reduce_mean([tf.reduce_mean(tf.abs(grads)) for grads in q_grads])
+        # tf.summary.scalar("grad/avg_actor", grad_avg, self.i)
+        # self.i += 1
         [tf.debugging.assert_all_finite(grads, message='Nan in grads') for grads in q_grads]
         # tf.debugging.assert_all_finite(q_grads, message='Nan in qgrads')
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
@@ -452,7 +535,7 @@ class HL_DDQNAgent(object):
     def save_weights_hl(self, path_to_weights):
         self.target_network_hl.save_weights(path_to_weights)
 
-    def save_modexl_hl(self, path_to_model):
+    def save_model_hl(self, path_to_model):
         self.target_network_hl.save(path_to_model)
 
     def load_weights_hl(self, path_to_weights):

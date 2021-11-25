@@ -13,6 +13,8 @@ import tensorflow as tf
 class AgentManager_Params():
     def __init__(self):
         self.hierarchical = True
+        self.use_soft_max = False
+        self.pretrain_ll = False
         self.h_trainer = H_DDQNTrainerParams()
         self.ll_agent = LL_DDQNAgentParams()
         self.hl_agent = HL_DDQNAgentParams()
@@ -113,8 +115,10 @@ class AgentManager():
         elif exploit:
             self.current_goal_idx = self.agent_hl.get_exploitation_goal(state)
         else:
-            self.current_goal_idx = self.agent_hl.get_goal(state)
-
+            if self.params.use_soft_max:
+                self.current_goal_idx = self.agent_hl.get_softmax_goal(state)
+            else:
+                self.current_goal_idx = self.agent_hl.get_eps_greedy_action(state)
         if self.current_goal_idx == self.agent_hl.num_actions_hl - 1:
             try_landing = True
             self.current_goal = np.zeros((17, 17))  # todo please
@@ -167,3 +171,9 @@ class AgentManager():
     def find_h_target_idx(self, state):
         end = np.where(state.h_target == 1)
         return end
+
+    def save_models(self, path):
+        if not self.trainer.params.use_astar:
+            self.agent_ll.save_model_ll(path)
+        if not self.params.pretrain_ll:
+            self.agent_hl.save_model_hl(path)

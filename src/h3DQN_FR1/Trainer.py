@@ -22,6 +22,7 @@ class H_DDQNTrainerParams:
         self.rm_pre_fill_multiplier_hl = 5
 
 
+
 class H_DDQNTrainer:
     def __init__(self, params: H_DDQNTrainerParams, agent_ll: LL_DDQNAgent, agent_hl: HL_DDQNAgent):
         self.params = params
@@ -74,8 +75,8 @@ class H_DDQNTrainer:
             return
         mini_batch = self.replay_memory_hl.sample(self.params.batch_size_h)
         if self.n == 0:
-            self.n+=1
-            print('############# training h')
+            self.n += 1
+            print('############# training h #################################')
         self.agent_hl.train_hl(mini_batch)
 
     def train_l(self):
@@ -84,8 +85,8 @@ class H_DDQNTrainer:
             return
         mini_batch = self.replay_memory_ll.sample(self.params.batch_size_l)
         if self.i == 0:
-            self.i+=1
-            print('########### training l')
+            self.i += 1
+            print('########### training l ######################')
         self.agent_ll.train_ll(mini_batch)
 
     def should_fill_replay_memory(self):

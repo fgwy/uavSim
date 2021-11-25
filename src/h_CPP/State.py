@@ -113,22 +113,25 @@ class H_CPPState(CPPState):
         return float_map
 
     def get_padded_map(self):
-        bm = self.get_boolean_map()
-        fm = self.get_float_map()
+        bm = self.get_boolean_map()[tf.newaxis, ...]
+        fm = self.get_float_map()[tf.newaxis, ...]
         map_cast_hl = tf.cast(bm, dtype=tf.float32)
-        padded_map_hl = tf.concat([map_cast_hl, fm], axis=2).numpy()
+        padded_map_hl = tf.concat([map_cast_hl, fm], axis=3)
+        padded_map_hl = tf.squeeze(padded_map_hl).numpy()
         return padded_map_hl
 
     def get_local_map(self):  # TODO: create local map in state to exclude computation from graph
-        conv_in = self.get_padded_map()
+        conv_in = self.get_padded_map()[tf.newaxis, ...]
         crop_frac = float(self.local_map_size) / float(self.get_boolean_map_ll_shape()[0])
         local_map = central_crop(conv_in, crop_frac)
-        return local_map.numpy()
+        local_map = tf.squeeze(local_map).numpy()
+        return local_map
 
     def get_global_map(self, global_map_scaling):
         pm = self.get_padded_map()[tf.newaxis, ...]
         self.global_map = AvgPool2D((global_map_scaling, global_map_scaling))(pm)
-        return self.global_map.numpy()
+        self.global_map = tf.squeeze(self.global_map).numpy()
+        return self.global_map
 
     def get_float_map_ll_shape(self):
         return self.get_float_map_ll().shape

@@ -56,15 +56,16 @@ class H_CPPEnvironment(BaseEnvironment):
             ## run_MDP
             # test = True if self.episode_count % self.agent.trainer.params.eval_period == 0 else False #  and self.episode_count != 0
             test = True if self.episode_count % self.agent_manager.trainer.params.eval_period == 0 and self.episode_count != 0 else False
-            self.run_MDP(self.step_count - 1, bar, episode_num=self.episode_count, test=test)
+            self.run_MDP(self.step_count - 1, bar, episode_num=self.episode_count, test=test, random_h=self.agent_manager.params.pretrain_ll)
 
             self.stats.on_episode_end(self.episode_count)
             self.stats.log_training_data(step=self.step_count)
 
             self.episode_count += 1
+        self.agent_manager.save_models(self.stats.params.save_model)
         self.stats.training_ended()
 
-    def run_MDP(self, last_step, bar, episode_num, test=False, prefill=False, random=True):
+    def run_MDP(self, last_step, bar, episode_num, test=False, prefill=False, random_h=True, random_l=False):
         """
         Runs MDP: High level interaction loop
         """
@@ -72,8 +73,8 @@ class H_CPPEnvironment(BaseEnvironment):
         display_trajectory.append(copy.deepcopy(self.physics.state))
 
         while not self.physics.state.is_terminal():
-            goal, goal_idx, try_landing = self.agent_manager.generate_goal(self.physics.state, random=False,
-                                                                           exploit=test)
+            goal, goal_idx, try_landing = self.agent_manager.generate_goal(self.physics.state, random=random_h,
+                                                                           exploit=False)
             self.physics.reset_h_target(goal)
             valid = self.agent_manager.check_valid_target(self.physics.state) or try_landing
 
@@ -85,12 +86,15 @@ class H_CPPEnvironment(BaseEnvironment):
                                                                                          try_landing,
                                                                                          display_trajectory,
                                                                                          test=test,
-                                                                                         random=random,
+                                                                                         random_l=random_l,
                                                                                          prefill=prefill)
 
-            if not test:
-                reward_h = self.rewards.calculate_reward_h(state_h, goal_idx, self.physics.state, valid,
-                                                           tried_landing_and_succeeded)
+            reward_h = self.rewards.calculate_reward_h(state_h, goal_idx, self.physics.state, valid,
+                                                       tried_landing_and_succeeded)
+
+            # print(f'reward_h: {reward_h}')
+
+            if not test and not self.agent_manager.params.pretrain_ll:
 
                 self.agent_manager.trainer.add_experience_hl(state_h, goal_idx, reward_h,
                                                              copy.deepcopy(self.physics.state))
@@ -102,7 +106,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
 
 
-    def run_subMDP(self, valid, bar, last_step, try_landing, display_trajectory, test=False, random=False,
+    def run_subMDP(self, valid, bar, last_step, try_landing, display_trajectory, test=False, random_l=False,
                    prefill=False):
         """
         Runs subMDP: low-level interaction loop
@@ -128,7 +132,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
                 action = self.agent_manager.act_l(self.physics.state, i, exploit=test,
                                                   use_astar=self.agent_manager.trainer.params.use_astar,
-                                                  random=random)
+                                                  random=random_l)
                 next_state = self.physics.step(GridActions(action))
                 reward = self.rewards.calculate_reward_l(state, GridActions(action), next_state)
                 if not test and not self.agent_manager.trainer.params.use_astar:

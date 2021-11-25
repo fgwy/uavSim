@@ -9,7 +9,7 @@ class H_CPPRewardParams(GridRewardParams):
         self.cell_multiplier = 0.4
         self.cell_multiplier_ll = 1
         self.invalid_goal_penalty = 1.
-        self.goal_reached_bonus = 2.
+        self.goal_reached_bonus = 1.
 
 
 # Class used to track rewards
@@ -42,6 +42,10 @@ class H_CPPRewards(GridRewards):
             print(f'Landing reward: failed {tried_landing_and_succeeded}')
             reward -= self.params.boundary_penalty
 
+        if next_state.movement_budget == 0 and not next_state.landed:
+            reward -= self.params.empty_battery_penalty
+
+        reward = reward/100
         # Cumulative reward
         self.h_cumulative_reward += reward
 

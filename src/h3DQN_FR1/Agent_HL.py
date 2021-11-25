@@ -144,8 +144,7 @@ class HL_DDQNAgent(object):
         # Define Q* in min(Q - (r + gamma_terminated * Q*))^2
         max_action_hl = tf.argmax(q_values_hl, axis=1, name='max_action', output_type=tf.int64)
         max_action_target_hl = tf.argmax(q_target_values_hl, axis=1, name='max_action', output_type=tf.int64)
-        one_hot_max_action_hl = tf.one_hot(max_action_hl, depth=self.num_actions_hl, dtype=float, on_value=0.0,
-                                           off_value=1.0)
+        one_hot_max_action_hl = tf.one_hot(max_action_hl, depth=self.num_actions_hl, dtype=float)
         # one_hot_max_action_hl = tf.squeeze(one_hot_max_action_hl)
         q_prime_hl = tf.reduce_sum(tf.multiply(one_hot_max_action_hl, q_target_values_hl, name='mul_hot_target'), axis=1,
                                   name='q_prime_hl')

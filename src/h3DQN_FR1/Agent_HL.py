@@ -144,11 +144,11 @@ class HL_DDQNAgent(object):
         # Define Q* in min(Q - (r + gamma_terminated * Q*))^2
         max_action_hl = tf.argmax(q_values_hl, axis=1, name='max_action', output_type=tf.int64)
         max_action_target_hl = tf.argmax(q_target_values_hl, axis=1, name='max_action', output_type=tf.int64)
-        one_hot_max_action_hl = tf.one_hot(max_action_hl, depth=self.num_actions_hl, dtype=float)
+        one_hot_max_action_hl = tf.one_hot(max_action_hl, depth=self.num_actions_hl, dtype=float, on_value=1.0,
+                                           off_value=0.0)
         # one_hot_max_action_hl = tf.squeeze(one_hot_max_action_hl)
         q_prime_hl = tf.reduce_sum(tf.multiply(one_hot_max_action_hl, q_target_values_hl, name='mul_hot_target'), axis=1,
                                   name='q_prime_hl')
-        print_node(q_prime_hl)
         self.q_prime_model_hl = Model(inputs=states_hl, outputs=q_prime_hl)
 
         # Define Bellman loss
@@ -156,21 +156,12 @@ class HL_DDQNAgent(object):
                                           dtype=float)
         one_cold_rm_action_hl = tf.one_hot(action_input, depth=self.num_actions_hl, on_value=0.0, off_value=1.0,
                                            dtype=float)
-        # print(one_cold_rm_action_hl.shape, one_hot_rm_action_hl.shape, q_values_hl.shape)
         q_old_hl = tf.stop_gradient(tf.multiply(q_values_hl, one_cold_rm_action_hl))
-        print_node(q_old_hl)
-        # tf.debugging.assert_all_finite(q_old_hl, message='Nan in qold')
         gamma_terminated_hl = tf.multiply(tf.cast(tf.math.logical_not(termination_input), tf.float32), gamma)
-        # tf.debugging.assert_all_finite(gamma_terminated_hl, message='Nan in gamma')
         q_update_hl = tf.expand_dims(tf.add(reward_hl_input, tf.multiply(q_prime_hl_input, gamma_terminated_hl)), 1)
-        # tf.debugging.assert_all_finite(q_update_hl, message='Nan in qupdate')
         q_update_hot_hl = tf.multiply(q_update_hl, one_hot_rm_action_hl)
-        # print_node(q_update_hot_hl)
-        # tf.debugging.assert_all_finite(q_update_hot_hl, message='Nan in qupdatehot')
         q_new_hl = tf.add(q_update_hot_hl, q_old_hl)
-        print_node(q_new_hl)
         q_loss_hl = tf.losses.MeanSquaredError()(q_new_hl, q_values_hl)
-        # tf.debugging.assert_all_finite(q_loss_hl, message='Nan in q_loss')
         self.q_loss_model_hl = Model(
             inputs=[local_map_input, global_map_input, scalars_input, action_input, reward_hl_input,
                     termination_input, q_prime_hl_input],
@@ -254,10 +245,10 @@ class HL_DDQNAgent(object):
 
         # layer = tf.keras.layers.Concatenate(name=name + 'concat')([flatten_map, states_proc_in])
 
-        layer_1 = tf.keras.layers.Dense(256, activation='ReLU', name=name + 'hidden_layer_all_hl_' + str(0))(
+        layer_1 = tf.keras.layers.Dense(256, activation='swish', name=name + 'hidden_layer_all_hl_' + str(0))(
             flatten_map)
         norm = tf.keras.layers.BatchNormalization()(layer_1)
-        layer_2 = tf.keras.layers.Dense(512, activation='elu', name=name + 'hidden_layer_all_hl_' + str(1))(
+        layer_2 = tf.keras.layers.Dense(256, activation='swish', name=name + 'hidden_layer_all_hl_' + str(1))(
             norm)
         norm = tf.keras.layers.BatchNormalization()(layer_2)
         # layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
@@ -501,11 +492,11 @@ class HL_DDQNAgent(object):
 
         self.soft_update_hl(self.params.alpha)
 
-        if self.counter%500 == 0:
-            print(f'###################### hard updating target #################################')
-            self.hard_update_hl()
-            self.counter = 1
-        self.counter += 1
+        # if self.counter%500 == 0:
+        #     print(f'###################### hard updating target #################################')
+        #     self.hard_update_hl()
+        #     self.counter = 1
+        # self.counter += 1
 
     # @tf.function
     def _train_hl(self, local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
@@ -520,7 +511,7 @@ class HL_DDQNAgent(object):
                 [local_map, global_map, scalars, action, reward,
                  terminated, tf.stop_gradient(q_prime)])
         tf.debugging.assert_all_finite(q_loss, message='Nan in q_loss')
-        print_node(f'q_loss: {q_loss}')
+        # print_node(f'q_loss: {q_loss}')
         # print_node(f'q_prime: {q_prime}\nq_loss: {q_loss},\n q_new: {q_new_hl},\n q_upd: {q_update_hot_hl},\n q_old: {q_old_hl}')
 
         q_grads = tape.gradient(q_loss, self.q_network_hl.trainable_variables)

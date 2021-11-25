@@ -13,7 +13,7 @@ import tensorflow as tf
 class AgentManager_Params():
     def __init__(self):
         self.hierarchical = True
-        self.use_soft_max = False
+        self.use_soft_max = True
         self.pretrain_ll = False
         self.h_trainer = H_DDQNTrainerParams()
         self.ll_agent = LL_DDQNAgentParams()

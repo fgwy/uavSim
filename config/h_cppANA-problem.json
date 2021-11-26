@@ -57,7 +57,7 @@
             "load_model": "",
             "use_astar": true,
             "rm_pre_fill_multiplier_ll": 10,
-            "rm_pre_fill_multiplier_hl": 1
+            "rm_pre_fill_multiplier_hl": 10
         },
         "ll_agent": {
             "conv_layers": 3,

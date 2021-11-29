@@ -60,6 +60,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
             self.stats.on_episode_end(self.episode_count)
             self.stats.log_training_data(step=self.step_count)
+            self.stats.save_if_best()
 
             self.episode_count += 1
         self.agent_manager.save_models(self.stats.params.save_model)
@@ -74,7 +75,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
         while not self.physics.state.is_terminal():
             goal, goal_idx, try_landing = self.agent_manager.generate_goal(self.physics.state, random=random_h,
-                                                                           exploit=False)
+                                                                           exploit=test)
             self.physics.reset_h_target(goal)
             valid = self.agent_manager.check_valid_target(self.physics.state) or try_landing
 
@@ -91,6 +92,8 @@ class H_CPPEnvironment(BaseEnvironment):
 
             reward_h = self.rewards.calculate_reward_h(state_h, goal_idx, self.physics.state, valid,
                                                        tried_landing_and_succeeded)
+
+            cumulative_reward_h +=reward_h
 
             # print(f'reward_h: {reward_h}')
 
@@ -135,6 +138,7 @@ class H_CPPEnvironment(BaseEnvironment):
                                                   random=random_l)
                 next_state = self.physics.step(GridActions(action))
                 reward = self.rewards.calculate_reward_l(state, GridActions(action), next_state)
+                # print(f'reward_l: {reward}')
                 if not test and not self.agent_manager.trainer.params.use_astar:
 
                     self.agent_manager.trainer.add_experience_ll(state, action, reward, next_state)

@@ -228,7 +228,7 @@ class LL_DDQNAgent(object):
 
         self.soft_update_ll(self.params.alpha)
 
-    # @tf.function
+    @tf.function
     def _train_ll(self, boolean_map, float_map, scalars, action, reward, next_boolean_map, next_float_map, next_scalars, terminated):
         q_star = self.q_star_model_ll(
             [next_boolean_map, next_float_map, next_scalars])

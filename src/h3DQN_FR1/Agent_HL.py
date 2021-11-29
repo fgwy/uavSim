@@ -1,13 +1,21 @@
 import tensorflow as tf
 
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, AvgPool2D, Reshape
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, AvgPool2D, Reshape, Activation
 import numpy as np
+# from tensorflow.keras.utils.generic_utils import get_custom_objects
+from tensorflow.keras.utils import get_custom_objects
 
 
 def print_node(x):
     print(x)
     return x
+
+def myswish_beta(x):
+    beta = tf.Variable(initial_value=1.0, trainable=True, name='swish_beta')
+    return x*tf.nn.sigmoid(beta*x) #trainable parameter beta
+
+get_custom_objects().update({'swish': Activation(myswish_beta)})
 
 
 def identify_idx_highest_val_in_tensor(tensor):
@@ -93,10 +101,6 @@ class HL_DDQNAgent(object):
         self.local_map_shape = example_state.get_local_map_shape()
         self.global_map_shape = example_state.get_global_map_shape(self.params.global_map_scaling)
         self.initial_mb = tf.convert_to_tensor(example_state.get_initial_mb(), dtype=tf.float32)
-        # self.initial_mb = tf.constant(200.)
-        # Create shared inputs
-        # boolean_map_input = Input(shape=self.boolean_map_shape, name='boolean_map_input', dtype=tf.bool)
-        # float_map_input = Input(shape=self.float_map_shape, name='float_map_input', dtype=tf.float32)
         scalars_input = Input(shape=(self.scalars,), name='scalars_hl_input', dtype=tf.float32)
         action_input = Input(shape=(), name='action_input', dtype=tf.int64)
         reward_hl_input = Input(shape=(), name='reward_hl_input', dtype=tf.float32)
@@ -110,14 +114,8 @@ class HL_DDQNAgent(object):
                      global_map_input,
                      scalars_input]
 
-        # map_cast_hl = tf.cast(boolean_map_input, dtype=tf.float32)
-        # padded_map_hl = tf.concat([map_cast_hl, float_map_input], axis=3)
-
-        # self.q_network_hl = self.build_model_hl(padded_map_hl, scalars_input, states_hl)
-        # self.target_network_hl = self.build_model_hl(padded_map_hl, scalars_input, states_hl, 'target_hl_')
-
         self.q_network_hl = self.build_hl_model(states_hl, self.params.path_to_local_pretrained_weights, 'soft_updated_hl_model_')
-        self.q_network_hl.summary()
+        # self.q_network_hl.summary()
         self.target_network_hl = self.build_hl_model(states_hl, 'target_hl_')
 
         # self.q_network_hl = self.build_dummy_model(states_hl)
@@ -125,19 +123,8 @@ class HL_DDQNAgent(object):
 
         self.hard_update_hl()
 
-        # if self.params.use_global_local:
-        #     self.global_map_model = Model(inputs=[boolean_map_input, float_map_input],
-        #                                   outputs=self.global_map)
-        #     self.local_map_hl_model = Model(inputs=[boolean_map_input, float_map_input],
-        #                                     outputs=self.local_map)
-        #     self.total_map_model_hl = Model(inputs=[boolean_map_input, float_map_input],
-        #                                     outputs=self.total_map_hl)
-
         q_values_hl = self.q_network_hl.output
-        # tf.debugging.assert_all_finite(q_values_hl, message='Nan in qvalues')
-        # print(q_values_hl.shape)
         q_target_values_hl = self.target_network_hl.output
-        # print(q_target_values_hl.shape)
 
         ########## HIGH-Level Agent ##############
 
@@ -410,8 +397,8 @@ class HL_DDQNAgent(object):
         goal = goal.numpy()[0]
         # goal = tf.one_hot(goal, depth=self.num_actions_hl)
 
-        print(f'goal: {goal}')
-        print(f'qval: {q[0].numpy()[goal]}')
+        # print(f'goal: {goal}')
+        # print(f'qval: {q[0].numpy()[goal]}')
         # highest_qval = q[a]
         # print(f'highest qval: {highest_qval}')
 
@@ -446,13 +433,13 @@ class HL_DDQNAgent(object):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
         p = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in).numpy()[0]
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
-        print(f'choosen act: {a}')
+        # print(f'choosen act: {a}')
         return a
 
-    # @tf.function
+    @tf.function
     def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars_in):
         p, q, max = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in])
-        print(f' sum Q vals: {tf.reduce_sum(q)}')
+        # print(f' sum Q vals: {tf.reduce_sum(q)}')
               #f'\nHighest IDX: {max}\nhighest prob idx: {np.argmax(p.numpy()[0])}')
         tf.debugging.assert_all_finite(p, message='Nan in soft explore output')
         return p
@@ -498,7 +485,7 @@ class HL_DDQNAgent(object):
         #     self.counter = 1
         # self.counter += 1
 
-    # @tf.function
+    @tf.function
     def _train_hl(self, local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                   next_scalars):
         self.training=True

@@ -7,7 +7,7 @@ class H_CPPRewardParams(GridRewardParams):
     def __init__(self):
         super().__init__()
         self.cell_multiplier = 0.4
-        self.cell_multiplier_ll = 1
+        self.cell_multiplier_ll = 2
         self.invalid_goal_penalty = 1.
         self.goal_reached_bonus = 1.
 
@@ -98,5 +98,7 @@ class H_CPPRewards(GridRewards):
         # Penalize battery dead
         if next_state.current_ll_mb == 0 and not next_state.landed:
             reward -= self.params.empty_battery_penalty
+
+        reward = reward/10
 
         return reward

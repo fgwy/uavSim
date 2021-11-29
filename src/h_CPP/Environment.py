@@ -72,6 +72,8 @@ class H_CPPEnvironment(BaseEnvironment):
         """
         display_trajectory = []
         display_trajectory.append(copy.deepcopy(self.physics.state))
+        
+        cumulative_reward_h = 0
 
         while not self.physics.state.is_terminal():
             goal, goal_idx, try_landing = self.agent_manager.generate_goal(self.physics.state, random=random_h,

@@ -11,11 +11,11 @@ def print_node(x):
     print(x)
     return x
 
-def myswish_beta(x):
-    beta = tf.Variable(initial_value=1.0, trainable=True, name='swish_beta')
-    return x*tf.nn.sigmoid(beta*x) #trainable parameter beta
+# def myswish_beta(x):
+#    beta = tf.Variable(initial_value=1.0, trainable=True, name='swish_beta')
+#    return x*tf.nn.sigmoid(beta*x) #trainable parameter beta
 
-get_custom_objects().update({'swish': Activation(myswish_beta)})
+# get_custom_objects().update({'swish': Activation(myswish_beta)})
 
 
 def identify_idx_highest_val_in_tensor(tensor):

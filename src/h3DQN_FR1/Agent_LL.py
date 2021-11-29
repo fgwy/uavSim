@@ -244,10 +244,10 @@ class LL_DDQNAgent(object):
         self.q_optimizer_ll.apply_gradients(zip(q_grads, self.q_network_ll.trainable_variables))
 
     def save_weights_ll(self, path_to_weights):
-        self.target_network_ll.save_weights(path_to_weights)
+        self.target_network_ll.save_weights(path_to_weights + '-ll_weights')
 
     def save_model_ll(self, path_to_model):
-        self.target_network_ll.save(path_to_model)
+        self.target_network_ll.save(path_to_model + '-ll_model')
 
     def load_weights_ll(self, path_to_weights):
         self.q_network_ll.load_weights(path_to_weights)

@@ -11,11 +11,11 @@ def print_node(x):
     print(x)
     return x
 
-# def myswish_beta(x):
-#    beta = tf.Variable(initial_value=1.0, trainable=True, name='swish_beta')
-#    return x*tf.nn.sigmoid(beta*x) #trainable parameter beta
+def myswish_beta(x):
+   beta = tf.Variable(initial_value=1.0, trainable=True, name='swish_beta')
+   return x*tf.nn.sigmoid(beta*x) #trainable parameter beta
 
-# get_custom_objects().update({'swish': Activation(myswish_beta)})
+
 
 
 def identify_idx_highest_val_in_tensor(tensor):
@@ -80,6 +80,9 @@ class HL_DDQNAgent(object):
         self.params = params
         gamma = tf.constant(self.params.gamma, dtype=float)
         self.align_counter = 0
+
+        # create custom swish
+        # get_custom_objects().update({'swish': Activation(myswish_beta)})
 
         self.training = False
 
@@ -199,23 +202,23 @@ class HL_DDQNAgent(object):
         '''
 
         local_map_in, global_map_in, states_proc_in = states_in
-        local_map_in_sg = tf.stop_gradient(local_map_in)
-        global_map_in_sg = tf.stop_gradient(global_map_in)
-        states_proc_in_sg = tf.stop_gradient(states_proc_in)
+        # local_map_in_sg = tf.stop_gradient(local_map_in)
+        # global_map_in_sg = tf.stop_gradient(global_map_in)
+        # states_proc_in_sg = tf.stop_gradient(states_proc_in)
 
-        states_proc = states_proc_in_sg / self.initial_mb + 1e-6
+        states_proc = states_proc_in / self.initial_mb + 1e-6
 
-        self.local_map_model = self.build_lm_preproc_model(local_map_in_sg, name)
+        self.local_map_model = self.build_lm_preproc_model(local_map_in, name)
         if self.params.use_pretrained_local_map_preproc:
             self.local_map_model.load_weights(path_to_weights=path_to_local_pretrained_weights)
-        flatten_local, local_map_2, local_map_3, local_map_4 = self.local_map_model(local_map_in_sg)
+        flatten_local, local_map_2, local_map_3, local_map_4 = self.local_map_model(local_map_in)
 
 
         # global map processing layers
 
         global_map_1 = tf.keras.layers.Conv2D(4, 5, activation='swish',
                                               strides=(1, 1),
-                                              name=name + 'global_conv_' + str(0 + 1))(global_map_in_sg)  # out:17
+                                              name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
         norm = tf.keras.layers.BatchNormalization()(global_map_1)
         global_map_2 = tf.keras.layers.Conv2D(8, 5, activation='swish',
                                               strides=(1, 1),
@@ -510,10 +513,10 @@ class HL_DDQNAgent(object):
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
 
     def save_weights_hl(self, path_to_weights):
-        self.target_network_hl.save_weights(path_to_weights)
+        self.target_network_hl.save_weights(path_to_weights + 'hl_weights')
 
     def save_model_hl(self, path_to_model):
-        self.target_network_hl.save(path_to_model)
+        self.target_network_hl.save(path_to_model + 'hl_model')
 
     def load_weights_hl(self, path_to_weights):
         self.q_network_hl.load_weights(path_to_weights)

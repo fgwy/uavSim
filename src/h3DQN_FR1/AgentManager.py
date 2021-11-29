@@ -177,3 +177,9 @@ class AgentManager():
             self.agent_ll.save_model_ll(path)
         if not self.params.pretrain_ll:
             self.agent_hl.save_model_hl(path)
+
+    def save_weights(self, path):
+        if not self.trainer.params.use_astar:
+            self.agent_ll.save_weights_ll(path)
+        if not self.params.pretrain_ll:
+            self.agent_hl.save_weights_hl(path)

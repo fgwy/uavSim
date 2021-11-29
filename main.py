@@ -51,11 +51,11 @@ if __name__ == "__main__":
 
     if args.generate_config:
         if args.h_cpp:
-            generate_config(H_CPPEnvironmentParams(), "config/h_cpp.json")
+            generate_config(H_CPPEnvironmentParams(), "config/old_configs/h_cpp.json")
         elif args.dh:
-            generate_config(DHEnvironmentParams(), "config/dh.json")
+            generate_config(DHEnvironmentParams(), "config/old_configs/dh.json")
         elif args.cpp:
-            generate_config(CPPEnvironmentParams(), "config/cpp.json")
+            generate_config(CPPEnvironmentParams(), "config/old_configs/cpp.json")
         else:
             print("Specify which config to generate, DH or CPP")
         exit(0)

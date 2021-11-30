@@ -28,6 +28,11 @@ def generate_config(params, file_path):
     f.close()
 
 
+def save_json_to_logs(params, path):
+    with open(f'{path}config.json', 'w', encoding='utf-8') as f:
+        json.dump(params, f, ensure_ascii=False, indent=4)
+
+
 def read_config(config_path):
     print('Parse Params file here from ', config_path, ' and pass into main')
     json_data = open(config_path, "r").read()

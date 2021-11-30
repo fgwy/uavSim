@@ -76,6 +76,8 @@ if __name__ == "__main__":
         params.model_stats_params.save_model = "models/" + args.id
         params.model_stats_params.log_file_name = args.id
 
+    # save_json_to_logs(params, params.model_stats_params.save_model + f'{params.model_stats_params.log_file_name}/')
+
 
     # if args.cpp:
     #     main_cpp(params)

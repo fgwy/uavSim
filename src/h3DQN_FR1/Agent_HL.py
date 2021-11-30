@@ -513,10 +513,10 @@ class HL_DDQNAgent(object):
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
 
     def save_weights_hl(self, path_to_weights):
-        self.target_network_hl.save_weights(path_to_weights + 'hl_weights')
+        self.target_network_hl.save_weights(path_to_weights + '-hl_weights')
 
     def save_model_hl(self, path_to_model):
-        self.target_network_hl.save(path_to_model + 'hl_model')
+        self.target_network_hl.save(path_to_model + '-hl_model')
 
     def load_weights_hl(self, path_to_weights):
         self.q_network_hl.load_weights(path_to_weights)

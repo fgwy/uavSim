@@ -63,6 +63,7 @@ class H_CPPEnvironment(BaseEnvironment):
             self.stats.save_if_best()
 
             self.episode_count += 1
+
         self.agent_manager.save_weights(self.stats.params.save_model + 'end')
         self.agent_manager.save_models(self.stats.params.save_model + 'end')
         self.stats.training_ended()
@@ -109,8 +110,10 @@ class H_CPPEnvironment(BaseEnvironment):
         if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0:
             self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
                                        name=self.stats.params.log_file_name)
-            self.agent_manager.save_weights(self.stats.params.save_model + str(episode_num))
-            self.agent_manager.save_models(self.stats.params.save_model + str(episode_num))
+
+            if test:
+                self.agent_manager.save_weights(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}')
+                self.agent_manager.save_models(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}')
 
 
 

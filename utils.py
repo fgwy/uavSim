@@ -1,5 +1,6 @@
 import distutils
 import json
+import os
 
 from types import SimpleNamespace as Namespace
 
@@ -29,9 +30,14 @@ def generate_config(params, file_path):
 
 
 def save_json_to_logs(params, path):
+    try:
+        os.mkdir(path)
+    except:
+        pass
     with open(f'{path}config.json', 'w', encoding='utf-8') as f:
-        json.dump(params, f, ensure_ascii=False, indent=4)
-
+        json_data = json.dumps(params.__dict__, default=lambda o: o.__dict__, indent=4)
+        # json.dump(json_data, f, ensure_ascii=False, indent=4)
+        f.write(json_data)
 
 def read_config(config_path):
     print('Parse Params file here from ', config_path, ' and pass into main')

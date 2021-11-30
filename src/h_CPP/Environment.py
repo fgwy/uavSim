@@ -76,6 +76,7 @@ class H_CPPEnvironment(BaseEnvironment):
         display_trajectory.append(copy.deepcopy(self.physics.state))
         
         cumulative_reward_h = 0
+        tried_landing_and_succeeded = False
 
         while not self.physics.state.is_terminal():
             goal, goal_idx, try_landing = self.agent_manager.generate_goal(self.physics.state, random=random_h,
@@ -107,9 +108,9 @@ class H_CPPEnvironment(BaseEnvironment):
                                                              copy.deepcopy(self.physics.state))
                 self.agent_manager.trainer.train_h()
 
-        if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0:
+        if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded:
             self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
-                                       name=self.stats.params.log_file_name)
+                                       name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h)
 
             if test:
                 self.agent_manager.save_weights(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}')
@@ -130,11 +131,12 @@ class H_CPPEnvironment(BaseEnvironment):
             bar.update(self.step_count - last_step)  # todo check this insanity
             last_step = self.step_count
             if try_landing:
-                print(f'########## tried landing! action: {GridActions(4)}')
                 action = 4  # Landing action
                 self.physics.step(GridActions(action))
                 next_state = self.physics.set_terminal_h(True)
                 tried_landing_and_succeeded = next_state.landed
+                if tried_landing_and_succeeded:
+                    print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {GridActions(4)}')
             elif not valid:
                 action = 5  # Hover such that state changes (mb is decreased and different goal generated)
                 self.physics.step(GridActions(action))

@@ -13,6 +13,10 @@ class h_CPPDisplay(CPPDisplay):
     def __init__(self):
         super().__init__()
         self.my_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../logs/plots/')
+        try:
+            os.mkdir(self.my_path)
+        except:
+            print("Dir already present")
 
     def plot_map(self, state, terminal=False): # , h_target_idx):
 
@@ -51,7 +55,7 @@ class h_CPPDisplay(CPPDisplay):
 
 
 
-    def save_plot_map(self, trajectory, episode_num, testing, name): # TODO: save a plot of a whole episode in one map with trail etc..
+    def save_plot_map(self, trajectory, episode_num, testing, name, las, cum_rew): # TODO: save a plot of a whole episode in one map with trail etc..
         state = trajectory[0]
         ending_state = trajectory[-1]
         positions = []
@@ -65,7 +69,7 @@ class h_CPPDisplay(CPPDisplay):
         colors = 'white blue green red yellow cyan'.split()
         cmap = mtplt.colors.ListedColormap(colors, name='colors', N=None)
 
-        fig, axs = plt.subplots(1,2)
+        fig, axs = plt.subplots(1,2, tight_layout=True)
         fig.suptitle(f'Episode: {episode_num}')
 
         data = state.no_fly_zone
@@ -93,13 +97,13 @@ class h_CPPDisplay(CPPDisplay):
         for i in range(len(trajectory)):
             data_end += trajectory[i].h_target*2
 
-        textstr = f'Ended by landing: {ending_state.landed} \nMode: {val}'
+        textstr = f'Ended by landing: {ending_state.landed} \nMode: {val}\nLAS: {las}\nCumulative_reward: {cum_rew}'
 
         # these are matplotlib.patch.Patch properties
         props = dict(boxstyle='round', facecolor='white', alpha=0.5)
 
         # place a text box in upper left in axes coords
-        plt.text(-40, -20, textstr, fontsize=11,
+        plt.text(-70, 60, textstr, fontsize=11,
                  verticalalignment='top', bbox=props)  # transform=plt.transAxes,
         plt.subplots_adjust(left=0.3)
 
@@ -108,6 +112,20 @@ class h_CPPDisplay(CPPDisplay):
         axs[0].set_title('First State')
         axs[1].set_title('Ending State')
 
-        my_file = f'{name}_{val}_ep{episode_num}.png'
-        plt.savefig(os.path.join(self.my_path, my_file), dpi=600)
+        if not las:
+            my_file = f'{name}/{val}_ep{episode_num}.png'
+        else:
+            my_file = f'{name}/{val}_ep{episode_num}_las_{las}.png'
+
+        path = os.path.join(self.my_path, my_file)
+        try:
+            plt.savefig(path, dpi=600)
+        except:
+            print(f"Path dosen't exist: {self.my_path}\nCreating New Path")
+            os.mkdir(self.my_path + name)
+            plt.savefig(path, dpi=600)
+            print(f"Created dir and saved Plots in: {path}")
+
+        else:
+            print(f"Saved Plots in: {path}")
         fig.clf()

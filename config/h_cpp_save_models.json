@@ -46,8 +46,8 @@
         "use_soft_max": true,
         "pretrain_ll": false,
         "use_ddqn": true,
-        "self.use_ddpg": false,
-        "self.use_ppo": false,
+        "use_ddpg": false,
+        "use_ppo": false,
         "h_trainer": {
             "batch_size_h": 128,
             "batch_size_l": 128,

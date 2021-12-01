@@ -21,7 +21,8 @@ class H_CPPScenario:
 class H_CPPState(CPPState):
     def __init__(self, map_init: Map):
         super().__init__(map_init)
-        self.h_target = np.zeros((17, 17))
+        self.h_target = np.zeros_like(self.landing_zone)
+        print(self.h_target.shape)
         self.initial_h_target_cell_count = 0
         self.h_coverage = 0
         self.initial_ll_movement_budget = 30

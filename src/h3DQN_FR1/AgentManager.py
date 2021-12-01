@@ -152,16 +152,16 @@ class AgentManager():
 
         return self.current_goal, self.current_goal_idx, try_landing
 
-    def preproc_goal(self, state):
+    def preproc_goal(self, goal, state):
         """
 
         :param state: goal already padded to total size (to enable comparison to view and
         :return: PROCESSED GOAL
         """
         view = ~self.camera.computeView(state.position, 0) * 1
-        goal = state.h_target*1 * view
+        goal = goal * view
         goal *= ~state.no_fly_zone * 1
-        goal *= ~state.obstacles * 1
+        # goal *= ~state.obstacles * 1
         return goal
 
     def act_l(self, state, steps_in_smdp, exploit=False, random=False, use_astar=False):

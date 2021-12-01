@@ -35,7 +35,7 @@ class H_CPPState(CPPState):
     def reset_h_target(self, h_target):
 
         # print(h_target)
-        self.h_target = self.pad_lm_to_total_size(h_target)
+        # self.h_target = self.pad_lm_to_total_size(h_target)
         self.initial_h_target_cell_count = np.sum(self.h_target)
         # print(self.initial_h_target_cell_count)
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)

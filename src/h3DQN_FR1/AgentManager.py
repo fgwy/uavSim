@@ -152,6 +152,18 @@ class AgentManager():
 
         return self.current_goal, self.current_goal_idx, try_landing
 
+    def preproc_goal(self, state):
+        """
+
+        :param state: goal already padded to total size (to enable comparison to view and
+        :return: PROCESSED GOAL
+        """
+        view = ~self.camera.computeView(state.position, 0) * 1
+        goal = state.h_target*1 * view
+        goal *= ~state.no_fly_zone * 1
+        goal *= ~state.obstacles * 1
+        return goal
+
     def act_l(self, state, steps_in_smdp, exploit=False, random=False, use_astar=False):
         # print('########### act_l ################')
         if random:
@@ -166,11 +178,13 @@ class AgentManager():
             return self.agent_ll.get_soft_max_exploration(state)
 
     def check_valid_target(self, state):
+        total_goal = state.h_target * 1
         if self.multigoal:
-
+            inside_bounds = bool(np.sum(total_goal))
+            valid = inside_bounds
         else:
             # total_goal = state.pad_lm_to_total_size(target_lm)
-            total_goal = state.h_target * 1
+
             # if np.sum(total_goal) == 0:
             #     print('######################## Goal Not Valid ####################################')
             #     return False

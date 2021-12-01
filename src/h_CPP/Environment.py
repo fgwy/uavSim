@@ -81,6 +81,8 @@ class H_CPPEnvironment(BaseEnvironment):
         while not self.physics.state.is_terminal():
             goal, goal_idx, try_landing = self.agent_manager.generate_goal(self.physics.state, random=random_h,
                                                                            exploit=test)
+            goal = self.physics.state.pad_lm_to_total_size(goal)
+            goal = self.agent_manager.preproc_goal(copy.deepcopy(self.physics.state))
             self.physics.reset_h_target(goal)
             valid = self.agent_manager.check_valid_target(self.physics.state) or try_landing
 

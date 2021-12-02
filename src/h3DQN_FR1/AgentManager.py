@@ -15,6 +15,9 @@ class AgentManager_Params():
         self.hierarchical = True
         self.use_soft_max = True
         self.pretrain_ll = False
+        self.use_ddqn = True
+        self.use_ddpg = False
+        self.use_ppo = False
         self.h_trainer = H_DDQNTrainerParams()
         self.ll_agent = LL_DDQNAgentParams()
         self.hl_agent = HL_DDQNAgentParams()
@@ -32,6 +35,11 @@ class AgentManager():
         self.trainer = H_DDQNTrainer(self.trainer_params, self.agent_ll, self.agent_hl)
         # self.rewards = H_CPPRewards(H_CPPRewardParams(), self.stats)
         self.astar = A_star()
+
+        if self.params.use_ppo or self.params.use_ddpg:
+            self.multigoal = True
+        else:
+            self.multigoal = False
 
         self.next_state_hl = None
         self.state_hl = None
@@ -109,6 +117,20 @@ class AgentManager():
     #     return self.step(state, exploit=True)
 
     def generate_goal(self, state=None, exploit=False, random=False):
+        if self.params.use_ddqn:
+            return self.generate_goal_ddqn(state, exploit, random)
+        elif self.params.use_ddpg:
+            return self.generate_goal_ddpg(state, exploit, random)
+        elif self.params.use_ppo:
+            return self.generate_goal_ppo(state, exploit, random)
+
+    def generate_goal_ppo(self, state, exploit, random):
+        pass
+
+    def generate_goal_ddpg(self, state, exploit, random):
+        pass
+
+    def generate_goal_ddqn(self, state, exploit, random):
         try_landing = False
         if random:
             self.current_goal_idx = self.agent_hl.get_random_goal()
@@ -130,6 +152,18 @@ class AgentManager():
 
         return self.current_goal, self.current_goal_idx, try_landing
 
+    def preproc_goal(self, goal, state):
+        """
+
+        :param state: goal already padded to total size (to enable comparison to view and
+        :return: PROCESSED GOAL
+        """
+        view = ~self.camera.computeView(state.position, 0) * 1
+        goal = goal * view
+        goal *= ~state.no_fly_zone * 1
+        # goal *= ~state.obstacles * 1
+        return goal
+
     def act_l(self, state, steps_in_smdp, exploit=False, random=False, use_astar=False):
         # print('########### act_l ################')
         if random:
@@ -144,28 +178,33 @@ class AgentManager():
             return self.agent_ll.get_soft_max_exploration(state)
 
     def check_valid_target(self, state):
-        # total_goal = state.pad_lm_to_total_size(target_lm)
         total_goal = state.h_target * 1
-        # if np.sum(total_goal) == 0:
-        #     print('######################## Goal Not Valid ####################################')
-        #     return False
-        # nfz = np.logical_not(state.no_fly_zone)
-        # obs = np.logical_not(state.obstacles)
+        if self.multigoal:
+            inside_bounds = bool(np.sum(total_goal))
+            valid = inside_bounds
+        else:
+            # total_goal = state.pad_lm_to_total_size(target_lm)
 
-        view = self.camera.computeView(state.position, 0)
-        nfz = state.no_fly_zone * 1
-        obs = state.obstacles * 1
-        on_nfz = np.any(total_goal * nfz) == 1
-        on_obs = np.any(total_goal * obs) == 1
-        inside_bounds = bool(np.sum(total_goal))
-        on_position = np.any(total_goal * view) == 1
-        valid = not on_nfz and not on_obs and inside_bounds and not on_position
-        # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
-        # print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')
+            # if np.sum(total_goal) == 0:
+            #     print('######################## Goal Not Valid ####################################')
+            #     return False
+            # nfz = np.logical_not(state.no_fly_zone)
+            # obs = np.logical_not(state.obstacles)
 
-        if not valid:
-            # print('######################## Goal Not Valid ####################################')
-            pass
+            view = self.camera.computeView(state.position, 0)
+            nfz = state.no_fly_zone * 1
+            obs = state.obstacles * 1
+            on_nfz = np.any(total_goal * nfz) == 1
+            on_obs = np.any(total_goal * obs) == 1
+            inside_bounds = bool(np.sum(total_goal))
+            on_position = np.any(total_goal * view) == 1
+            valid = not on_nfz and not on_obs and inside_bounds and not on_position
+            # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
+            # print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')
+
+            if not valid:
+                # print('######################## Goal Not Valid ####################################')
+                pass
         return valid
 
     def find_h_target_idx(self, state):

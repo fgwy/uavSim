@@ -39,8 +39,9 @@ class H_CPPGrid(BaseGrid):
                                                   #high=self.params.movement_range_ll[1] + 1)
 
         state.initial_movement_budget = state.movement_budget
-        state.reset_h_target(np.zeros((self.params.local_map_size, self.params.local_map_size)))
+        # state.reset_h_target(np.zeros((self.params.local_map_size, self.params.local_map_size)))
         # state.initial_ll_movement_budget = state.current_ll_mb
+        state.reset_h_target(np.zeros_like(self.target_zone))
         state.landed = False
         state.terminal = False
 
@@ -64,7 +65,8 @@ class H_CPPGrid(BaseGrid):
     def get_example_state(self):
         state = H_CPPState(self.map_image)
         state.reset_target(self.target_zone)
-        state.reset_h_target(np.zeros((self.params.local_map_size, self.params.local_map_size)))
+        # state.reset_h_target(np.zeros((self.params.local_map_size, self.params.local_map_size)))
+        state.reset_h_target(np.zeros_like(self.target_zone))
         state.position = [0, 0]
         state.movement_budget = self.params.movement_range[1]
         state.initial_movement_budget = self.params.movement_range[1]

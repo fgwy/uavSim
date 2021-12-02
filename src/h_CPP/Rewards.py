@@ -36,10 +36,10 @@ class H_CPPRewards(GridRewards):
             # print(f'Landing reward: passing {landed_and_succeded}')
             pass
         elif tried_landing_and_succeeded == True:
-            print(f'Landing reward: succeded {tried_landing_and_succeeded}')
-            # reward += 2
+            # print(f'Landing reward: succeded {tried_landing_and_succeeded}')
+            reward += self.params.goal_reached_bonus
         elif tried_landing_and_succeeded == False:
-            print(f'Landing reward: failed {tried_landing_and_succeeded}')
+            # print(f'Landing reward: failed {tried_landing_and_succeeded}')
             reward -= self.params.boundary_penalty
 
         if next_state.movement_budget == 0 and not next_state.landed:

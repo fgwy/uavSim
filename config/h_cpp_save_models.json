@@ -4,7 +4,7 @@
         "moving_average_length": 200,
         "log_file_name": "2021-2911-full-h_softmax",
         "training_images": false,
-        "draw": false
+        "draw": true
     },
     "grid_params": {
         "movement_range": [
@@ -46,14 +46,14 @@
         "use_soft_max": true,
         "pretrain_ll": false,
         "h_trainer": {
-            "batch_size_h": 128,
+            "batch_size_h": 256,
             "batch_size_l": 128,
             "num_steps": 1000000.0,
             "rm_pre_fill_ratio": 0.5,
             "rm_pre_fill_random": true,
-            "eval_period": 50,
+            "eval_period": 100,
             "rm_size_ll": 50000,
-            "rm_size_hl": 50000,
+            "rm_size_hl": 100000,
             "load_model": "",
             "use_astar": false,
             "rm_pre_fill_multiplier_ll": 10,

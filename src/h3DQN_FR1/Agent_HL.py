@@ -1,4 +1,5 @@
 import tensorflow as tf
+import math
 
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, AvgPool2D, Reshape, Activation
@@ -15,8 +16,7 @@ def myswish_beta(x):
    beta = tf.Variable(initial_value=1.0, trainable=True, name='swish_beta')
    return x*tf.nn.sigmoid(beta*x) #trainable parameter beta
 
-
-
+# get_custom_objects().update({'swish': Activation(myswish_beta)})
 
 def identify_idx_highest_val_in_tensor(tensor):
     return tf.math.argmax(tensor)
@@ -58,7 +58,7 @@ class HL_DDQNAgentParams:
         # Global-Local Map
         self.use_global_local = True
         self.global_map_scaling = 3
-        self.local_map_size = 17
+        self.goal_size = 17
 
         # Printing
         self.print_summary = False
@@ -98,7 +98,7 @@ class HL_DDQNAgent(object):
         self.float_map_shape = example_state.get_float_map_shape()
         self.scalars = example_state.get_num_scalars()
         self.goal_target_shape = example_state.get_goal_target_shape()
-        self.num_actions_hl = (self.params.local_map_size ** 2) + 1
+        self.num_actions_hl = (self.params.goal_size ** 2) + 1
         self.example_goal = example_state.get_example_goal()
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
         self.local_map_shape = example_state.get_local_map_shape()
@@ -300,8 +300,11 @@ class HL_DDQNAgent(object):
             deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
                                                        name=name + 'deconv_' + str(4), dtype=tf.float64)(norm)
 
+        # TODO: central crop of size goal_size
+        crop_frac = float(self.params.goal_size) / float(self.local_map_shape[0])
+        crop = tf.image.central_crop(deconv_4, crop_frac)
 
-        flatten_deconv = tf.keras.layers.Flatten(name=name + 'deconv_flatten')(deconv_4)
+        flatten_deconv = tf.keras.layers.Flatten(name=name + 'deconv_flatten')(crop)
         adv = tf.keras.layers.Concatenate(name=name + 'concat_final')([flatten_deconv, landing])
         # adv = tf.keras.layers.BatchNormalization(name=name + 'final_norm')(adv)
         advAverage = tf.reduce_mean(adv, axis=1, keepdims=True)
@@ -379,12 +382,13 @@ class HL_DDQNAgent(object):
         return model
 
     def get_softmax_goal(self, state):
-        goal = self.get_soft_max_exploration(state)
+        goal, q = self.get_soft_max_exploration(state)
         # print(f'### soft goal:{goal}')
-        return goal
+        return goal, q
 
     def get_random_goal(self):
-        arr = np.zeros(self.params.local_map_size)
+        self.zeros = np.zeros(self.params.goal_size)
+        arr = self.zeros
         arr[:1] = 1
         np.random.shuffle(arr)
         # print('rand goal:', arr.shape)
@@ -398,6 +402,7 @@ class HL_DDQNAgent(object):
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         goal, q = self._get_exploitation_goal(local_map_in, global_map_in, scalars) #.numpy()[0]
         goal = goal.numpy()[0]
+        q = q.numpy()[0]
         # goal = tf.one_hot(goal, depth=self.num_actions_hl)
 
         # print(f'goal: {goal}')
@@ -405,7 +410,7 @@ class HL_DDQNAgent(object):
         # highest_qval = q[a]
         # print(f'highest qval: {highest_qval}')
 
-        return goal
+        return (goal, q)
 
     @tf.function
     def _get_exploitation_goal(self, local_map_in, global_map_in, scalars):
@@ -434,10 +439,33 @@ class HL_DDQNAgent(object):
         #     print(f'sum inputs: {tf.reduce_sum(local_map_in)} {tf.reduce_sum(global_map_in)} {tf.reduce_sum(scalars_in)/self.initial_mb}')
         if np.any(np.isnan(local_map_in)) or np.any(np.isnan(global_map_in)) or np.any(np.isnan(scalars_in)):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
-        p = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in).numpy()[0]
+        p, q = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in)
+        p = p.numpy()[0]
+        # p_land = np.asarray(p[-1])
+        p_land = [p[-1]]
+        print(p_land)
+        p_val = p[:-1]
+
+        ### put -inf on view
+        p = p_val.reshape((self.params.goal_size, self.params.goal_size))
+        view = 5
+        helper0 = int((p.shape[0]-1)/2 - (view-1)/2)
+        helper1 = int((p.shape[1]-1)/2 - (view-1)/2) # beginning of mask for each dim
+        for i in range(view):
+            for j in range(view):
+                # p[i+helper0][j+helper1] = - math.inf
+                p[i+helper0][j+helper1] = 0
+        p = p.flatten()
+
+        # print(f'sizes: {p.shape} {p_land.shape}')
+        p = np.concatenate((p, p_land))
+        p = p / np.linalg.norm(p, ord=1)
+        print(sum(p))
+        q = q.numpy()[0]
+        p.squeeze()
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
         # print(f'choosen act: {a}')
-        return a
+        return a, q
 
     @tf.function
     def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars_in):
@@ -445,7 +473,7 @@ class HL_DDQNAgent(object):
         # print(f' sum Q vals: {tf.reduce_sum(q)}')
               #f'\nHighest IDX: {max}\nhighest prob idx: {np.argmax(p.numpy()[0])}')
         tf.debugging.assert_all_finite(p, message='Nan in soft explore output')
-        return p
+        return p, q
 
     def hard_update_hl(self):
         self.target_network_hl.set_weights(self.q_network_hl.get_weights())
@@ -472,10 +500,10 @@ class HL_DDQNAgent(object):
         next_global_map = tf.convert_to_tensor(experiences[6], dtype=tf.float64)
         next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float64)
         terminated = tf.convert_to_tensor(experiences[8])
-        if self.var ==True:
-            for i in range(len(experiences)):
-                print(f'experiences {i}: {experiences[i]}')
-            self.var = False
+        # if self.var ==True:
+        #     for i in range(len(experiences)):
+        #         print(f'experiences {i}: {experiences[i]}')
+        #     self.var = False
 
         self._train_hl(local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                        next_scalars)

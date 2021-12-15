@@ -30,13 +30,18 @@ class H_CPPEnvironment(BaseEnvironment):
         self.display = h_CPPDisplay()
         super().__init__(params, self.display)
         self.params = params
+
         self.grid = H_CPPGrid(params.grid_params, self.stats)
+        self.example_state = self.grid.get_example_state()
         self.rewards = H_CPPRewards(params.reward_params, stats=self.stats)
         self.physics = H_CPPPhysics(params=params.physics_params, stats=self.stats)
         self.agent_manager = AgentManager(params.agent_params, camera=self.physics.camera,
-                                          example_state=self.grid.get_example_state(),
+                                          example_state=self.example_state,
                                           example_action=self.physics.get_example_action(),
                                           stats=self.stats)
+        # self.display.init_plt(self.example_state)
+        # super().__init__(params, self.display)
+        self.hl_steps = 0
 
         # self.random = False
 
@@ -47,7 +52,8 @@ class H_CPPEnvironment(BaseEnvironment):
         bar = tqdm.tqdm(total=int(self.agent_manager.trainer.params.num_steps))
         last_step = 0
 
-        while self.step_count < self.agent_manager.trainer.params.num_steps:
+        # while self.step_count < self.agent_manager.trainer.params.num_steps:
+        while self.hl_steps < self.agent_manager.trainer.params.num_steps:
             print(
                 f'\nepisode count: {self.episode_count}, eval period: {self.agent_manager.trainer.params.eval_period}, draw: {self.stats.params.draw}')
             state = copy.deepcopy(self.init_episode())
@@ -79,11 +85,15 @@ class H_CPPEnvironment(BaseEnvironment):
         tried_landing_and_succeeded = False
 
         while not self.physics.state.is_terminal():
-            goal, goal_idx, try_landing = self.agent_manager.generate_goal(self.physics.state, random=random_h,
+            goal, goal_idx, try_landing, q = self.agent_manager.generate_goal(self.physics.state, random=random_h,
                                                                            exploit=test)
+            # print(f'goal before padding: {np.sum(goal * 1)}')
             goal = self.physics.state.pad_lm_to_total_size(goal)
-            goal = self.agent_manager.preproc_goal(goal, copy.deepcopy(self.physics.state))
-            self.physics.reset_h_target(goal)
+            # print(f'goal before preproc env: {np.sum(goal * 1)}')
+            # goal = self.agent_manager.preproc_goal(goal, copy.deepcopy(self.physics.state))
+            # print(f'goal before resetting: {np.sum(goal * 1)}')
+            state = self.physics.reset_h_target(goal)
+            # print(f'goal before chack validity: {np.sum(state.h_target * 1)}')
             valid = self.agent_manager.check_valid_target(self.physics.state) or try_landing
 
             state_h = copy.deepcopy(self.physics.state)
@@ -100,7 +110,9 @@ class H_CPPEnvironment(BaseEnvironment):
             reward_h = self.rewards.calculate_reward_h(state_h, goal_idx, self.physics.state, valid,
                                                        tried_landing_and_succeeded)
 
-            cumulative_reward_h +=reward_h
+            cumulative_reward_h += reward_h
+
+            self.hl_steps += 1
 
             # print(f'reward_h: {reward_h}')
 
@@ -112,11 +124,12 @@ class H_CPPEnvironment(BaseEnvironment):
 
         if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded:
             self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
-                                       name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h)
+                                       name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h, hl_steps=self.hl_steps)
+            self.display.save_state_and_hm(state=state_h, q_vals=q, name=self.stats.params.log_file_name, episode_num=episode_num)
 
-            if test:
-                self.agent_manager.save_weights(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}')
-                self.agent_manager.save_models(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}')
+        if test:
+            self.agent_manager.save_weights(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}/')
+            self.agent_manager.save_models(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}/')
 
 
 
@@ -140,6 +153,7 @@ class H_CPPEnvironment(BaseEnvironment):
                 if tried_landing_and_succeeded:
                     print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {GridActions(4)}')
             elif not valid:
+                # print('invalid!')
                 action = 5  # Hover such that state changes (mb is decreased and different goal generated)
                 self.physics.step(GridActions(action))
                 next_state = self.physics.set_terminal_h(True)

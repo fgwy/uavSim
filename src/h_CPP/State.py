@@ -22,7 +22,7 @@ class H_CPPState(CPPState):
     def __init__(self, map_init: Map):
         super().__init__(map_init)
         self.h_target = np.zeros_like(self.landing_zone)
-        print(self.h_target.shape)
+        # print(self.h_target.shape)
         self.initial_h_target_cell_count = 0
         self.h_coverage = 0
         self.initial_ll_movement_budget = 30
@@ -34,16 +34,15 @@ class H_CPPState(CPPState):
         self.goal_covered = False
 
     def reset_h_target(self, h_target):
-
-        # print(h_target)
-        # self.h_target = self.pad_lm_to_total_size(h_target)
+        # if h_target.shape == self.get_boolean_map_shape():
+        #     self.h_target = h_target
+        # else:
+        self.h_target = self.pad_lm_to_total_size(h_target)
         self.initial_h_target_cell_count = np.sum(self.h_target)
-        # print(self.initial_h_target_cell_count)
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
         self.reset_ll_mb()
         self.set_terminal_h(False)
         self.goal_covered = False
-        # self.global_map = np.zeros_like(self.get_global_map(global))
 
     def pad_lm_to_total_size(self, h_target):
         """
@@ -52,21 +51,28 @@ class H_CPPState(CPPState):
 
         shape_map = self.landing_zone.shape[:2]
         shape_htarget = h_target.shape
-        if self.position == None:
-            x, y = 0, 0
+        # print(f"input shape: {h_target.shape}")
+        if shape_htarget == shape_map:
+            return h_target.astype(bool)
         else:
-            x, y = self.position
-        pad_left = x
-        pad_right = shape_map[0] - x - 1
-        pad_up = y
-        pad_down = shape_map[1] - y - 1
+            if self.position == None:
+                x, y = 0, 0
+            else:
+                x, y = self.position
+            pad_left = x
+            pad_right = shape_map[0] - x - 1
+            pad_up = y
+            pad_down = shape_map[1] - y - 1
 
-        padded = np.pad(h_target, ((pad_up, pad_down), (pad_left, pad_right)))
+            h_target = h_target*1
 
-        lm_as_tm_size = padded[int((shape_htarget[0] - 1) / 2):int(padded.shape[0] - (shape_htarget[0] - 1) / 2),
-                        int((shape_htarget[1] - 1) / 2):int(padded.shape[1] - (shape_htarget[1] - 1) / 2)]
+            padded = np.pad(h_target, ((pad_up, pad_down), (pad_left, pad_right)))
 
-        return lm_as_tm_size.astype(bool)
+            lm_as_tm_size = padded[int((shape_htarget[0] - 1) / 2):int(padded.shape[0] - (shape_htarget[0] - 1) / 2),
+                            int((shape_htarget[1] - 1) / 2):int(padded.shape[1] - (shape_htarget[1] - 1) / 2)]
+            # print(f"output shape: {lm_as_tm_size.shape}")
+
+            return lm_as_tm_size.astype(bool)
 
     def goal_not_active(self):
         return not self.goal_active

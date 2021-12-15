@@ -99,5 +99,6 @@ class H_CPPPhysics(GridPhysics):
         return self.landed
 
     def reset_h_target(self, goal):
+        goal = goal.astype(bool)
         self.state.reset_h_target(goal)
         return self.state

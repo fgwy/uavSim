@@ -1,4 +1,5 @@
 import tensorflow as tf
+import math
 
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, AvgPool2D, Reshape, Activation
@@ -6,13 +7,18 @@ import numpy as np
 # from tensorflow.keras.utils.generic_utils import get_custom_objects
 
 
-from src.h3DQN_FR1.models import build_hl_model, build_dummy_model
+# from src.h3DQN_FR1.models import build_hl_model, build_dummy_model
 
 
 def print_node(x):
     print(x)
     return x
 
+def myswish_beta(x):
+   beta = tf.Variable(initial_value=1.0, trainable=True, name='swish_beta')
+   return x*tf.nn.sigmoid(beta*x) #trainable parameter beta
+
+# get_custom_objects().update({'swish': Activation(myswish_beta)})
 
 def identify_idx_highest_val_in_tensor(tensor):
     return tf.math.argmax(tensor)
@@ -54,7 +60,7 @@ class HL_DDQNAgentParams:
         # Global-Local Map
         self.use_global_local = True
         self.global_map_scaling = 3
-        self.local_map_size = 17
+        self.goal_size = 17
 
         # Printing
         self.print_summary = False
@@ -94,7 +100,7 @@ class HL_DDQNAgent(object):
         self.float_map_shape = example_state.get_float_map_shape()
         self.scalars = example_state.get_num_scalars()
         self.goal_target_shape = example_state.get_goal_target_shape()
-        self.num_actions_hl = (self.params.local_map_size ** 2) + 1
+        self.num_actions_hl = (self.params.goal_size ** 2) + 1
         self.example_goal = example_state.get_example_goal()
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
         self.local_map_shape = example_state.get_local_map_shape()
@@ -173,13 +179,219 @@ class HL_DDQNAgent(object):
         if stats:
             stats.set_model(self.target_network_hl)
 
+
+    def build_dummy_model(self, states_in):
+        local_map_in, global_map_in, states_proc_in = states_in
+        states_proc = states_proc_in / self.initial_mb + 1e-6
+
+        local_map_proc = Flatten()(local_map_in)
+        local_map_proc = Dense(128)(local_map_proc)
+
+        global_map_proc = Flatten()(global_map_in)
+        global_map_proc = Dense(128)(global_map_proc)
+
+        concat = Concatenate()([local_map_proc, global_map_proc, states_proc])
+        out = Dense(self.num_actions_hl, activation='linear')(concat)
+        model = Model(inputs=states_in, outputs=out)
+        return model
+
+
+
+
+    def build_hl_model(self, states_in, path_to_local_pretrained_weights, name=''):  # local:17,17,4; global:21:21,4
+        '''
+         usage: model = build_hl_model(lm[tf.newaxis, ...], gm[tf.newaxis, ...], states_proc[tf.newaxis, ...])
+        '''
+
+        local_map_in, global_map_in, states_proc_in = states_in
+        # local_map_in_sg = tf.stop_gradient(local_map_in)
+        # global_map_in_sg = tf.stop_gradient(global_map_in)
+        # states_proc_in_sg = tf.stop_gradient(states_proc_in)
+
+        states_proc = states_proc_in / self.initial_mb + 1e-6
+
+        self.local_map_model = self.build_lm_preproc_model(local_map_in, name)
+        if self.params.use_pretrained_local_map_preproc:
+            self.local_map_model.load_weights(path_to_weights=path_to_local_pretrained_weights)
+        flatten_local, local_map_2, local_map_3, local_map_4 = self.local_map_model(local_map_in)
+
+
+        # global map processing layers
+
+        global_map_1 = tf.keras.layers.Conv2D(4, 5, activation='swish',
+                                              strides=(1, 1),
+                                              name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
+        norm = tf.keras.layers.BatchNormalization()(global_map_1)
+        global_map_2 = tf.keras.layers.Conv2D(8, 5, activation='swish',
+                                              strides=(1, 1),
+                                              name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
+        norm = tf.keras.layers.BatchNormalization()(global_map_2)
+        global_map_3 = tf.keras.layers.Conv2D(16, 5, activation='swish',
+                                              strides=(1, 1),
+                                              name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
+        norm = tf.keras.layers.BatchNormalization()(global_map_3)
+
+        flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
+
+        flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')([flatten_global, flatten_local, states_proc])
+
+        # layer = tf.keras.layers.Concatenate(name=name + 'concat')([flatten_map, states_proc_in])
+
+        layer_1 = tf.keras.layers.Dense(256, activation='swish', name=name + 'hidden_layer_all_hl_' + str(0))(
+            flatten_map)
+        norm = tf.keras.layers.BatchNormalization()(layer_1)
+        layer_2 = tf.keras.layers.Dense(256, activation='swish', name=name + 'hidden_layer_all_hl_' + str(1))(
+            norm)
+        norm = tf.keras.layers.BatchNormalization()(layer_2)
+        # layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
+        #     layer_1)
+
+        output = tf.keras.layers.Dense(units=300, activation='swish', name=name + 'last_dense_layer_hl')(
+            norm)
+        norm_out = tf.keras.layers.BatchNormalization()(output)
+
+        # value for dueling ddqn
+        val = tf.keras.layers.Dense(units=256, activation='swish', name=name + 'value_dense1')(norm)
+        val = tf.keras.layers.BatchNormalization()(val)
+        value = tf.keras.layers.Dense(units=1, activation='linear', name=name + 'value_out')(val)
+
+        reshape = tf.keras.layers.Reshape((5, 5, 12), name=name + 'last_dense_layer')(norm_out)
+
+        # landing = tf.keras.layers.Dense(units=128, activation='swish', name=name + 'landing_layer_proc_hl')(
+        #     layer_1)
+        landing = tf.keras.layers.Dense(units=1, activation='linear', name=name + 'landing_layer_hl')(norm)
+
+        # deconvolutional part aiming at 17x17
+        # self.dec_model = self.build_goal_decoder(reshape, local_map_2, local_map_3, local_map_4, name=name)
+        # deconv_4 = self.dec_model(reshape, local_map_2, local_map_3, local_map_4)
+
+        if self.params.use_skip:
+            deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='swish',
+                                                       name=name + 'deconv_' + str(1))(reshape)
+            skip_1 = tf.keras.layers.Concatenate(name=name + '1st_skip_connection_concat', axis=3)(
+                [deconv_1, local_map_4])
+            norm = tf.keras.layers.BatchNormalization()(skip_1)
+            deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
+                                                       name=name + 'deconv_' + str(2))(norm)
+            skip_2 = tf.keras.layers.Concatenate(name=name + '2nd_skip_connection_concat', axis=3)(
+                [deconv_2, local_map_3])
+            norm = tf.keras.layers.BatchNormalization()(skip_2)
+            deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='swish',
+                                                         name=name + 'deconv_' + str(2.1))(norm)
+            skip_3 = tf.keras.layers.Concatenate(name=name + '3rd_skip_connection_concat', axis=3)(
+                [deconv_2_1, local_map_2])
+            norm = tf.keras.layers.BatchNormalization()(skip_3)
+            deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='swish',
+                                                       name=name + 'deconv_' + str(3))(norm)
+            deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
+                                                       name=name + 'deconv_' + str(4))(deconv_3)
+
+        else:
+            deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='swish',
+                                                       name=name + 'deconv_' + str(1))(reshape)
+            norm = tf.keras.layers.BatchNormalization()(deconv_1)
+            deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
+                                                       name=name + 'deconv_' + str(2))(norm)
+            norm = tf.keras.layers.BatchNormalization()(deconv_2)
+            deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='swish',
+                                                         name=name + 'deconv_' + str(2.1))(norm)
+            norm = tf.keras.layers.BatchNormalization()(deconv_2_1)
+            deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='swish',
+                                                       name=name + 'deconv_' + str(3))(norm)
+            norm = tf.keras.layers.BatchNormalization()(deconv_3)
+            deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
+                                                       name=name + 'deconv_' + str(4), dtype=tf.float64)(norm)
+
+        # TODO: central crop of size goal_size
+        crop_frac = float(self.params.goal_size) / float(self.local_map_shape[0])
+        crop = tf.image.central_crop(deconv_4, crop_frac)
+
+        flatten_deconv = tf.keras.layers.Flatten(name=name + 'deconv_flatten')(crop)
+        adv = tf.keras.layers.Concatenate(name=name + 'concat_final')([flatten_deconv, landing])
+        # adv = tf.keras.layers.BatchNormalization(name=name + 'final_norm')(adv)
+        advAverage = tf.reduce_mean(adv, axis=1, keepdims=True)
+
+        Q_vals = value + tf.subtract(adv, advAverage)
+
+        model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
+        return model
+
+    # def build_goal_decoder(self, reshape, local_map_2, local_map_3, local_map_4, name=''):
+    #     if self.params.use_skip:
+    #         deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='swish',
+    #                                                    name=name + 'deconv_' + str(1))(reshape)
+    #         skip_1 = tf.keras.layers.Concatenate(name=name + '1st_skip_connection_concat', axis=3)(
+    #             [deconv_1, local_map_4])
+    #         norm = tf.keras.layers.BatchNormalization()(skip_1)
+    #         deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
+    #                                                    name=name + 'deconv_' + str(2))(norm)
+    #         skip_2 = tf.keras.layers.Concatenate(name=name + '2nd_skip_connection_concat', axis=3)(
+    #             [deconv_2, local_map_3])
+    #         norm = tf.keras.layers.BatchNormalization()(skip_2)
+    #         deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='swish',
+    #                                                      name=name + 'deconv_' + str(2.1))(norm)
+    #         skip_3 = tf.keras.layers.Concatenate(name=name + '3rd_skip_connection_concat', axis=3)(
+    #             [deconv_2_1, local_map_2])
+    #         norm = tf.keras.layers.BatchNormalization()(skip_3)
+    #         deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='swish',
+    #                                                    name=name + 'deconv_' + str(3))(norm)
+    #         deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
+    #                                                    name=name + 'deconv_' + str(4))(deconv_3)
+    #
+    #     else:
+    #         deconv_1 = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=5, activation='swish',
+    #                                                    name=name + 'deconv_' + str(1))(reshape)
+    #         norm = tf.keras.layers.BatchNormalization()(deconv_1)
+    #         deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
+    #                                                    name=name + 'deconv_' + str(2))(norm)
+    #         norm = tf.keras.layers.BatchNormalization()(deconv_2)
+    #         deconv_2_1 = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=3, activation='swish',
+    #                                                      name=name + 'deconv_' + str(2.1))(norm)
+    #         norm = tf.keras.layers.BatchNormalization()(deconv_2_1)
+    #         deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation='swish',
+    #                                                    name=name + 'deconv_' + str(3))(norm)
+    #         norm = tf.keras.layers.BatchNormalization()(deconv_3)
+    #         deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
+    #                                                    name=name + 'deconv_' + str(4), dtype=tf.float64)(norm)
+    #
+    #     model = Model(inputs=(reshape, local_map_2, local_map_3, local_map_4), outputs=deconv_4)
+    #     return model
+
+    def build_lm_preproc_model(self, local_map_in, name=''):
+        local_map_1 = tf.keras.layers.Conv2D(4, 3, activation='swish',
+                                             strides=(1, 1),
+                                             name=name + 'local_conv_' + str(0 + 1))(
+            local_map_in)  # out:(None, 1, 15, 15, 4) 1156->
+        norm = tf.keras.layers.BatchNormalization()(local_map_1)
+        local_map_2 = tf.keras.layers.Conv2D(8, 3, activation='swish',
+                                             strides=(1, 1),
+                                             name=name + 'local_conv_' + str(1 + 1))(
+            norm)  # out:(None, 1, 13, 13, 8)
+        norm = tf.keras.layers.BatchNormalization()(local_map_2)
+        local_map_3 = tf.keras.layers.Conv2D(16, 3, activation='swish',
+                                             strides=(1, 1),
+                                             name=name + 'local_conv_' + str(2 + 1))(
+            norm)  # out:(None, 1, 11, 11, 16)
+        norm = tf.keras.layers.BatchNormalization()(local_map_3)
+        local_map_4 = tf.keras.layers.Conv2D(16, 3, activation='swish',
+                                             strides=(1, 1),
+                                             name=name + 'local_conv_' + str(3 + 1))(
+            norm)  # out:(None, 1, 9, 9, 16)
+        flatten_local = tf.keras.layers.Flatten(name=name + 'local_flatten')(local_map_4)
+
+        model = tf.keras.Model(inputs=[local_map_in], outputs=[flatten_local, local_map_2, local_map_3, local_map_4])
+
+        return model
+
+
     def get_softmax_goal(self, state):
-        goal = self.get_soft_max_exploration(state)
+        goal, q = self.get_soft_max_exploration(state)
         # print(f'### soft goal:{goal}')
-        return goal
+        return goal, q
 
     def get_random_goal(self):
-        arr = np.zeros(self.params.local_map_size)
+        self.zeros = np.zeros(self.params.goal_size)
+        arr = self.zeros
         arr[:1] = 1
         np.random.shuffle(arr)
         # print('rand goal:', arr.shape)
@@ -193,6 +405,7 @@ class HL_DDQNAgent(object):
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         goal, q = self._get_exploitation_goal(local_map_in, global_map_in, scalars) #.numpy()[0]
         goal = goal.numpy()[0]
+        q = q.numpy()[0]
         # goal = tf.one_hot(goal, depth=self.num_actions_hl)
 
         # print(f'goal: {goal}')
@@ -200,7 +413,7 @@ class HL_DDQNAgent(object):
         # highest_qval = q[a]
         # print(f'highest qval: {highest_qval}')
 
-        return goal
+        return (goal, q)
 
     @tf.function
     def _get_exploitation_goal(self, local_map_in, global_map_in, scalars):
@@ -229,10 +442,33 @@ class HL_DDQNAgent(object):
         #     print(f'sum inputs: {tf.reduce_sum(local_map_in)} {tf.reduce_sum(global_map_in)} {tf.reduce_sum(scalars_in)/self.initial_mb}')
         if np.any(np.isnan(local_map_in)) or np.any(np.isnan(global_map_in)) or np.any(np.isnan(scalars_in)):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
-        p = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in).numpy()[0]
+        p, q = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in)
+        p = p.numpy()[0]
+        # p_land = np.asarray(p[-1])
+        p_land = [p[-1]]
+        print(p_land)
+        p_val = p[:-1]
+
+        ### put -inf on view
+        p = p_val.reshape((self.params.goal_size, self.params.goal_size))
+        view = 5
+        helper0 = int((p.shape[0]-1)/2 - (view-1)/2)
+        helper1 = int((p.shape[1]-1)/2 - (view-1)/2) # beginning of mask for each dim
+        for i in range(view):
+            for j in range(view):
+                # p[i+helper0][j+helper1] = - math.inf
+                p[i+helper0][j+helper1] = 0
+        p = p.flatten()
+
+        # print(f'sizes: {p.shape} {p_land.shape}')
+        p = np.concatenate((p, p_land))
+        p = p / np.linalg.norm(p, ord=1)
+        print(sum(p))
+        q = q.numpy()[0]
+        p.squeeze()
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
         # print(f'choosen act: {a}')
-        return a
+        return a, q
 
     @tf.function
     def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars_in):
@@ -240,7 +476,7 @@ class HL_DDQNAgent(object):
         # print(f' sum Q vals: {tf.reduce_sum(q)}')
               #f'\nHighest IDX: {max}\nhighest prob idx: {np.argmax(p.numpy()[0])}')
         tf.debugging.assert_all_finite(p, message='Nan in soft explore output')
-        return p
+        return p, q
 
     def hard_update_hl(self):
         self.target_network_hl.set_weights(self.q_network_hl.get_weights())
@@ -267,10 +503,10 @@ class HL_DDQNAgent(object):
         next_global_map = tf.convert_to_tensor(experiences[6], dtype=tf.float64)
         next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float64)
         terminated = tf.convert_to_tensor(experiences[8])
-        if self.var ==True:
-            for i in range(len(experiences)):
-                print(f'experiences {i}: {experiences[i]}')
-            self.var = False
+        # if self.var ==True:
+        #     for i in range(len(experiences)):
+        #         print(f'experiences {i}: {experiences[i]}')
+        #     self.var = False
 
         self._train_hl(local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                        next_scalars)

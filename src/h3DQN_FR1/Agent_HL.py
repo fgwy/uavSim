@@ -450,7 +450,7 @@ class HL_DDQNAgent(object):
         p = p.numpy()[0]
         # p_land = np.asarray(p[-1])
         p_land = [p[-1]]
-        print(p_land)
+        # print(p_land)
         p_val = p[:-1]
 
         ### put -inf on view
@@ -467,7 +467,7 @@ class HL_DDQNAgent(object):
         # print(f'sizes: {p.shape} {p_land.shape}')
         p = np.concatenate((p, p_land))
         p = p / np.linalg.norm(p, ord=1)
-        print(sum(p))
+        # print(sum(p))
         q = q.numpy()[0]
         p.squeeze()
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)

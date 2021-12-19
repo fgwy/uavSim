@@ -7,7 +7,7 @@ import numpy as np
 # from tensorflow.keras.utils.generic_utils import get_custom_objects
 
 
-# from src.h3DQN_FR1.models import build_hl_model, build_dummy_model
+from src.h3DQN_FR1.models import build_hl_model, build_dummy_model
 
 
 def print_node(x):
@@ -119,9 +119,13 @@ class HL_DDQNAgent(object):
                      global_map_input,
                      scalars_input]
 
-        self.q_network_hl = build_hl_model(states_hl, self.params.use_skip, self.initial_mb, self.params.path_to_local_pretrained_weights, 'soft_updated_hl_model_')
+        # self.q_network_hl = build_hl_model(states_hl, self.params.use_skip, self.initial_mb, self.params.path_to_local_pretrained_weights, 'soft_updated_hl_model_')
+        # # self.q_network_hl.summary()
+        # self.target_network_hl = build_hl_model(states_hl, self.params.use_skip, self.initial_mb, 'target_hl_')
+
+        self.q_network_hl = self.build_hl_model(states_hl, self.params.path_to_local_pretrained_weights,  'soft_updated_hl_model_')
         # self.q_network_hl.summary()
-        self.target_network_hl = build_hl_model(states_hl, self.params.use_skip, self.initial_mb, 'target_hl_')
+        self.target_network_hl = self.build_hl_model(states_hl, self.params.path_to_local_pretrained_weights,  'target_hl_')
 
         # self.q_network_hl = self.build_dummy_model(states_hl, self.num_actions, self.initial_mb)
         # self.target_network_hl = self.build_dummy_model(states_hl, self.num_actions, self.initial_mb)

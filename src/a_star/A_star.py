@@ -1,7 +1,9 @@
 from scipy.spatial import cKDTree as kd
 from tensorflow import argmax as argmx
 import numpy as np
+import numba as nb
 
+@nb.experimental.jitclass
 class Node():
     """A node class for A* Pathfinding"""
 
@@ -19,7 +21,10 @@ class Node():
 class A_star:
     def __init__(self):
         self.stuff = None
-    def astar(self, maze, start, end):
+
+    @staticmethod
+    @nb.jit(npython=True) # TODO: add input data classez
+    def astar(maze, start, end):
         """
         Returns a list of tuples as a path from the given start to the given end in the given maze
         Maze position is initia.lized as (0,0) in top left corner

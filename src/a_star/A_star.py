@@ -3,7 +3,7 @@ from tensorflow import argmax as argmx
 import numpy as np
 import numba as nb
 
-@nb.experimental.jitclass
+# @nb.experimental.jitclass
 class Node():
     """A node class for A* Pathfinding"""
 

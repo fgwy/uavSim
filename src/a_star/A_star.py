@@ -1,7 +1,9 @@
 from scipy.spatial import cKDTree as kd
 from tensorflow import argmax as argmx
 import numpy as np
+import numba as nb
 
+# @nb.experimental.jitclass
 class Node():
     """A node class for A* Pathfinding"""
 
@@ -19,7 +21,11 @@ class Node():
 class A_star:
     def __init__(self):
         self.stuff = None
-    def astar(self, maze, start, end):
+        self.path = None
+
+    @staticmethod
+    @nb.jit(npython=True) # TODO: add input data classez
+    def astar(maze, start, end):
         """
         Returns a list of tuples as a path from the given start to the given end in the given maze
         Maze position is initia.lized as (0,0) in top left corner
@@ -86,7 +92,7 @@ class A_star:
 
             # Loop through children
             for child in children:
-                i +=1
+                i += 1
                 if i > 2000:
                     return None
                 # print(i)
@@ -156,7 +162,7 @@ class A_star:
 
 def main():
 
-    a = np.zeros((5,5))
+    a = np.zeros((5, 5))
     a[3][2] = 1
     print(a)
     print(argmx(a))

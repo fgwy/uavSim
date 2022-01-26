@@ -150,6 +150,8 @@ class AgentManager():
                 self.current_goal_idx, q = self.agent_hl.get_softmax_goal(state)
             else:
                 self.current_goal_idx = self.agent_hl.get_eps_greedy_action(state)
+
+        # generate goal out of idx
         if self.current_goal_idx == self.agent_hl.num_actions_hl - 1:
             try_landing = True
             self.current_goal = np.zeros((self.hl_agent_params.goal_size, self.hl_agent_params.goal_size))  # todo please

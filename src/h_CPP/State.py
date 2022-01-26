@@ -134,6 +134,21 @@ class H_CPPState(CPPState):
         local_map = tf.squeeze(local_map).numpy()
         return local_map
 
+    def get_padded_map_ll(self):
+        bm = self.get_boolean_map_ll()[tf.newaxis, ...]
+        fm = self.get_float_map_ll()[tf.newaxis, ...]
+        map_cast_ll = tf.cast(bm, dtype=tf.float32)
+        padded_map_ll = tf.concat([map_cast_ll, fm], axis=3)
+        padded_map_ll = tf.squeeze(padded_map_ll).numpy()
+        return padded_map_ll
+
+    def get_local_map_ll(self):  # TODO: create local map in state to exclude computation from graph
+        conv_in = self.get_padded_map_ll()[tf.newaxis, ...]
+        crop_frac = float(self.local_map_size) / float(self.get_boolean_map_ll_shape()[0])
+        local_map = central_crop(conv_in, crop_frac)
+        local_map = tf.squeeze(local_map).numpy()
+        return local_map
+
     def get_global_map(self, global_map_scaling):
         pm = self.get_padded_map()[tf.newaxis, ...]
         self.global_map = AvgPool2D((global_map_scaling, global_map_scaling))(pm)

@@ -1,3 +1,6 @@
+import copy
+
+import matplotlib.pyplot as plt
 import tensorflow as tf
 import math
 
@@ -449,10 +452,38 @@ class HL_DDQNAgent(object):
         p, q = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in)
         p = p.numpy()[0]
         p = self.manipulate_p(p, state)
+        print(p.shape)
 
         q = q.numpy()[0]
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
         # print(f'choosen act: {a}')
+
+
+
+        p_val = p[:-1]
+
+        ### put -inf on view
+        p = p_val.reshape((self.params.goal_size, self.params.goal_size))
+
+        goal = tf.one_hot(a,
+                   depth=self.num_actions_hl - 1).numpy().reshape(self.params.goal_size,
+                                                                           self.params.goal_size).astype(int)
+        d = 1
+        goal = np.pad(goal, ((d,d), (d,d)))
+        data = self.get_data(copy.deepcopy(state))
+        data_lm = self.get_data_lm(copy.deepcopy(state))
+
+        fig = plt.figure()
+        fig.add_subplot(1, 3, 1)
+        plt.imshow(data)
+        fig.add_subplot(1, 3, 2)
+        # plt.imshow(lm[:, :, 3])
+        data_lm += goal
+        plt.imshow(data_lm)
+        fig.add_subplot(1, 3, 3)
+        plt.imshow(p, cmap='hot', interpolation='nearest')
+        plt.show()
+
         return a, q
 
     @tf.function
@@ -474,11 +505,11 @@ class HL_DDQNAgent(object):
 
         ### put -inf on view
         p = p_val.reshape((self.params.goal_size, self.params.goal_size))
-        view = 5
+        view = 5 # TODO: Hardcoded
         helper0 = int((p.shape[0] - 1) / 2 - (view - 1) / 2)
         helper1 = int((p.shape[1] - 1) / 2 - (view - 1) / 2)  # beginning of mask for each dim
 
-        # Set q-vals on vew to zero
+        # Set q-vals on view to zero
         for i in range(view):
             for j in range(view):
                 # p[i+helper0][j+helper1] = - math.inf
@@ -486,25 +517,68 @@ class HL_DDQNAgent(object):
         p = p.flatten()
 
         lm = state.get_local_map()
-        # print(f'shape: {lm.shape} \n printout lm: {lm}')
+        # # print(f'shape: {lm.shape} \n printout lm: {lm}')
+        #
+        # tm = state.get_boolean_map()
+
+
+
 
         p = p.reshape((self.params.goal_size, self.params.goal_size))
 
-        dv_i = int((lm.shape[0] - self.goal_target_shape[0]) / 2)
-        dv_j = int((lm.shape[1] - self.goal_target_shape[1]) / 2)
+        # dv_i = int((self.goal_target_shape[0] - lm.shape[0]) / 2)
+        # dv_j = int((self.goal_target_shape[1] - lm.shape[1] ) / 2)
+        dv_i = int((lm.shape[0] - self.params.goal_size) / 2)
+        dv_j = int((lm.shape[1] - self.params.goal_size) / 2)
 
-        # Set obs to zero
+
+        # Set obs to zero TODO: Check LM!!!! Broken data is being received
         for i in range(p.shape[0]):
             for j in range(p.shape[1]):
-                p[i][j] = lm[i + dv_i][j + dv_j][3]
+                if lm[i + dv_i, j + dv_j, 0] == 1: # or lm[i + dv_i, j + dv_j, 1] == 1:
+                    p[i][j] = 0
 
-        # print(f'sizes: {p.shape} {p_land.shape}')
         p = p.reshape(self.params.goal_size**2)
+
+        # normalize probabilities vector to sum up to one
         p = np.concatenate((p, p_land))
         p = p / np.linalg.norm(p, ord=1)
         # print(sum(p))
 
         p.squeeze()
+
+        return p
+    #
+    def get_data(self, state):
+
+        data = state.no_fly_zone.astype(bool)
+        target = ~data * state.target
+        # for dp in target:
+        #     print(f'target point: {dp}')
+        target = ~state.h_target * target
+        # for dp in data:
+        #     print(f'target after point: {dp}')
+        lz = state.landing_zone * ~state.h_target
+        data = data * 1
+        # for dp in data:
+        #     print(f'data point before: {dp}')
+        data += lz * 5
+        # data[h_target_idx[0], h_target_idx[1]] = 2
+        data += state.h_target * 2
+        data += target * 4
+        data[state.position[1], state.position[0]] = 3
+
+        return data
+
+    def get_data_lm(self, state):
+
+        lm = state.get_local_map().astype(bool)
+        data = lm[:, :, 0]*1
+        data += (~lm[:, :, 0].astype(bool) *1) * lm[:, :, 1] *2
+        data += (~data.astype(bool) *1) *lm[:,:,2] *3
+        data += (~data.astype(bool) * 1) * lm[:, :, 3] * 4
+        # data += (~data.astype(bool) * 1) * lm[:, :, 4] * 5
+        return data
 
     def hard_update_hl(self):
         self.target_network_hl.set_weights(self.q_network_hl.get_weights())

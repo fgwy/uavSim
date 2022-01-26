@@ -18,10 +18,36 @@ class Node():
     def __eq__(self, other):
         return self.position == other.position
 
+
 class A_star:
     def __init__(self):
         self.stuff = None
         self.path = None
+
+
+    ####### adapted from: https://stackoverflow.com/questions/43306291/find-the-nearest-nonzero-element-and-corresponding-index-in-a-2d-numpy-array
+
+    @staticmethod
+    def nearest_nonzero_idx(map, pos):
+        x = pos[0]
+        y = pos[1]
+
+        idx = np.argwhere(map)
+
+        idx = idx[~(idx == [x, y]).all(1)]
+
+        return idx[((idx - [x, y]) ** 2).sum(1).argmin()]
+
+    @staticmethod
+    def nearest_nonzero_idx_v2(a, pos):
+        x = pos[0]
+        y = pos[1]
+        tmp = a[x, y]
+        a[x, y] = 0
+        r, c = np.nonzero(a)
+        a[x, y] = tmp
+        min_idx = ((r - x) ** 2 + (c - y) ** 2).argmin()
+        return r[min_idx], c[min_idx]
 
     @staticmethod
     @nb.jit(npython=True) # TODO: add input data classez
@@ -147,6 +173,7 @@ class A_star:
                 action = 3
             # print(f'A-Star action: {action}')
         return action
+
 
     @staticmethod
     def do_kdtree(combined_x_y_arrays, points):

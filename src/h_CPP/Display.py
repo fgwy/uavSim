@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mtplt
 import time
 import os
+import copy
 
 import seaborn as sns # sns.set_theme()
 from matplotlib import patches
@@ -120,7 +121,7 @@ class h_CPPDisplay(CPPDisplay):
                  verticalalignment='top', bbox=props)  # transform=plt.transAxes,
         plt.subplots_adjust(left=0.3)
         plt.show(block=False)
-        plt.pause(0.001)
+        plt.pause(0.1)
         plt.clf()
         if terminal:
             print(f'Terminal Fig')
@@ -249,6 +250,20 @@ class h_CPPDisplay(CPPDisplay):
         else:
             print(f"Saved Plots in: {path}")
 
+    def save_lm_tm_and_q(self, state):
+        data = self.get_data(copy.deepcopy(state))
+        data_lm = self.get_data_lm(copy.deepcopy(state))
+
+        fig = plt.figure()
+        fig.add_subplot(1, 3, 1)
+        plt.imshow(data)
+        fig.add_subplot(1, 3, 2)
+        # plt.imshow(lm[:, :, 3])
+        plt.imshow(data_lm)
+        fig.add_subplot(1, 3, 3)
+        plt.imshow(p, cmap='hot', interpolation='nearest')
+        plt.show()
+
 
     def get_data(self, state):
 
@@ -272,6 +287,11 @@ class h_CPPDisplay(CPPDisplay):
         return data
 
     def get_lm_data(self, state):
-        data = None
-
+        lm = state.get_local_map().astype(bool)
+        data = lm[:, :, 0]*1
+        data += (~lm[:, :, 0].astype(bool) *1) * lm[:, :, 1] *2
+        data += (~data.astype(bool) *1) *lm[:,:,2] *3
+        data += (~data.astype(bool) * 1) * lm[:, :, 3] * 4
+        data[state.position[1], state.position[0]] = 5
+        # data += (~data.astype(bool) * 1) * lm[:, :, 4] * 5
         return data

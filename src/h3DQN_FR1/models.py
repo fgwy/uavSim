@@ -9,9 +9,7 @@ def myswish_beta(x):
    beta = tf.Variable(initial_value=1.0, trainable=True, name='swish_beta')
    return x*tf.nn.sigmoid(beta*x) #trainable parameter beta
 
-get_custom_objects().update({
-   'swish': Activation(myswish_beta)
-})
+# get_custom_objects().update({'swish': Activation(myswish_beta)})
 
 
 def print_node(x):
@@ -131,26 +129,8 @@ def build_hl_model(states_in, use_skip, initial_mb, path_to_local_pretrained_wei
                                                    name=name + 'deconv_' + str(1))(reshape)
         skip_1 = tf.keras.layers.Concatenate(name=name + '1st_skip_connection_concat', axis=3)(
             [deconv_1, local_map_4])
-        norm = tf.keras.layers.BatchNormalization()(skip_1) ll < lmax:
-            dict_list[lname] += [padel] * (lmax - ll)
-    return dict_list
+        norm = tf.keras.layers.BatchNormalization()(skip_1)
 
-def dict_from_list(dict):
-    new_dict = {}
-    for k in dict.keys():
-        a = np.array(dict[k])
-        mean = np.mean(a)
-        min = np.min(a)
-        max = np.max(a)
-        new_dict[k] = [mean, min, max]
-
-    return new_dict
-
-
-
-def plot_dif_len(data):
-    nd = dict_from_list(data)
-    df = pd.DataFrame(nd)
         deconv_2 = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=3, activation='swish',
                                                    name=name + 'deconv_' + str(2))(norm)
         skip_2 = tf.keras.layers.Concatenate(name=name + '2nd_skip_connection_concat', axis=3)(

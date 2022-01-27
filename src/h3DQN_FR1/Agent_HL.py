@@ -7,7 +7,7 @@ import numpy as np
 # from tensorflow.keras.utils.generic_utils import get_custom_objects
 
 
-# from src.h3DQN_FR1.models import build_hl_model, build_dummy_model
+from src.h3DQN_FR1.models import build_hl_model, build_dummy_model
 
 
 def print_node(x):
@@ -119,9 +119,13 @@ class HL_DDQNAgent(object):
                      global_map_input,
                      scalars_input]
 
-        self.q_network_hl = build_hl_model(states_hl, self.params.use_skip, self.initial_mb, self.params.path_to_local_pretrained_weights, 'soft_updated_hl_model_')
+        # self.q_network_hl = build_hl_model(states_hl, self.params.use_skip, self.initial_mb, self.params.path_to_local_pretrained_weights, 'soft_updated_hl_model_')
+        # # self.q_network_hl.summary()
+        # self.target_network_hl = build_hl_model(states_hl, self.params.use_skip, self.initial_mb, 'target_hl_')
+
+        self.q_network_hl = self.build_hl_model(states_hl, self.params.path_to_local_pretrained_weights,  'soft_updated_hl_model_')
         # self.q_network_hl.summary()
-        self.target_network_hl = build_hl_model(states_hl, self.params.use_skip, self.initial_mb, 'target_hl_')
+        self.target_network_hl = self.build_hl_model(states_hl, self.params.path_to_local_pretrained_weights,  'target_hl_')
 
         # self.q_network_hl = self.build_dummy_model(states_hl, self.num_actions, self.initial_mb)
         # self.target_network_hl = self.build_dummy_model(states_hl, self.num_actions, self.initial_mb)
@@ -444,28 +448,9 @@ class HL_DDQNAgent(object):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
         p, q = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in)
         p = p.numpy()[0]
-        # p_land = np.asarray(p[-1])
-        p_land = [p[-1]]
-        # print(p_land)
-        p_val = p[:-1]
+        p = self.manipulate_p(p, state)
 
-        ### put -inf on view
-        p = p_val.reshape((self.params.goal_size, self.params.goal_size))
-        view = 5
-        helper0 = int((p.shape[0]-1)/2 - (view-1)/2)
-        helper1 = int((p.shape[1]-1)/2 - (view-1)/2) # beginning of mask for each dim
-        for i in range(view):
-            for j in range(view):
-                # p[i+helper0][j+helper1] = - math.inf
-                p[i+helper0][j+helper1] = 0
-        p = p.flatten()
-
-        # print(f'sizes: {p.shape} {p_land.shape}')
-        p = np.concatenate((p, p_land))
-        p = p / np.linalg.norm(p, ord=1)
-        # print(sum(p))
         q = q.numpy()[0]
-        p.squeeze()
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
         # print(f'choosen act: {a}')
         return a, q
@@ -477,6 +462,56 @@ class HL_DDQNAgent(object):
               #f'\nHighest IDX: {max}\nhighest prob idx: {np.argmax(p.numpy()[0])}')
         tf.debugging.assert_all_finite(p, message='Nan in soft explore output')
         return p, q
+
+    def manipulate_p(self, p, state):
+        '''
+        Series of manipulations to zero out probabilities of generating target at view and at obs
+        '''
+        ############### separate p and p land to manipulate p
+        p_land = [p[-1]]
+        # print(p_land)
+        p_val = p[:-1]
+
+        ### put -inf on view
+        p = p_val.reshape((self.params.goal_size, self.params.goal_size))
+        view = 5
+        helper0 = int((p.shape[0] - 1) / 2 - (view - 1) / 2)
+        helper1 = int((p.shape[1] - 1) / 2 - (view - 1) / 2)  # beginning of mask for each dim
+
+        # Set q-vals on vew to zero
+        for i in range(view):
+            for j in range(view):
+                # p[i+helper0][j+helper1] = - math.inf
+                p[i + helper0][j + helper1] = 0
+        p = p.flatten()
+
+        lm = state.get_local_map()
+        # print(f'shape: {lm.shape} \n printout lm: {lm}')
+
+        p = p.reshape((self.params.goal_size, self.params.goal_size))
+
+        dv_i = int((lm.shape[0] - self.goal_target_shape[0]) / 2)
+        dv_j = int((lm.shape[1] - self.goal_target_shape[1]) / 2)
+
+        # Set obs to zero
+        for i in range(p.shape[0]):
+            for j in range(p.shape[1]):
+                p[i][j] = lm[i + dv_i][j + dv_j][3]
+
+        # print(f'sizes: {p.shape} {p_land.shape}')
+        p = p.reshape(self.params.goal_size**2)
+        p = np.concatenate((p, p_land))
+        p = p / np.linalg.norm(p, ord=1)
+        # print(sum(p))
+
+        q = q.numpy()[0]
+        p.squeeze()
+        a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
+        # print(f'choosen act: {a}')
+        p.squeeze()
+        return a, q
+
+
 
     def hard_update_hl(self):
         self.target_network_hl.set_weights(self.q_network_hl.get_weights())

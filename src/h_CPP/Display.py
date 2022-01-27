@@ -21,6 +21,9 @@ class h_CPPDisplay(CPPDisplay):
         except:
             print("Dir already present")
 
+        colors = 'white brown lime red yellow blue'.split()
+        self.cmap = mtplt.colors.ListedColormap(colors, name='colors', N=None)
+
     def init_plt(self, state):
 
         self.ax = self.get_plt(state)
@@ -55,8 +58,22 @@ class h_CPPDisplay(CPPDisplay):
             self.arrow_scale = 5
             self.marker_size = 15
 
-        for ax in axs:
-            plt.sca(ax)
+        try:
+            for ax in axs:
+                plt.sca(ax)
+                plt.gca().set_aspect('equal', adjustable='box')
+                plt.xticks(tick_labels_x)
+                plt.yticks(tick_labels_y)
+                plt.axis([0, area_x_max, area_y_max, 0])
+
+                for i in range(obst.shape[0]):
+                    for j in range(obst.shape[1]):
+                        if obst[j, i]:
+                            rect = patches.Rectangle((i-0.5, j-0.5), 1, 1, fill=None, hatch='////', edgecolor="Black")
+                            # ax.add_patch(rect)
+                            ax.add_patch(rect)
+        except:
+            plt.sca(axs)
             plt.gca().set_aspect('equal', adjustable='box')
             plt.xticks(tick_labels_x)
             plt.yticks(tick_labels_y)
@@ -65,41 +82,25 @@ class h_CPPDisplay(CPPDisplay):
             for i in range(obst.shape[0]):
                 for j in range(obst.shape[1]):
                     if obst[j, i]:
-                        rect = patches.Rectangle((i-0.5, j-0.5), 1, 1, fill=None, hatch='////', edgecolor="Black")
+                        rect = patches.Rectangle((i - 0.5, j - 0.5), 1, 1, fill=None, hatch='////', edgecolor="Black")
                         # ax.add_patch(rect)
-                        ax.add_patch(rect)
-
+                        axs.add_patch(rect)
+        else:
+            pass
         return axs
 
     def plot_map(self, state, terminal=False):  # , h_target_idx):
 
-        colors = 'white brown lime red yellow blue'.split()
-        cmap = mtplt.colors.ListedColormap(colors, name='colors', N=None)
-        data = state.no_fly_zone.astype(bool)
-        target = ~data * state.target
-        # for dp in target:
-        #     print(f'target point: {dp}')
-        target = ~state.h_target * target
-        # for dp in data:
-        #     print(f'target after point: {dp}')
-        lz = state.landing_zone * ~state.h_target
-        data = data * 1
-        # for dp in data:
-        #     print(f'data point before: {dp}')
-        data += lz * 5
-        # data[h_target_idx[0], h_target_idx[1]] = 2
-        data += state.h_target * 2
-        data += target * 4
-        data[state.position[1], state.position[0]] = 3
-
-
+        data = self.get_data(state)
 
         fig_size = 5.5
         # fig, ax = plt.subplots(1, 1, figsize=[fig_size, fig_size])
 
         # ax = self.get_plt(ax, state)
-        plt.imshow(data, alpha=1, cmap=cmap, vmin=0, vmax=5)
-        ax = self.get_plt(state)
+        plt.imshow(data, alpha=1, cmap=self.cmap, vmin=0, vmax=5)
+        ax = plt.gca()
+        ax = self.get_plt(state, ax)
+        plt.sca(ax)
 
 
         [m, n] = np.shape(data)
@@ -138,24 +139,26 @@ class h_CPPDisplay(CPPDisplay):
         for i in range(len(trajectory)):
             positions.append((trajectory[i].position[1], trajectory[i].position[0]))
         # print(positions)
-        colors = 'white blue green red yellow cyan'.split()
-        cmap = mtplt.colors.ListedColormap(colors, name='colors', N=None)
+        # colors = 'white blue green red yellow cyan'.split()
+        # cmap = mtplt.colors.ListedColormap(colors, name='colors', N=None)
 
-        fig, axs = plt.subplots(1, 2, tight_layout=True)
+        fig, axs = plt.subplots(1, 2) #, tight_layout=True)
         fig.suptitle(f'Episode: {episode_num}')
 
         axs = self.get_plt(state, axs)
 
-        data = state.no_fly_zone
-        target = ~data * state.target
-        target = ~state.h_target * target
-        lz = state.landing_zone * ~state.h_target
-        data = data * 1
-        data += lz * 5
-        # data[h_target_idx[0], h_target_idx[1]] = 2
-        data += state.h_target * 2
-        data += target * 4
-        data[state.position[1], state.position[0]] = 3
+        # data = state.no_fly_zone
+        # target = ~data * state.target
+        # target = ~state.h_target * target
+        # lz = state.landing_zone * ~state.h_target
+        # data = data * 1
+        # data += lz * 5
+        # # data[h_target_idx[0], h_target_idx[1]] = 2
+        # data += state.h_target * 2
+        # data += target * 4
+        # data[state.position[1], state.position[0]] = 3
+
+        data = self.get_data(state)
 
         data_end = ending_state.no_fly_zone
         target = ~data_end * ending_state.target
@@ -181,8 +184,8 @@ class h_CPPDisplay(CPPDisplay):
                  verticalalignment='top', bbox=props)  # transform=plt.transAxes,
         plt.subplots_adjust(left=0.3)
 
-        axs[0].imshow(data, alpha=1, cmap=cmap, vmin=0, vmax=5)
-        axs[1].imshow(data_end, alpha=1, cmap=cmap, vmin=0, vmax=5)
+        axs[0].imshow(data, alpha=1, cmap=self.cmap, vmin=0, vmax=5)
+        axs[1].imshow(data_end, alpha=1, cmap=self.cmap, vmin=0, vmax=5)
         axs[0].set_title('First State')
         axs[1].set_title('Ending State')
 
@@ -221,6 +224,8 @@ class h_CPPDisplay(CPPDisplay):
                          cbar_ax=cbar_ax,
 
                          cbar_kws={"orientation": "horizontal"})
+
+        data = self.get_data(state)
         lm_ax = data
 
         my_file = f'{name}/heat_map_ep{episode_num}_figure.png'
@@ -243,3 +248,30 @@ class h_CPPDisplay(CPPDisplay):
 
         else:
             print(f"Saved Plots in: {path}")
+
+
+    def get_data(self, state):
+
+        data = state.no_fly_zone.astype(bool)
+        target = ~data * state.target
+        # for dp in target:
+        #     print(f'target point: {dp}')
+        target = ~state.h_target * target
+        # for dp in data:
+        #     print(f'target after point: {dp}')
+        lz = state.landing_zone * ~state.h_target
+        data = data * 1
+        # for dp in data:
+        #     print(f'data point before: {dp}')
+        data += lz * 5
+        # data[h_target_idx[0], h_target_idx[1]] = 2
+        data += state.h_target * 2
+        data += target * 4
+        data[state.position[1], state.position[0]] = 3
+
+        return data
+
+    def get_lm_data(self, state):
+        data = None
+
+        return data

@@ -124,7 +124,7 @@ class h_CPPDisplay(CPPDisplay):
         plt.pause(0.1)
         plt.clf()
         if terminal:
-            print(f'Terminal Fig')
+            # print(f'Terminal Fig')
             plt.gcf()
             plt.close('all')
 

@@ -86,7 +86,7 @@ class H_CPPEnvironment(BaseEnvironment):
 
         while not self.physics.state.is_terminal():
             goal, goal_idx, try_landing, q = self.agent_manager.generate_goal(self.physics.state, random=random_h,
-                                                                           exploit=test)
+                                                                           exploit=False)
             # print(f'goal before padding: {np.sum(goal * 1)}')
             goal = self.physics.state.pad_lm_to_total_size(goal)
             # print(f'goal before preproc env: {np.sum(goal * 1)}')
@@ -166,7 +166,6 @@ class H_CPPEnvironment(BaseEnvironment):
                 reward = self.rewards.calculate_reward_l(state, GridActions(action), next_state)
                 # print(f'reward_l: {reward}')
                 if not test and not self.agent_manager.trainer.params.use_astar:
-
                     self.agent_manager.trainer.add_experience_ll(state, action, reward, next_state)
                     self.agent_manager.trainer.train_l()
 

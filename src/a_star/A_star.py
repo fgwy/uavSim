@@ -50,7 +50,7 @@ class A_star:
         return r[min_idx], c[min_idx]
 
     @staticmethod
-    @nb.jit(npython=True) # TODO: add input data classez
+    # @nb.jit(npython=True) # TODO: add input data classez
     def astar(maze, start, end):
         """
         Returns a list of tuples as a path from the given start to the given end in the given maze

@@ -451,11 +451,24 @@ class HL_DDQNAgent(object):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
         p, q = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in)
         p = p.numpy()[0]
+        p_sum = np.sum(p)
+        if np.isnan(p_sum):
+            print(f'Nan in p before manipulation!!!!! : {p_sum} {np.isnan(p_sum)}')
         p = self.manipulate_p(p, state)
-        print(p.shape)
+        p_sum = np.sum(p)
+        print(f'isnan: {np.isnan(p_sum)}')
+        # if np.isnan(p_sum):
+        #     print(f'Nan in p after manipulation!!!!! : {p_sum} {np.isnan(p_sum)}')
+        #     a = np.random.choice(range(self.num_actions_hl), size=1)
+        #     print('Random action!')
+        # else:
+        #     a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
 
-        q = q.numpy()[0]
+        # a = np.random.choice(range(self.num_actions_hl), size=1) if np.isnan(p_sum) else np.random.choice(range(self.num_actions_hl), size=1, p=p)
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
+        print(p)
+        q = q.numpy()[0]
+
         # print(f'choosen act: {a}')
 
 
@@ -473,16 +486,16 @@ class HL_DDQNAgent(object):
         data = self.get_data(copy.deepcopy(state))
         data_lm = self.get_data_lm(copy.deepcopy(state))
 
-        fig = plt.figure()
-        fig.add_subplot(1, 3, 1)
-        plt.imshow(data)
-        fig.add_subplot(1, 3, 2)
-        # plt.imshow(lm[:, :, 3])
-        data_lm += goal
-        plt.imshow(data_lm)
-        fig.add_subplot(1, 3, 3)
-        plt.imshow(p, cmap='hot', interpolation='nearest')
-        plt.show()
+        # fig = plt.figure()
+        # fig.add_subplot(1, 3, 1)
+        # plt.imshow(data)
+        # fig.add_subplot(1, 3, 2)
+        # # plt.imshow(lm[:, :, 3])
+        # data_lm += goal
+        # plt.imshow(data_lm)
+        # fig.add_subplot(1, 3, 3)
+        # plt.imshow(p, cmap='hot', interpolation='nearest')
+        # plt.show()
 
         return a, q
 

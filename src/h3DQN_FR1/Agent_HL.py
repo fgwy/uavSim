@@ -456,7 +456,7 @@ class HL_DDQNAgent(object):
             print(f'Nan in p before manipulation!!!!! : {p_sum} {np.isnan(p_sum)}')
         p = self.manipulate_p(p, state)
         p_sum = np.sum(p)
-        print(f'isnan: {np.isnan(p_sum)}')
+        # print(f'isnan: {np.isnan(p_sum)}')
         # if np.isnan(p_sum):
         #     print(f'Nan in p after manipulation!!!!! : {p_sum} {np.isnan(p_sum)}')
         #     a = np.random.choice(range(self.num_actions_hl), size=1)
@@ -466,26 +466,26 @@ class HL_DDQNAgent(object):
 
         # a = np.random.choice(range(self.num_actions_hl), size=1) if np.isnan(p_sum) else np.random.choice(range(self.num_actions_hl), size=1, p=p)
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
-        print(p)
+        # print(p)
         q = q.numpy()[0]
 
         # print(f'choosen act: {a}')
 
 
 
-        p_val = p[:-1]
-
-        ### put -inf on view
-        p = p_val.reshape((self.params.goal_size, self.params.goal_size))
-
-        goal = tf.one_hot(a,
-                   depth=self.num_actions_hl - 1).numpy().reshape(self.params.goal_size,
-                                                                           self.params.goal_size).astype(int)
-        d = 1
-        goal = np.pad(goal, ((d,d), (d,d)))
-        data = self.get_data(copy.deepcopy(state))
-        data_lm = self.get_data_lm(copy.deepcopy(state))
-
+        # p_val = p[:-1]
+        #
+        # ### put -inf on view
+        # p = p_val.reshape((self.params.goal_size, self.params.goal_size))
+        #
+        # goal = tf.one_hot(a,
+        #            depth=self.num_actions_hl - 1).numpy().reshape(self.params.goal_size,
+        #                                                                    self.params.goal_size).astype(int)
+        # d = 1
+        # goal = np.pad(goal, ((d,d), (d,d)))
+        # data = self.get_data(copy.deepcopy(state))
+        # data_lm = self.get_data_lm(copy.deepcopy(state))
+        #
         # fig = plt.figure()
         # fig.add_subplot(1, 3, 1)
         # plt.imshow(data)
@@ -497,7 +497,27 @@ class HL_DDQNAgent(object):
         # plt.imshow(p, cmap='hot', interpolation='nearest')
         # plt.show()
 
-        return a, q
+        ### put -inf on view
+        # p = p_val.reshape((self.params.goal_size, self.params.goal_size))
+        #
+        # goal = tf.one_hot(a,
+        #            depth=self.num_actions_hl - 1).numpy().reshape(self.params.goal_size,
+        #                                                                    self.params.goal_size).astype(int)
+        # d = 1
+        # goal = np.pad(goal, ((d,d), (d,d)))
+        # data = self.get_data(copy.deepcopy(state))
+        # data_lm = self.get_data_lm(copy.deepcopy(state))
+
+        # fig = plt.figure()
+        # fig.add_subplot(1, 3, 1)
+        # plt.imshow(data)
+        # fig.add_subplot(1, 3, 2)
+        # # plt.imshow(lm[:, :, 3])
+        # data_lm += goal
+        # plt.imshow(data_lm)
+        # fig.add_subplot(1, 3, 3)
+        # plt.imshow(p, cmap='hot', interpolation='
+        return a, [q, p]
 
     @tf.function
     def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars_in):
@@ -558,10 +578,8 @@ class HL_DDQNAgent(object):
         p = p / np.linalg.norm(p, ord=1)
         # print(sum(p))
 
-        p.squeeze()
-
         return p
-    #
+
     def get_data(self, state):
 
         data = state.no_fly_zone.astype(bool)

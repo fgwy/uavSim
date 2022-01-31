@@ -197,6 +197,7 @@ class H_CPPState(CPPState):
 
     def set_goal_covered(self, covered):
         self.goal_covered = covered
+        self.set_terminal_h(True) # added setting terminal
 
     def get_initial_ll_movement_budget(self):
         return self.initial_ll_movement_budget

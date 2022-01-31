@@ -89,7 +89,7 @@
             "soft_max_scaling": 0.2,
             "use_global_local": true,
             "global_map_scaling": 3,
-            "goal_size": 15,
+            "goal_size": 11,
             "print_summary": true,
             "use_skip": true,
             "use_pretrained_local_map_preproc": false,

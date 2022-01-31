@@ -142,7 +142,7 @@ class AgentManager():
         q = 0
         if random:
             self.current_goal_idx = self.agent_hl.get_random_goal()
-        elif exploit:
+        elif False: #exploit:
             self.current_goal_idx, q = self.agent_hl.get_exploitation_goal(state)
 
         else:

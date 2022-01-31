@@ -62,7 +62,7 @@ class H_CPPEnvironment(BaseEnvironment):
             ## run_MDP
             # test = True if self.episode_count % self.agent.trainer.params.eval_period == 0 else False #  and self.episode_count != 0
             test = True if self.episode_count % self.agent_manager.trainer.params.eval_period == 0 and self.episode_count != 0 else False
-            self.run_MDP(self.step_count - 1, bar, episode_num=self.episode_count, test=test, random_h=self.agent_manager.params.pretrain_ll)
+            self.run_MDP(last_step, bar, episode_num=self.episode_count, test=test, random_h=self.agent_manager.params.pretrain_ll)
 
             self.stats.on_episode_end(self.episode_count)
             self.stats.log_training_data(step=self.step_count)
@@ -85,8 +85,12 @@ class H_CPPEnvironment(BaseEnvironment):
         tried_landing_and_succeeded = False
 
         while not self.physics.state.is_terminal():
+            bar.update(self.hl_steps - last_step)  # todo check this insanity
+            last_step = self.hl_steps
             goal, goal_idx, try_landing, q = self.agent_manager.generate_goal(self.physics.state, random=random_h,
                                                                            exploit=test)
+            if self.hl_steps %1000 ==0:
+                print(f'sum qval = {sum(q[0])}')
             # print(f'goal before padding: {np.sum(goal * 1)}')
             goal = self.physics.state.pad_lm_to_total_size(goal)
             # print(f'goal before preproc env: {np.sum(goal * 1)}')
@@ -143,8 +147,8 @@ class H_CPPEnvironment(BaseEnvironment):
         while not self.physics.state.is_terminal_h() and not self.physics.state.is_terminal():
             i += 1
             state = copy.deepcopy(self.physics.state)
-            bar.update(self.step_count - last_step)  # todo check this insanity
-            last_step = self.step_count
+            # bar.update(self.step_count - last_step)  # todo check this insanity
+            # last_step = self.step_count
             if try_landing:
                 action = 4  # Landing action
                 self.physics.step(GridActions(action))
@@ -174,7 +178,7 @@ class H_CPPEnvironment(BaseEnvironment):
             if test and self.stats.params.draw:
                 self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
             display_trajectory.append(copy.deepcopy(self.physics.state))
-            self.step_count += 1
+            # self.step_count += 1
 
         return tried_landing_and_succeeded, last_step, display_trajectory
 

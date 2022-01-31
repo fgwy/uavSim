@@ -250,7 +250,7 @@ class h_CPPDisplay(CPPDisplay):
         else:
             print(f"Saved Plots in: {path}")
 
-    def save_lm_tm_and_q(self, state):
+    def save_lm_tm_and_q(self, state, p):
         data = self.get_data(copy.deepcopy(state))
         data_lm = self.get_data_lm(copy.deepcopy(state))
 
@@ -259,6 +259,30 @@ class h_CPPDisplay(CPPDisplay):
         plt.imshow(data)
         fig.add_subplot(1, 3, 2)
         # plt.imshow(lm[:, :, 3])
+        plt.imshow(data_lm)
+        fig.add_subplot(1, 3, 3)
+        plt.imshow(p, cmap='hot', interpolation='nearest')
+        plt.show()
+
+        p_val = p[:-1]
+
+        ### put -inf on view
+        p = p_val.reshape((self.params.goal_size, self.params.goal_size))
+
+        # goal = tf.one_hot(a,
+        #                   depth=self.num_actions_hl - 1).numpy().reshape(self.params.goal_size,
+        #                                                                  self.params.goal_size).astype(int)
+        d = 1
+        goal = np.pad(goal, ((d, d), (d, d)))
+        data = self.get_data(copy.deepcopy(state))
+        data_lm = self.get_data_lm(copy.deepcopy(state))
+
+        fig = plt.figure()
+        fig.add_subplot(1, 3, 1)
+        plt.imshow(data)
+        fig.add_subplot(1, 3, 2)
+        # plt.imshow(lm[:, :, 3])
+        data_lm += goal
         plt.imshow(data_lm)
         fig.add_subplot(1, 3, 3)
         plt.imshow(p, cmap='hot', interpolation='nearest')

@@ -23,6 +23,7 @@ class A_star:
     def __init__(self):
         self.stuff = None
         self.path = None
+        self.one_random = True
 
 
     ####### adapted from: https://stackoverflow.com/questions/43306291/find-the-nearest-nonzero-element-and-corresponding-index-in-a-2d-numpy-array
@@ -50,7 +51,8 @@ class A_star:
         return r[min_idx], c[min_idx]
 
     @staticmethod
-    @nb.jit(npython=True) # TODO: add input data classez
+    # @nb.jit(npython=True) # TODO: add input data classez
+    # @nb.jit
     def astar(maze, start, end):
         """
         Returns a list of tuples as a path from the given start to the given end in the given maze
@@ -72,15 +74,22 @@ class A_star:
 
         # Loop until you find the end
         i = 0
+        n = 0
+        m = 0
         while len(open_list) > 0:
+            m +=1
 
             # Get the current node
             current_node = open_list[0]
             current_index = 0
             for index, item in enumerate(open_list):
+                n +=1
                 if item.f < current_node.f:
                     current_node = item
                     current_index = index
+                if n > 3000:
+                    # print('breaking A0star search!!')
+                    return None
 
             # Pop current off open list, add to closed list
             open_list.pop(current_index)
@@ -93,6 +102,7 @@ class A_star:
                 while current is not None:
                     path.append(current.position)
                     current = current.parent
+                # print(f'number of inm is: {i} {n} while: {m}')
                 return path[::-1] # Return reversed path
 
             # Generate children
@@ -119,7 +129,8 @@ class A_star:
             # Loop through children
             for child in children:
                 i += 1
-                if i > 2000:
+                if i > 3000:
+                    # print('breaking A0star search!!')
                     return None
                 # print(i)
                 # Child is on the closed list
@@ -141,20 +152,24 @@ class A_star:
                 open_list.append(child)
 
     def get_A_star_action(self, state, steps_in_smdp):
-        obstacles = state.no_fly_zone * 1
+        # obstacles = state.no_fly_zone * 1
 
-        if steps_in_smdp == 1:
+        if steps_in_smdp == 1 or self.one_random:
             x, y = state.position
             start = (y, x) # TODO: keep track!!
             obstacles = state.no_fly_zone*1
             end = np.where(state.h_target == 1)
+            # self.path = self.astar(obstacles,start,end)
             try:
                 self.path = self.astar(obstacles, start, end)
+                self.one_random = False
                 # print(f'path: {self.path}')
             except:
+                self.one_random = True
                 return np.random.randint(0, 4)
 
         if self.path == None:
+            # print('random!!!')
             return np.random.randint(0, 4)
         else:
             # print(f'steps in smdp: {steps_in_smdp}')

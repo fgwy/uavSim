@@ -169,7 +169,7 @@ class A_star:
                 return np.random.randint(0, 4)
 
         if self.path == None:
-            # print('random!!!')
+            print('A-star: random action!!!')
             return np.random.randint(0, 4)
         else:
             # print(f'steps in smdp: {steps_in_smdp}')

@@ -45,11 +45,9 @@ class H_CPPRewards(GridRewards):
         if next_state.movement_budget == 0 and not next_state.landed:
             reward -= self.params.empty_battery_penalty
 
-        reward = reward/100
+        reward = reward / 10
         # Cumulative reward
         self.h_cumulative_reward += reward
-
-
 
         return reward
 
@@ -79,7 +77,7 @@ class H_CPPRewards(GridRewards):
 
         # reward collected target area
         reward += self.params.cell_multiplier_ll * (
-                    state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
+                state.get_remaining_h_target_cells() - next_state.get_remaining_h_target_cells())
 
         # cumulative reward_l
         self.l_cumulative_reward += reward
@@ -99,6 +97,6 @@ class H_CPPRewards(GridRewards):
         if next_state.current_ll_mb == 0 and not next_state.landed:
             reward -= self.params.empty_battery_penalty
 
-        reward = reward/10
+        reward = reward / 10
 
         return reward

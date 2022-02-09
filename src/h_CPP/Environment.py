@@ -54,8 +54,9 @@ class H_CPPEnvironment(BaseEnvironment):
 
         # while self.step_count < self.agent_manager.trainer.params.num_steps:
         while self.hl_steps < self.agent_manager.trainer.params.num_steps:
-            print(
-                f'\nepisode count: {self.episode_count}, eval period: {self.agent_manager.trainer.params.eval_period}, draw: {self.stats.params.draw}')
+            if self.episode_count%10==0:
+                print(
+                    f'\nepisode count: {self.episode_count}, eval period: {self.agent_manager.trainer.params.eval_period}, draw: {self.stats.params.draw}')
             state = copy.deepcopy(self.init_episode())
             self.stats.on_episode_begin(self.episode_count)
 
@@ -85,7 +86,8 @@ class H_CPPEnvironment(BaseEnvironment):
         tried_landing_and_succeeded = False
 
         while not self.physics.state.is_terminal():
-            bar.update(self.hl_steps - last_step)  # todo check this insanity
+            # bar.update(self.hl_steps - last_step)  # todo check this insanity
+            bar.update(1)
             last_step = self.hl_steps
             goal, goal_idx, try_landing, q = self.agent_manager.generate_goal(self.physics.state, random=random_h,
                                                                            exploit=test)
@@ -99,7 +101,7 @@ class H_CPPEnvironment(BaseEnvironment):
             # print(f'goal before resetting: {np.sum(goal * 1)}')
             state = self.physics.reset_h_target(goal)
             # print(f'goal before chack validity: {np.sum(state.h_target * 1)}')
-            valid = self.agent_manager.check_valid_target(self.physics.state) or try_landing
+            valid = self.agent_manager.check_valid_target(self.physics.state, test) or try_landing
 
             state_h = copy.deepcopy(self.physics.state)
 
@@ -117,7 +119,8 @@ class H_CPPEnvironment(BaseEnvironment):
 
             cumulative_reward_h += reward_h
 
-            self.hl_steps += 1
+            if not test:
+                self.hl_steps += 1
 
             # print(f'reward_h: {reward_h}')
 

@@ -62,7 +62,7 @@ class LL_DDQNAgent(object):
         self.scalars = example_state.get_num_scalars()
         self.goal_target_shape = example_state.get_goal_target_shape()
         self.num_actions_ll = 4 # len(type(example_action_ll))
-        print(f'## len actions ll: {self.num_actions_ll}')
+        # print(f'## len actions ll: {self.num_actions_ll}')
         self.example_goal = example_state.get_example_goal()
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
         self.ll_mb = example_state.get_initial_ll_movement_budget()

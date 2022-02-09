@@ -142,7 +142,7 @@ class AgentManager():
         q = 0
         if random:
             self.current_goal_idx = self.agent_hl.get_random_goal()
-        elif False: #exploit:
+        elif exploit:
             self.current_goal_idx, q = self.agent_hl.get_exploitation_goal(state)
 
         else:
@@ -163,24 +163,24 @@ class AgentManager():
 
         return self.current_goal, self.current_goal_idx, try_landing, q
 
-    def preproc_goal(self, goal, state):
-        """
-
-        :param state: goal already padded to total size (to enable comparison to view and
-        :return: PROCESSED GOAL
-        """
-        goal = goal*1
-        # print(f'goal before preproc: {np.sum(goal*1)}')
-        view = self.camera.computeView(state.position, 0)
-        # print(f'VIEW: {np.sum(view * 1)} {view.shape} {np.sum((~view) * 1)}')
-        # print(f'VIEW: {view}')
-        # print(f'VIEW: {~view}')
-        # goal = goal * ((~view) * 1)
-        # print(f'goal after VIEW: {np.sum(goal)}')
-        # goal *= ~state.no_fly_zone * 1
-        # goal *= (~state.obstacles) * 1
-        # print(f'goal after preproc: {np.sum(goal*1)}')
-        return goal.astype(bool)
+    # def preproc_goal(self, goal, state):
+    #     """
+    #
+    #     :param state: goal already padded to total size (to enable comparison to view and
+    #     :return: PROCESSED GOAL
+    #     """
+    #     goal = goal*1
+    #     # print(f'goal before preproc: {np.sum(goal*1)}')
+    #     view = self.camera.computeView(state.position, 0)
+    #     # print(f'VIEW: {np.sum(view * 1)} {view.shape} {np.sum((~view) * 1)}')
+    #     # print(f'VIEW: {view}')
+    #     # print(f'VIEW: {~view}')
+    #     # goal = goal * ((~view) * 1)
+    #     # print(f'goal after VIEW: {np.sum(goal)}')
+    #     # goal *= ~state.no_fly_zone * 1
+    #     # goal *= (~state.obstacles) * 1
+    #     # print(f'goal after preproc: {np.sum(goal*1)}')
+    #     return goal.astype(bool)
 
     def act_l(self, state, steps_in_smdp, exploit=False, random=False, use_astar=False):
         # print('########### act_l ################')
@@ -195,7 +195,7 @@ class AgentManager():
         else:
             return self.agent_ll.get_soft_max_exploration(state)
 
-    def check_valid_target(self, state):
+    def check_valid_target(self, state, test):
         total_goal = state.h_target * 1
         # print(f'htarget:{total_goal}')
         # if bool(np.sum(total_goal)):
@@ -216,27 +216,28 @@ class AgentManager():
             nfz = state.no_fly_zone * 1
             obs = state.obstacles * 1
             # on_nfz = np.any(total_goal * nfz) == 1
-            on_nfz = bool(np.sum(total_goal * nfz))
+            on_nfz = total_goal * nfz
+            on_nfz = bool(np.sum(on_nfz))
             # on_obs = np.any(total_goal * obs) == 1
             on_obs = bool(np.sum(total_goal * obs))
             inside_bounds = bool(np.sum(total_goal))
             on_position = np.any(total_goal * view*1) == 1
-            # if on_nfz:
-            #     print('on-nfz')
-            # elif on_obs:
-            #     print('on-obs')
-            # elif not inside_bounds:
-            #     print(f'not inside bounds {np.sum(total_goal)}')
-            # elif on_position:
-            #     print('on-position')
+            if on_nfz:
+                print(f'on-nfz: {np.sum()} test:{test}')
+            elif on_obs:
+                print(f'on-obs')
+            elif not inside_bounds:
+                print(f'not inside bounds {np.sum(total_goal)}')
+            elif on_position:
+                print(f'on-position')
 
-            valid = not on_obs and inside_bounds and not on_position # and not on_nfz
+            valid = not on_obs and inside_bounds and not on_position and not on_nfz
             # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
             # print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')
 
-            # if not valid:
-            #     # print('######################## Goal Not Valid ####################################')
-            #     pass
+            if not valid:
+                # print(f'######################## Goal Not Valid ####################################')
+                pass
         return valid
 
     def find_h_target_idx(self, state):

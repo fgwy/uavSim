@@ -11,7 +11,7 @@ def print_node(x):
     return x
 
 
-class DDQNAgentParams:
+class TD3AgentParams:
     def __init__(self):
         # Convolutional part config
         self.conv_layers = 2
@@ -39,9 +39,9 @@ class DDQNAgentParams:
         self.print_summary = False
 
 
-class DDQNAgent(object):
+class TD3Agent(object):
 
-    def __init__(self, params: DDQNAgentParams, example_state, example_action, stats=None):
+    def __init__(self, params: TD3AgentParams, example_state, example_action, stats=None):
 
         self.params = params
         gamma = tf.constant(self.params.gamma, dtype=float)

@@ -33,7 +33,7 @@ class H_CPPState(CPPState):
         self.local_map_size = 17
         self.goal_covered = False
 
-    def reset_h_target(self, h_target):
+    def reset_target_h(self, h_target):
         # if h_target.shape == self.get_boolean_map_shape():
         #     self.h_target = h_target
         # else:
@@ -42,7 +42,7 @@ class H_CPPState(CPPState):
         self.h_coverage = np.zeros(self.h_target.shape, dtype=bool)
         self.reset_ll_mb()
         self.set_terminal_h(False)
-        self.goal_covered = False
+        self.set_goal_covered(False)
 
     def pad_lm_to_total_size(self, h_target):
         """
@@ -167,11 +167,8 @@ class H_CPPState(CPPState):
     def get_boolean_map_ll_shape(self):
         return self.get_boolean_map_ll().shape
 
-
-
     def get_global_map_shape(self, gms):
         return self.get_global_map(gms).shape
-
 
     def get_example_goal(self):
         return self.h_target
@@ -197,7 +194,7 @@ class H_CPPState(CPPState):
 
     def set_goal_covered(self, covered):
         self.goal_covered = covered
-        self.set_terminal_h(True) # added setting terminal
+        self.set_terminal_h(covered) # added setting terminal
 
     def get_initial_ll_movement_budget(self):
         return self.initial_ll_movement_budget

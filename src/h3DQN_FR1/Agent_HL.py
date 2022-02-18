@@ -59,6 +59,7 @@ class HL_DDQNAgentParams:
         self.hidden_layer_num = 3
 
         # Hierarchical Params
+        self.only_valid_targets = True
 
         # Training Params
         self.learning_rate = 3e-5
@@ -217,15 +218,15 @@ class HL_DDQNAgent(object):
         goal, q = self._get_exploitation_goal(local_map_in, global_map_in, scalars)
         goal = goal.numpy()[0]
         q = q.numpy()[0]
-
-        q_man = self.manipulate_p(q, state)
-        goal_after = tf.argmax(q_man, axis=0, output_type=tf.int64).numpy()
+        if self.params.only_valid_targets:
+            q = self.manipulate_p(q, state)
+        goal_after = tf.argmax(q, axis=0, output_type=tf.int64).numpy()
         if goal != goal_after:
             print(f'different goals: before: {goal}, after: {goal_after}')
 
-        return (goal_after, q)
+        return goal_after, [q, 0]
 
-    @tf.function
+    # @tf.function
     def _get_exploitation_goal(self, local_map_in, global_map_in, scalars):
         a, q = self.exploit_model_hl([local_map_in, global_map_in, scalars])
         # tf.debugging.assert_all_finite(a, message='Nan in exploitation goal')
@@ -253,11 +254,13 @@ class HL_DDQNAgent(object):
         if np.any(np.isnan(local_map_in)) or np.any(np.isnan(global_map_in)) or np.any(np.isnan(scalars_in)):
             print(f'###################### Nan in act input: {np.isnan(local_map_in)}')
         p, q = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in)
+        # print(f'position: {state.position}')
         p = p.numpy()[0]
         p_sum = np.sum(p)
         if np.isnan(p_sum):
             print(f'Nan in p before manipulation!!!!! : {p_sum} {np.isnan(p_sum)}')
-        p = self.manipulate_p(p, state)
+        if self.params.only_valid_targets:
+            p = self.manipulate_p(p, state)
         p_sum = np.sum(p)
         # if print(f'isnan: {np.isnan(p_sum)}')
         if np.isnan(p_sum):
@@ -322,7 +325,7 @@ class HL_DDQNAgent(object):
         # plt.imshow(p, cmap='hot', interpolation='
         return a, [q, p]
 
-    @tf.function
+    # @tf.function
     def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars_in):
         p, q, max = self.soft_explore_model_hl([local_map_in, global_map_in, scalars_in])
         # print(f' sum Q vals: {tf.reduce_sum(q)}')
@@ -334,33 +337,39 @@ class HL_DDQNAgent(object):
         '''
         Series of manipulations to zero out probabilities of generating target at view and at obs
         '''
-        if any(p)<0:
-            print(p)
-            mx = -min(p)
+        if any(x<0 for x in p):
+            # print(p)
+            mx = min(p)
             # print(mx)
-            p += mx
-            print(p)
+            p -= mx
+            # print(p)
         ############### separate p and p land to manipulate p
+        # print(f'position: {state.position}')
         p_land = [p[-1]]
         # print(p_land)
         p_val = p[:-1]
 
         ### put -inf on view
         p = p_val.reshape((self.params.goal_size, self.params.goal_size))
-        view = 5 # TODO: Hardcoded
+        view = 5    # TODO: Hardcoded
         helper0 = int((p.shape[0] - 1) / 2 - (view - 1) / 2)
-        helper1 = int((p.shape[1] - 1) / 2 - (view - 1) / 2)  # beginning of mask for each dim
+        helper1 = int((p.shape[1] - 1) / 2 - (view - 1) / 2)    # beginning of mask for each dim
 
         # Set q-vals on view to zero
         for i in range(view):
             for j in range(view):
                 # p[i+helper0][j+helper1] = - math.inf
                 p[i + helper0][j + helper1] = 0
-        p = p.flatten()
+        # p = p.flatten()
 
         lm = state.get_local_map()*1
+        # print(lm.shape)
+        lm_1 = np.apply_over_axes(np.sum, lm, [2])
+        # print(lm_1.shape)
+        # plt.imshow(lm_1, cmap='BuGn')
+        # plt.show()
 
-        p = p.reshape((self.params.goal_size, self.params.goal_size))
+        # p = p.reshape((self.params.goal_size, self.params.goal_size))
 
         dv_i = int((lm.shape[0] - self.params.goal_size) / 2)
         dv_j = int((lm.shape[1] - self.params.goal_size) / 2)
@@ -368,16 +377,21 @@ class HL_DDQNAgent(object):
         # Set obs to zero TODO: Check LM!!!! Broken data is being received
         for i in range(p.shape[0]):
             for j in range(p.shape[1]):
-                if lm[i + dv_i, j + dv_j, 0] == 1 or lm[i + dv_i, j + dv_j, 1] == 1: # or lm[i + dv_i, j + dv_j, 1] == 1:
+                if lm[i + dv_i, j + dv_j, 0] or lm[i + dv_i, j + dv_j, 1]: # or lm[i + dv_i, j + dv_j, 1] == 1:
                     p[i][j] = 0
+
+        # plt.imshow(p)
+        # plt.show()
 
         p = p.reshape(self.params.goal_size**2)
 
         # normalize probabilities vector to sum up to one
         p = np.concatenate((p, p_land))
 
+
         # same sthing TEST!
         p_norm = p/p.sum()
+        # print(min(p_norm))
 
         # p = p / np.linalg.norm(p, ord=1)
         #
@@ -426,7 +440,7 @@ class HL_DDQNAgent(object):
         #     self.counter = 1
         # self.counter += 1
 
-    @tf.function
+    # @tf.function
     def _train_hl(self, local_map, global_map, scalars, action, reward, terminated, next_local_map, next_global_map,
                   next_scalars):
         self.training=True

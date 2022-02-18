@@ -291,6 +291,7 @@ class h_CPPDisplay(CPPDisplay):
 
     def get_data(self, state):
 
+        # lm_1 = np.apply_over_axes(np.sum, lm, [2])
         data = state.no_fly_zone.astype(bool)
         target = ~data * state.target
         # for dp in target:
@@ -311,6 +312,7 @@ class h_CPPDisplay(CPPDisplay):
         return data
 
     def get_lm_data(self, state):
+        # lm_1 = np.apply_over_axes(np.sum, lm, [2])
         lm = state.get_local_map().astype(bool)
         data = lm[:, :, 0]*1
         data += (~lm[:, :, 0].astype(bool) *1) * lm[:, :, 1] *2

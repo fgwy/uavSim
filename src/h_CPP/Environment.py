@@ -51,9 +51,13 @@ class H_CPPEnvironment(BaseEnvironment):
         print('Running ', self.stats.params.log_file_name)
         bar = tqdm.tqdm(total=int(self.agent_manager.trainer.params.num_steps))
         last_step = 0
+        w = 0
 
         # while self.step_count < self.agent_manager.trainer.params.num_steps:
-        while self.hl_steps < self.agent_manager.trainer.params.num_steps:
+        # while self.hl_steps < self.agent_manager.trainer.params.num_steps:
+        while True:
+            print(w)
+            w+=1
             if self.episode_count%10==0:
                 print(
                     f'\nepisode count: {self.episode_count}, eval period: {self.agent_manager.trainer.params.eval_period}, draw: {self.stats.params.draw}')
@@ -63,6 +67,7 @@ class H_CPPEnvironment(BaseEnvironment):
             ## run_MDP
             # test = True if self.episode_count % self.agent.trainer.params.eval_period == 0 else False #  and self.episode_count != 0
             test = True if self.episode_count % self.agent_manager.trainer.params.eval_period == 0 and self.episode_count != 0 else False
+            # test = False
             self.run_MDP(last_step, bar, episode_num=self.episode_count, test=test, random_h=self.agent_manager.params.pretrain_ll)
 
             self.stats.on_episode_end(self.episode_count)
@@ -84,14 +89,17 @@ class H_CPPEnvironment(BaseEnvironment):
         
         cumulative_reward_h = 0
         tried_landing_and_succeeded = False
-
+        i = 0
         while not self.physics.state.is_terminal():
+            # terminal = self.physics.state.is_terminal()
+            # terminal_h = self.physics.state.is_terminal_h()
+            i+=1
             # bar.update(self.hl_steps - last_step)  # todo check this insanity
             bar.update(1)
             last_step = self.hl_steps
             goal, goal_idx, try_landing, q = self.agent_manager.generate_goal(self.physics.state, random=random_h,
                                                                            exploit=test)
-            if self.hl_steps %1000 ==0:
+            if self.hl_steps %1000 == 0:
                 print(f'sum qval = {sum(q[0])}')
 
             # print(f'goal before padding: {np.sum(goal * 1)}')
@@ -101,7 +109,10 @@ class H_CPPEnvironment(BaseEnvironment):
             # print(f'goal before resetting: {np.sum(goal * 1)}')
             state = self.physics.reset_h_target(goal)
             # print(f'goal before chack validity: {np.sum(state.h_target * 1)}')
-            valid = self.agent_manager.check_valid_target(self.physics.state, test) or try_landing
+            if try_landing:
+                valid = True
+            else:
+                valid = self.agent_manager.check_valid_target(self.physics.state, test) or try_landing
 
             state_h = copy.deepcopy(self.physics.state)
 
@@ -130,6 +141,7 @@ class H_CPPEnvironment(BaseEnvironment):
                                                              copy.deepcopy(self.physics.state))
                 self.agent_manager.trainer.train_h()
 
+        print(f'Steps in episode: {i}')
         if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded:
             self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
                                        name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h, hl_steps=self.hl_steps)
@@ -154,6 +166,7 @@ class H_CPPEnvironment(BaseEnvironment):
             # bar.update(self.step_count - last_step)  # todo check this insanity
             # last_step = self.step_count
             if try_landing:
+                print('tried landing')
                 action = 4  # Landing action
                 self.physics.step(GridActions(action))
                 next_state = self.physics.set_terminal_h(True)
@@ -181,8 +194,10 @@ class H_CPPEnvironment(BaseEnvironment):
             if test and self.stats.params.draw:
                 self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
             display_trajectory.append(copy.deepcopy(self.physics.state))
+            # if next_state.h_terminal or next_state.goal_covered:
+            #     print(f'next state term?terminal: {next_state.is_terminal()} terminal_h: {next_state.h_terminal} goal active: {next_state.goal_active} goal_covered: {next_state.goal_covered}')
             # self.step_count += 1
-
+        # print(f'how many setps in smdp: {i}')
         return tried_landing_and_succeeded, last_step, display_trajectory
 
     def fill_replay_memory(self):
@@ -193,4 +208,3 @@ class H_CPPEnvironment(BaseEnvironment):
             while not state.terminal:
                 next_state = self.step(state, random=self.agent_manager.trainer.params.rm_pre_fill_random)
                 state = copy.deepcopy(next_state)
-

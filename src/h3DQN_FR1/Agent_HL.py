@@ -220,8 +220,8 @@ class HL_DDQNAgent(object):
 
         q_man = self.manipulate_p(q, state)
         goal_after = tf.argmax(q_man, axis=0, output_type=tf.int64).numpy()
-        if goal != goal_after:
-            print(f'different goals: before: {goal}, after: {goal_after}')
+        # if goal != goal_after:
+        #     print(f'different goals: before: {goal}, after: {goal_after}')
 
         return (goal_after, q)
 
@@ -335,11 +335,11 @@ class HL_DDQNAgent(object):
         Series of manipulations to zero out probabilities of generating target at view and at obs
         '''
         if any(p)<0:
-            print(p)
+            # print(p)
             mx = -min(p)
             # print(mx)
             p += mx
-            print(p)
+            # print(p)
         ############### separate p and p land to manipulate p
         p_land = [p[-1]]
         # print(p_land)

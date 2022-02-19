@@ -34,7 +34,7 @@ def save_json_to_logs(params, path):
         os.mkdir(path)
     except:
         print(f"couldn't create path: {path}")
-    with open(f'{path}config.json', 'w', encoding='utf-8') as f:
+    with open(f'{path}.json', 'w', encoding='utf-8') as f:
         json_data = json.dumps(params.__dict__, default=lambda o: o.__dict__, indent=4)
         # json.dump(json_data, f, ensure_ascii=False, indent=4)
         f.write(json_data)

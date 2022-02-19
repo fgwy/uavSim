@@ -100,5 +100,5 @@ class H_CPPPhysics(GridPhysics):
 
     def reset_h_target(self, goal):
         goal = goal.astype(bool)
-        self.state.reset_h_target(goal)
+        self.state.reset_target_h(goal)
         return self.state

@@ -144,15 +144,18 @@ class AgentManager():
             self.current_goal_idx = self.agent_hl.get_random_goal()
         elif exploit:
             self.current_goal_idx, q = self.agent_hl.get_exploitation_goal(state)
+            # print(q)
 
         else:
             if self.params.use_soft_max:
                 self.current_goal_idx, q = self.agent_hl.get_softmax_goal(state)
             else:
+                print(f'epsilon_greedy!!')
                 self.current_goal_idx = self.agent_hl.get_eps_greedy_action(state)
 
         # generate goal out of idx
         if self.current_goal_idx == self.agent_hl.num_actions_hl - 1:
+            print('tried landing')
             try_landing = True
             self.current_goal = np.zeros((self.hl_agent_params.goal_size, self.hl_agent_params.goal_size))  # todo please
         else:
@@ -201,6 +204,7 @@ class AgentManager():
         # if bool(np.sum(total_goal)):
         # print(f'at least one goal in total goal: {bool(np.sum(total_goal))}')
         if self.multigoal:
+            # TODO: Consider eliminating all nfz before
             inside_bounds = bool(np.sum(total_goal))
             valid = inside_bounds
         else:

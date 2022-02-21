@@ -52,15 +52,16 @@ class H_CPPEnvironment(BaseEnvironment):
         bar = tqdm.tqdm(total=int(self.agent_manager.trainer.params.num_steps))
         last_step = 0
         w = 0
+        steps_ins_mdp = 0
 
         # while self.step_count < self.agent_manager.trainer.params.num_steps:
-        # while self.hl_steps < self.agent_manager.trainer.params.num_steps:
-        while True:
-            print(w)
+        while self.hl_steps < self.agent_manager.trainer.params.num_steps:
+        # while True:
+            # print(w)
             w+=1
             if self.episode_count%10==0:
                 print(
-                    f'\nepisode count: {self.episode_count}, eval period: {self.agent_manager.trainer.params.eval_period}, draw: {self.stats.params.draw}')
+                    f'\nepisode count: {self.episode_count}, steps in mdp: {steps_ins_mdp} eval period: {self.agent_manager.trainer.params.eval_period}, draw: {self.stats.params.draw}')
             state = copy.deepcopy(self.init_episode())
             self.stats.on_episode_begin(self.episode_count)
 
@@ -68,7 +69,7 @@ class H_CPPEnvironment(BaseEnvironment):
             # test = True if self.episode_count % self.agent.trainer.params.eval_period == 0 else False #  and self.episode_count != 0
             test = True if self.episode_count % self.agent_manager.trainer.params.eval_period == 0 and self.episode_count != 0 else False
             # test = False
-            self.run_MDP(last_step, bar, episode_num=self.episode_count, test=test, random_h=self.agent_manager.params.pretrain_ll)
+            steps_ins_mdp = self.run_MDP(last_step, bar, episode_num=self.episode_count, test=test, random_h=self.agent_manager.params.pretrain_ll)
 
             self.stats.on_episode_end(self.episode_count)
             self.stats.log_training_data(step=self.step_count)
@@ -99,8 +100,8 @@ class H_CPPEnvironment(BaseEnvironment):
             last_step = self.hl_steps
             goal, goal_idx, try_landing, q = self.agent_manager.generate_goal(self.physics.state, random=random_h,
                                                                            exploit=test)
-            if self.hl_steps %1000 == 0:
-                print(f'sum qval = {sum(q[0])}')
+            # if self.hl_steps %1000 == 0:
+            #     print(f'sum qval = {sum(q[0])}')
 
             # print(f'goal before padding: {np.sum(goal * 1)}')
             goal = self.physics.state.pad_lm_to_total_size(goal)
@@ -141,7 +142,7 @@ class H_CPPEnvironment(BaseEnvironment):
                                                              copy.deepcopy(self.physics.state))
                 self.agent_manager.trainer.train_h()
 
-        print(f'Steps in episode: {i}')
+        # print(f'H-Steps in episode: {i}')
         if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded:
             self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
                                        name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h, hl_steps=self.hl_steps)
@@ -151,7 +152,7 @@ class H_CPPEnvironment(BaseEnvironment):
             self.agent_manager.save_weights(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}/')
             self.agent_manager.save_models(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}/')
 
-
+        return i
 
     def run_subMDP(self, valid, bar, last_step, try_landing, display_trajectory, test=False, random_l=False,
                    prefill=False):
@@ -166,10 +167,11 @@ class H_CPPEnvironment(BaseEnvironment):
             # bar.update(self.step_count - last_step)  # todo check this insanity
             # last_step = self.step_count
             if try_landing:
+                # todo: check!! enters twice before landing
                 print('tried landing')
                 action = 4  # Landing action
-                self.physics.step(GridActions(action))
-                next_state = self.physics.set_terminal_h(True)
+                next_state = self.physics.step(GridActions(action))
+                # next_state = self.physics.set_terminal_h(True)
                 tried_landing_and_succeeded = next_state.landed
                 if tried_landing_and_succeeded:
                     print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {GridActions(4)}')

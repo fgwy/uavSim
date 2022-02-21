@@ -200,21 +200,12 @@ class AgentManager():
 
     def check_valid_target(self, state, test):
         total_goal = state.h_target * 1
-        # print(f'htarget:{total_goal}')
-        # if bool(np.sum(total_goal)):
-        # print(f'at least one goal in total goal: {bool(np.sum(total_goal))}')
+
         if self.multigoal:
             # TODO: Consider eliminating all nfz before
             inside_bounds = bool(np.sum(total_goal))
             valid = inside_bounds
         else:
-            # total_goal = state.pad_lm_to_total_size(target_lm)
-
-            # if np.sum(total_goal) == 0:
-            #     print('######################## Goal Not Valid ####################################')
-            #     return False
-            # nfz = np.logical_not(state.no_fly_zone)
-            # obs = np.logical_not(state.obstacles)
 
             view = self.camera.computeView(state.position, 0)
             nfz = state.no_fly_zone * 1
@@ -236,12 +227,10 @@ class AgentManager():
                 print(f'on-position')
 
             valid = not on_obs and inside_bounds and not on_position and not on_nfz
-            # valid = not np.all(valid1 == 0) or not np.all(valid2 == 0)
-            # print(f'Goal on obs: {on_nfz} # On nfz: {on_obs} # Outside Bounds: {not inside_bounds} # Goal valid: {valid}')
 
             if not valid:
-                # print(f'######################## Goal Not Valid ####################################')
-                pass
+                print(f'######################## Goal Not Valid ####################################')
+                # pass
         return valid
 
     def find_h_target_idx(self, state):

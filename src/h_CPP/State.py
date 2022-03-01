@@ -1,7 +1,7 @@
 import numpy as np
 
 from src.Map.Map import Map
-from src.StateUtils import pad_centered
+from src.StateUtils import pad_centered, pad_with_nfz_gm
 from src.CPP.State import CPPState
 
 from tensorflow.image import central_crop
@@ -150,9 +150,13 @@ class H_CPPState(CPPState):
         return local_map
 
     def get_global_map(self, global_map_scaling):
-        pm = self.get_padded_map()[tf.newaxis, ...]
+        pm = self.get_padded_map()
+        # print(f'global map shape: {pm.shape}')
+        pm = pad_with_nfz_gm(pm)[tf.newaxis, ...]
+        # print(f'global map shape: {pm.shape}')
         self.global_map = AvgPool2D((global_map_scaling, global_map_scaling))(pm)
         self.global_map = tf.squeeze(self.global_map).numpy()
+        # print(f'global map shape: {self.global_map.shape}')
         return self.global_map
 
     def get_float_map_ll_shape(self):

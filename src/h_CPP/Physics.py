@@ -3,6 +3,7 @@ from src.CPP.SimpleSquareCamera import SimpleSquareCameraParams, SimpleSquareCam
 from src.ModelStats import ModelStats
 from src.base.GridActions import GridActions, GridActionsNoHover
 from src.base.GridPhysics import GridPhysics
+from src.h_CPP.Grid import H_CPPGrid
 
 
 class H_CPPPhysicsParams:
@@ -53,7 +54,8 @@ class H_CPPPhysics(GridPhysics):
     def vision_step(self):
         view = self.camera.computeView(self.state.position, 0)
         self.state.add_explored(view)
-        self.state.add_explored_h_target(view)
+        view_ll = self.camera.computeView(self.state.position, 0, 0)
+        self.state.add_explored_h_target(view_ll)
 
     def get_example_action(self):
         return [self.get_example_action_h(), self.get_example_action_l()]
@@ -102,3 +104,6 @@ class H_CPPPhysics(GridPhysics):
         goal = goal.astype(bool)
         self.state.reset_target_h(goal)
         return self.state
+
+    def reset_camera(self, path):
+        self.camera.initialize(path)

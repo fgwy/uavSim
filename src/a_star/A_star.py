@@ -166,6 +166,7 @@ class A_star:
                 # print(f'path: {self.path}')
             except:
                 self.one_random = True
+                print(f'A-star: one random action right away!!')
                 return np.random.randint(0, 4)
 
         if self.path == None:

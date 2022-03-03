@@ -15,6 +15,9 @@ class RandomTargetGenerator:
         self.params = params
         self.shape = shape
 
+    def update_shape(self, shape):
+        self.shape = shape
+
     def generate_target(self, obstacles):
 
         area = np.product(self.shape)

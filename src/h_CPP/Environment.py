@@ -65,6 +65,8 @@ class H_CPPEnvironment(BaseEnvironment):
             state = copy.deepcopy(self.init_episode())
             self.stats.on_episode_begin(self.episode_count)
 
+            # print(f'initial movement budget: {state.initial_movement_budget}')
+
             ## run_MDP
             # test = True if self.episode_count % self.agent.trainer.params.eval_period == 0 else False #  and self.episode_count != 0
             test = True if self.episode_count % self.agent_manager.trainer.params.eval_period == 0 and self.episode_count != 0 else False
@@ -210,3 +212,21 @@ class H_CPPEnvironment(BaseEnvironment):
             while not state.terminal:
                 next_state = self.step(state, random=self.agent_manager.trainer.params.rm_pre_fill_random)
                 state = copy.deepcopy(next_state)
+
+    def init_episode(self, init_state=None, test=False):
+        if self.params.agent_params.random_map:
+            if test:
+                state, path = copy.deepcopy(self.grid.random_new_map_image_test())
+                self.physics.reset_camera(path)
+            else:
+                state, path = copy.deepcopy(self.grid.random_new_map_image_train())
+                self.physics.reset_camera(path)
+        else:
+            if init_state:
+                state = copy.deepcopy(self.grid.init_scenario(init_state))
+            else:
+                state = copy.deepcopy(self.grid.init_episode())
+
+        self.rewards.reset()
+        self.physics.reset(state)
+        return state

@@ -6,12 +6,19 @@ from src.h_CPP.State import H_CPPState
 from src.CPP.RandomTargetGenerator import RandomTargetGenerator, RandomTargetGeneratorParams
 from src.base.BaseGrid import BaseGrid, BaseGridParams
 
+import src.Map.Map as Map
+
 
 class H_CPPGridParams(BaseGridParams):
     def __init__(self):
         super().__init__()
         self.generator_params = RandomTargetGeneratorParams()
         self.local_map_size = 17
+        self.train_map_set = ['res/manhattan32.png',
+                              'res/urban50.png',
+                              'res/easy50.png',
+                              'res/barrier50.png']
+        self.test_map_set = ['']
 
 
 class H_CPPGrid(BaseGrid):
@@ -24,6 +31,7 @@ class H_CPPGrid(BaseGrid):
         self.target_zone = self.generator.generate_target(self.map_image.obstacles)
 
     def init_episode(self):
+        self.generator.update_shape(self.map_image.get_size())
         self.target_zone = self.generator.generate_target(self.map_image.obstacles)
 
         state = H_CPPState(self.map_image)
@@ -74,3 +82,24 @@ class H_CPPGrid(BaseGrid):
 
     def get_target_zone(self):
         return self.target_zone
+
+
+    def random_new_map_image_train(self):
+        a = np.random.randint(0, len(self.params.train_map_set))
+        self.map_image = Map.load_map(self.params.train_map_set[a])
+        self.shape = self.map_image.start_land_zone.shape
+        self.generator.update_shape(self.shape)
+        self.starting_vector = self.map_image.get_starting_vector()
+        self.stats.set_env_map_callback(self.get_map_image)
+        state = self.init_episode()
+        return state, self.params.train_map_set[a]
+
+    def random_new_map_image_test(self):
+        a = np.random.randint(0, len(self.params.test_map_set))
+        self.map_image = Map.load_map(self.params.test_map_set[a])
+        self.shape = self.map_image.start_land_zone.shape
+        self.generator.update_shape(self.shape)
+        self.starting_vector = self.map_image.get_starting_vector()
+        self.stats.set_env_map_callback(self.get_map_image)
+        state = self.init_episode()
+        return state, self.params.test_map_set[a]

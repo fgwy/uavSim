@@ -23,7 +23,8 @@
             "res/easy50.png",
             "res/barrier50.png",
             "res/center60.png",
-            "res/maze80.png"
+            "res/maze60.png",
+            "res/random60.png"
         ],
         "self.test_map_set": [
             "res/manhattan32.png",
@@ -71,7 +72,7 @@
             "rm_size_ll": 50000,
             "rm_size_hl": 50000,
             "load_model": "",
-            "use_astar": true,
+            "use_astar": false,
             "rm_pre_fill_multiplier_ll": 10,
             "rm_pre_fill_multiplier_hl": 1
         },

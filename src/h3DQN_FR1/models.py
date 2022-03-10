@@ -51,6 +51,45 @@ def build_lm_preproc_model(local_map_in, name=''):
 
     return model
 
+def build_ll_model(states_in, initial_mb, num_actions, path_to_local_pretrained_weights=None, name=''):
+
+    local_map_in, states_proc_in = states_in
+
+    states_proc = states_proc_in / initial_mb + 1e-6
+
+    local_map_model = build_lm_preproc_model(local_map_in, name)
+
+    if path_to_local_pretrained_weights:
+        print(f'Loading weights from: {path_to_local_pretrained_weights}')
+        local_map_model.load_weights(path_to_local_pretrained_weights)
+    flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
+
+    flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
+        [flatten_local, states_proc])
+
+    # layer = tf.keras.layers.Concatenate(name=name + 'concat')([flatten_map, states_proc_in])
+
+    layer_1 = tf.keras.layers.Dense(256, activation=None, name=name + 'hidden_layer_all_ll_' + str(0))(
+        flatten_map)
+    norm = tf.keras.layers.LayerNormalization()(layer_1)
+    norm = swish(norm)
+    layer_2 = tf.keras.layers.Dense(256, activation=None, name=name + 'hidden_layer_all_ll_' + str(1))(
+        norm)
+    norm = tf.keras.layers.LayerNormalization()(layer_2)
+    norm = swish(norm)
+    # layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
+    #     layer_1)
+
+    output = tf.keras.layers.Dense(units=300, activation=None, name=name + 'last_dense_layer_ll')(
+        norm)
+    norm_out = tf.keras.layers.LayerNormalization()(output)
+    norm_out = swish(norm_out)
+    q_vals = tf.keras.layers.Dense(units=num_actions, activation=None, name=name + 'q_layer')(norm_out)
+
+    model = tf.keras.Model (inputs=[local_map_in, states_proc_in], outputs=q_vals)
+
+    return model
+
 
 def build_hl_model(states_in, goal_size, local_map_shape, use_skip, initial_mb, path_to_local_pretrained_weights=None,
                    name=''):  # local:17,17,4; global:21:21,4
@@ -69,7 +108,7 @@ def build_hl_model(states_in, goal_size, local_map_shape, use_skip, initial_mb, 
     if path_to_local_pretrained_weights:
         print(f'Loading weights from: {path_to_local_pretrained_weights}')
         local_map_model.load_weights(path_to_local_pretrained_weights)
-    flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model(local_map_in)
+    flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
 
     # global map processing layers
 

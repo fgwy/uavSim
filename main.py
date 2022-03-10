@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--params', nargs='*', default=None)
 
-    parser.add_argument('--h_cpp', action='store_true', help='Run Coverage Path Planning with hierarchical Agent')
+    parser.add_argument('--h_cpp', action='store_true', help='Run Coverage Path Planning with hierarchical Agent', default=True)
     parser.add_argument('--cpp', action='store_true', help='Run Coverage Path Planning')
     parser.add_argument('--dh', action='store_true', help='Run Path Planning for Data Harvesting')
     parser.add_argument('--multi', action='store_true', help='Run Path Planning for Multi (So far only DH)')
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         elif args.dh:
             generate_config(DHEnvironmentParams(), "config/old_configs/dh.json")
         elif args.cpp:
-            generate_config(CPPEnvironmentParams(), "config/old_configs/cpp.json")
+            generate_config(CPPEnvironmentParams(), "config/cpp_test.json")
         else:
             print("Specify which config to generate, DH or CPP")
         exit(0)
@@ -80,13 +80,12 @@ if __name__ == "__main__":
     save_json_to_logs(params, 'logs/plots/' + str(params.model_stats_params.log_file_name) + '/')
 
 
-    # if args.cpp:
-    #     main_cpp(params)
-    # elif args.h_cpp:
-    #     main_h(params)
-    # elif args.dh:
-    #     if args.multi:
-    #         main_dh_multi(params)
-    #     else:
-    #         main_dh(params)
-    main_h(params)
+    if args.cpp:
+        main_cpp(params)
+    elif args.h_cpp:
+        main_h(params)
+    elif args.dh:
+        if args.multi:
+            main_dh_multi(params)
+        else:
+            main_dh(params)

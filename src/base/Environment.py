@@ -17,6 +17,7 @@ class BaseEnvironment:
         self.stats = ModelStats(params.model_stats_params, display=display)
         self.trainer = None
         self.agent_manager = None
+        self.agent = None
         self.grid = None
         self.rewards = None
         self.physics = None
@@ -24,52 +25,52 @@ class BaseEnvironment:
         self.episode_count = 0
         self.step_count = 0
 
-    def fill_replay_memory(self):
+    # def fill_replay_memory(self):
+    #
+    #     while self.trainer.should_fill_replay_memory():
+    #
+    #         state = copy.deepcopy(self.init_episode())
+    #         while not state.terminal:
+    #             next_state = self.step(state, random=self.trainer.params.rm_pre_fill_random)
+    #             state = copy.deepcopy(next_state)
 
-        while self.trainer.should_fill_replay_memory():
+    # def train_episode(self):
+    #     state = copy.deepcopy(self.init_episode())
+    #     self.stats.on_episode_begin(self.episode_count)
+    #     while not state.is_terminal():
+    #         state = self.step(state)
+    #         self.trainer.train_agent()
+    #
+    #     self.stats.on_episode_end(self.episode_count)
+    #     self.stats.log_training_data(step=self.step_count)
+    #
+    #     self.episode_count += 1
 
-            state = copy.deepcopy(self.init_episode())
-            while not state.terminal:
-                next_state = self.step(state, random=self.trainer.params.rm_pre_fill_random)
-                state = copy.deepcopy(next_state)
-
-    def train_episode(self):
-        state = copy.deepcopy(self.init_episode())
-        self.stats.on_episode_begin(self.episode_count)
-        while not state.is_terminal():
-            state = self.step(state)
-            self.trainer.train_agent()
-
-        self.stats.on_episode_end(self.episode_count)
-        self.stats.log_training_data(step=self.step_count)
-
-        self.episode_count += 1
-
-    def run(self):
-
-        self.fill_replay_memory()
-
-        print('Running ', self.stats.params.log_file_name)
-
-        bar = tqdm.tqdm(total=int(self.trainer.params.num_steps))
-        last_step = 0
-        while self.step_count < self.trainer.params.num_steps:
-            bar.update(self.step_count - last_step)
-            last_step = self.step_count
-            self.train_episode()
-
-            if self.episode_count % self.trainer.params.eval_period == 0:
-                self.test_episode()
-
-            self.stats.save_if_best()
-
-        self.stats.training_ended()
+    # def run(self):
+    #
+    #     self.fill_replay_memory()
+    #
+    #     print('Running ', self.stats.params.log_file_name)
+    #
+    #     bar = tqdm.tqdm(total=int(self.trainer.params.num_steps))
+    #     last_step = 0
+    #     while self.step_count < self.trainer.params.num_steps:
+    #         bar.update(self.step_count - last_step)
+    #         last_step = self.step_count
+    #         self.train_episode()
+    #
+    #         if self.episode_count % self.trainer.params.eval_period == 0:
+    #             self.test_episode()
+    #
+    #         self.stats.save_if_best()
+    #
+    #     self.stats.training_ended()
 
     def step(self, state, random=False):
         if random:
-            action = self.agent_manager.get_random_action()
+            action = self.agent.get_random_action()
         else:
-            action = self.agent_manager.act(state)
+            action = self.agent.act(state)
         next_state = self.physics.step(GridActions(action))
         reward = self.rewards.calculate_reward(state, GridActions(action), next_state)
         self.trainer.add_experience(state, action, reward, next_state)
@@ -77,18 +78,18 @@ class BaseEnvironment:
         self.step_count += 1
         return copy.deepcopy(next_state)
 
-    def test_episode(self, scenario=None):
-        state = copy.deepcopy(self.init_episode(scenario))
-        self.stats.on_episode_begin(self.episode_count)
-        while not state.terminal:
-            action = self.agent_manager.get_exploitation_action_target(state)
-            next_state = self.physics.step(GridActions(action))
-            reward = self.rewards.calculate_reward(state, GridActions(action), next_state)
-            self.stats.add_experience((copy.deepcopy(state), action, reward, copy.deepcopy(next_state)))
-            state = copy.deepcopy(next_state)
-
-        self.stats.on_episode_end(self.episode_count)
-        self.stats.log_testing_data(step=self.step_count)
+    # def test_episode(self, scenario=None):
+    #     state = copy.deepcopy(self.init_episode(scenario, test=True))
+    #     self.stats.on_episode_begin(self.episode_count)
+    #     while not state.terminal:
+    #         action = self.agent_manager.get_exploitation_action_target(state)
+    #         next_state = self.physics.step(GridActions(action))
+    #         reward = self.rewards.calculate_reward(state, GridActions(action), next_state)
+    #         self.stats.add_experience((copy.deepcopy(state), action, reward, copy.deepcopy(next_state)))
+    #         state = copy.deepcopy(next_state)
+    #
+    #     self.stats.on_episode_end(self.episode_count)
+    #     self.stats.log_testing_data(step=self.step_count)
 
     def test_scenario(self, scenario):
         state = copy.deepcopy(self.init_episode(scenario))
@@ -96,15 +97,17 @@ class BaseEnvironment:
             action = self.agent_manager.get_exploitation_action_target(state)
             state = self.physics.step(GridActions(action))
 
-    def init_episode(self, init_state=None):
-        if init_state:
-            state = copy.deepcopy(self.grid.init_scenario(init_state))
-        else:
-            state = copy.deepcopy(self.grid.init_episode())
+    # def init_episode(self, init_state=None):
+    #     if init_state:
+    #         state = copy.deepcopy(self.grid.init_scenario(init_state))
+    #     else:
+    #         state = copy.deepcopy(self.grid.init_episode())
+    #
+    #     self.rewards.reset()
+    #     self.physics.reset(state)
+    #     return state
 
-        self.rewards.reset()
-        self.physics.reset(state)
-        return state
+
 
     def eval(self, episodes, show=False):
         for _ in tqdm.tqdm(range(episodes)):

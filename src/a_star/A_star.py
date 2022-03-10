@@ -76,6 +76,7 @@ class A_star:
         i = 0
         n = 0
         m = 0
+        limit = 30000
         while len(open_list) > 0:
             m +=1
 
@@ -87,7 +88,7 @@ class A_star:
                 if item.f < current_node.f:
                     current_node = item
                     current_index = index
-                if n > 3000:
+                if n > limit:
                     # print('breaking A0star search!!')
                     return None
 
@@ -129,7 +130,7 @@ class A_star:
             # Loop through children
             for child in children:
                 i += 1
-                if i > 3000:
+                if i > limit:
                     # print('breaking A0star search!!')
                     return None
                 # print(i)
@@ -171,8 +172,10 @@ class A_star:
 
         if self.path == None:
             print('A-star: random action!!!')
+            self.one_random = True
             return np.random.randint(0, 4)
         else:
+            self.one_random = False
             # print(f'steps in smdp: {steps_in_smdp}')
             a = self.path[steps_in_smdp][0]-self.path[steps_in_smdp-1][0] # x
             b = self.path[steps_in_smdp][1]-self.path[steps_in_smdp-1][1] # y

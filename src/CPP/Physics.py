@@ -14,8 +14,8 @@ class CPPPhysics(GridPhysics):
     def __init__(self, params: CPPPhysicsParams, stats: ModelStats):
         super().__init__()
         self.landed = False
-
-        self.camera = None
+        self.params = params
+        self.camera = SimpleSquareCamera(self.params.camera_params)
 
         self.params = params
 
@@ -35,7 +35,7 @@ class CPPPhysics(GridPhysics):
         GridPhysics.reset(self, state)
         self.landed = False
 
-        self.camera = SimpleSquareCamera(self.params.camera_params)
+        # self.camera = SimpleSquareCamera(self.params.camera_params)
 
     def step(self, action: GridActions):
         self.movement_step(action)
@@ -77,3 +77,6 @@ class CPPPhysics(GridPhysics):
 
     def has_landed(self):
         return self.landed
+
+    def reset_camera(self, path):
+        self.camera.initialize(path)

@@ -55,7 +55,8 @@ def build_ll_model(states_in, initial_mb, num_actions, path_to_local_pretrained_
 
     local_map_in, states_proc_in = states_in
 
-    states_proc = states_proc_in / initial_mb + 1e-6
+    # states_proc = states_proc_in / initial_mb + 1e-6
+    states_proc = states_proc_in / 30
 
     local_map_model = build_lm_preproc_model(local_map_in, name)
 
@@ -102,7 +103,8 @@ def build_hl_model(states_in, goal_size, local_map_shape, use_skip, initial_mb, 
     # global_map_in_sg = tf.stop_gradient(global_map_in)
     # states_proc_in_sg = tf.stop_gradient(states_proc_in)
 
-    states_proc = states_proc_in / initial_mb + 1e-6
+    # states_proc = states_proc_in / initial_mb + 1e-6
+    states_proc = states_proc_in / 100
 
     local_map_model = build_lm_preproc_model(local_map_in, name)
     if path_to_local_pretrained_weights:
@@ -255,7 +257,8 @@ def build_hl_model_ddqn_masked_dueling(states_in, goal_size, local_map_shape, us
     # global_map_in_sg = tf.stop_gradient(global_map_in)
     # states_proc_in_sg = tf.stop_gradient(states_proc_in)
 
-    states_proc = states_proc_in / initial_mb + 1e-6
+    # states_proc = states_proc_in / initial_mb + 1e-6
+    states_proc = states_proc_in / 100
 
     local_map_model = build_lm_preproc_model(local_map_in, name)
     if path_to_local_pretrained_weights:
@@ -406,7 +409,9 @@ def build_hl_model_ddqn_masked_non_dueling(states_in, goal_size, local_map_shape
     # global_map_in_sg = tf.stop_gradient(global_map_in)
     # states_proc_in_sg = tf.stop_gradient(states_proc_in)
 
-    states_proc = states_proc_in / initial_mb + 1e-6
+    # states_proc = states_proc_in / initial_mb + 1e-6
+
+    states_proc = states_proc_in / 100
 
     local_map_model = build_lm_preproc_model(local_map_in, name)
     if path_to_local_pretrained_weights:

@@ -63,7 +63,8 @@ def build_flat_model_masked(states_in, num_actions, initial_mb, path_to_local_pr
     # global_map_in_sg = tf.stop_gradient(global_map_in)
     # states_proc_in_sg = tf.stop_gradient(states_proc_in)
 
-    states_proc = states_proc_in / initial_mb + 1e-6
+    # states_proc = states_proc_in / initial_mb + 1e-6
+    states_proc = states_proc_in / 100
 
     local_map_model = build_lm_preproc_model(local_map_in, name)
     # if path_to_local_pretrained_weights:
@@ -121,6 +122,8 @@ def build_flat_model_masked(states_in, num_actions, initial_mb, path_to_local_pr
 
     Q_vals = tf.where(b, -np.inf, Q_vals)
 
+    print(f'Qvals: {Q_vals}')
+
 
     model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
     return model
@@ -136,7 +139,8 @@ def build_flat_model_no_mask(states_in, num_actions, initial_mb, path_to_local_p
     # global_map_in_sg = tf.stop_gradient(global_map_in)
     # states_proc_in_sg = tf.stop_gradient(states_proc_in)
 
-    states_proc = states_proc_in / initial_mb + 1e-6
+    # states_proc = states_proc_in / initial_mb + 1e-6
+    states_proc = states_proc_in / 100
 
     local_map_model = build_lm_preproc_model(local_map_in, name)
     # if path_to_local_pretrained_weights:
@@ -182,6 +186,10 @@ def build_flat_model_no_mask(states_in, num_actions, initial_mb, path_to_local_p
 
     Q_vals = tf.keras.layers.Dense(units=num_actions, activation=None, name=name + 'last_dense_layer_hl')(
         norm)
+
+    tf.debugging.assert_all_finite(Q_vals, message='Nan in Q_vals')
+
+    print(f'Qvals: {Q_vals}')
 
     model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
     return model

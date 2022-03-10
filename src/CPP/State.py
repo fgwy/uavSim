@@ -27,7 +27,7 @@ class CPPState(BaseState):
         self.landed = False
         self.terminal = False
 
-        self.initial_movement_budget = None
+        self.initial_movement_budget = 180
         self.initial_target_cell_count = 0
         self.coverage = None
         self.local_map_size = 17
@@ -133,3 +133,6 @@ class CPPState(BaseState):
 
     def get_global_map_shape(self, gms):
         return self.get_global_map(gms).shape
+
+    def get_initial_mb(self):
+        return self.initial_movement_budget

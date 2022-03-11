@@ -1,32 +1,35 @@
 import argparse
 import os
-
+from src.DHMulti.Environment import DHMultiEnvironment
+from src.h_CPP.Environment import H_CPPEnvironmentParams, H_CPPEnvironment
+from src.DH.Environment import DHEnvironmentParams, DHEnvironment
+from src.CPP.Environment import CPPEnvironment, CPPEnvironmentParams
 
 from utils import *
 
 
 def main_cpp(p):
-    from src.CPP.Environment import CPPEnvironment, CPPEnvironmentParams
+
     env = CPPEnvironment(p)
 
     env.run()
 
 
 def main_dh(p):
-    from src.DH.Environment import DHEnvironmentParams, DHEnvironment
+
     env = DHEnvironment(p)
 
     env.run()
 
 def main_h(p):
-    from src.h_CPP.Environment import H_CPPEnvironmentParams, H_CPPEnvironment
+
     env = H_CPPEnvironment(p)
 
     env.run()
 
 
 def main_dh_multi(p):
-    from src.DHMulti.Environment import DHMultiEnvironment
+
     env = DHMultiEnvironment(p)
 
     env.run()
@@ -78,7 +81,6 @@ if __name__ == "__main__":
 
     save_json_to_logs(params, params.model_stats_params.save_model + f'{params.model_stats_params.log_file_name}/')
     save_json_to_logs(params, 'logs/plots/' + str(params.model_stats_params.log_file_name) + '/')
-
 
     if args.cpp:
         main_cpp(params)

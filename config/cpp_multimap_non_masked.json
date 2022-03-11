@@ -1,6 +1,6 @@
 {
     "model_stats_params": {
-        "save_model": "models/save_model",
+        "save_model": "models/save_model/",
         "moving_average_length": 50,
         "log_file_name": "multimap_flatag_masked",
         "training_images": false

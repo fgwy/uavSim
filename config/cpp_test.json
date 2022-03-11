@@ -69,7 +69,8 @@
         "use_global_local": true,
         "global_map_scaling": 3,
         "local_map_size": 17,
-        "print_summary": false
+        "print_summary": false,
+        "masked": false
     },
     "physics_params": {
         "camera_params": {

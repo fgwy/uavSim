@@ -161,7 +161,7 @@ class DDQNAgent(object):
 
         return self._get_exploitation_action(local_map_in, global_map_in, scalars).numpy()[0]
 
-    # @tf.function
+    @tf.function
     def _get_exploitation_action(self, local_map_in, global_map_in, scalars):
         a =  self.exploit_model([local_map_in, global_map_in, scalars])
         tf.debugging.assert_all_finite(a, message='Nan in exploit_act')
@@ -179,7 +179,7 @@ class DDQNAgent(object):
         tf.debugging.assert_all_finite(p, message='Nan in p')
         return np.random.choice(range(self.num_actions), size=1, p=p)
 
-    # @tf.function
+    @tf.function
     def _get_soft_max_exploration(self, local_map_in, global_map_in, scalars):
         return self.soft_explore_model([local_map_in, global_map_in, scalars])
 
@@ -191,6 +191,7 @@ class DDQNAgent(object):
 
         return self._get_exploitation_action_target(local_map_in, global_map_in, scalars).numpy()[0]
 
+    @tf.function
     def _get_exploitation_action_target(self, local_map_in, global_map_in, scalars):
         return self.exploit_model_target([local_map_in, global_map_in, scalars])
 
@@ -205,11 +206,11 @@ class DDQNAgent(object):
             [w_new * alpha + w_old * (1. - alpha) for w_new, w_old in zip(weights, target_weights)])
 
     def train(self, experiences):
-        print('training')
-        for e in experiences:
-            for val in e:
-                if np.isnan(np.any(val)):
-                    print('NAN in exp')
+        # print('training')
+        # for e in experiences:
+        #     for val in e:
+        #         if np.isnan(np.any(val)):
+        #             print('NAN in exp')
         local_map = tf.convert_to_tensor(experiences[0])
         global_map = tf.convert_to_tensor(experiences[1])
         scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
@@ -223,7 +224,7 @@ class DDQNAgent(object):
                  terminated)
         self.soft_update(self.params.alpha)
 
-    # @tf.function
+    @tf.function
     def _train(self, next_local_map, next_global_map, next_scalars, local_map, global_map, scalars, action, reward,
                  terminated ):
 

@@ -1,32 +1,32 @@
 import argparse
 import os
 
-from src.h_CPP.Environment import H_CPPEnvironmentParams, H_CPPEnvironment
-from src.CPP.Environment import CPPEnvironment, CPPEnvironmentParams
-from src.DH.Environment import DHEnvironmentParams, DHEnvironment
-from src.DHMulti.Environment import DHMultiEnvironment
 
 from utils import *
 
 
 def main_cpp(p):
+    from src.CPP.Environment import CPPEnvironment, CPPEnvironmentParams
     env = CPPEnvironment(p)
 
     env.run()
 
 
 def main_dh(p):
+    from src.DH.Environment import DHEnvironmentParams, DHEnvironment
     env = DHEnvironment(p)
 
     env.run()
 
 def main_h(p):
+    from src.h_CPP.Environment import H_CPPEnvironmentParams, H_CPPEnvironment
     env = H_CPPEnvironment(p)
 
     env.run()
 
 
 def main_dh_multi(p):
+    from src.DHMulti.Environment import DHMultiEnvironment
     env = DHMultiEnvironment(p)
 
     env.run()

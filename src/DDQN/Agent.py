@@ -40,6 +40,8 @@ class DDQNAgentParams:
         # Printing
         self.print_summary = False
 
+        self.masked = True
+
 
 class DDQNAgent(object):
 
@@ -48,7 +50,6 @@ class DDQNAgent(object):
         self.params = params
         gamma = tf.constant(self.params.gamma, dtype=float)
         self.align_counter = 0
-        self.masked = False
 
         self.boolean_map_shape = example_state.get_boolean_map_shape()
         self.float_map_shape = example_state.get_float_map_shape()
@@ -76,7 +77,7 @@ class DDQNAgent(object):
         states = [local_map_input,
                   global_map_input,
                   scalars_input]
-        if self.masked:
+        if self.params.masked:
             self.q_network = build_flat_model_masked(states, self.num_actions, self.initial_mb)
             self.target_network = build_flat_model_masked(states, self.num_actions, self.initial_mb, None, 'target_')
         else:

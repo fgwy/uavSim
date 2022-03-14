@@ -55,7 +55,7 @@
         "rm_size": 50000,
         "load_model": "",
         "random_map": true,
-        "rm_pre_fill_multiplier": 1
+        "rm_pre_fill_multiplier": 10
     },
     "agent_params": {
         "conv_layers": 2,

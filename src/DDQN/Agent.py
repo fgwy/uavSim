@@ -134,9 +134,9 @@ class DDQNAgent(object):
         # Softmax explore model
         tf.debugging.assert_all_finite(self.params.soft_max_scaling, message='Nan in softmax_scaling_factor')
         softmax_scaling = tf.divide(q_values, tf.constant(self.params.soft_max_scaling, dtype=float))
-        tf.debugging.assert_all_finite(softmax_scaling, message='Nan in softmax_scaling')
+        # tf.debugging.assert_all_finite(softmax_scaling, message='Nan in softmax_scaling')
         softmax_action = tf.math.softmax(softmax_scaling, name='softmax_action')
-        tf.debugging.assert_all_finite(softmax_action, message='Nan in softmax_action')
+        # tf.debugging.assert_all_finite(softmax_action, message='Nan in softmax_action')
         self.soft_explore_model = Model(inputs=states, outputs=(softmax_action)) #, q_values, max_action))
 
         self.q_optimizer = tf.optimizers.Adam(learning_rate=params.learning_rate, amsgrad=True)
@@ -164,19 +164,19 @@ class DDQNAgent(object):
     @tf.function
     def _get_exploitation_action(self, local_map_in, global_map_in, scalars):
         a =  self.exploit_model([local_map_in, global_map_in, scalars])
-        tf.debugging.assert_all_finite(a, message='Nan in exploit_act')
+        # tf.debugging.assert_all_finite(a, message='Nan in exploit_act')
         return a
 
     def get_soft_max_exploration(self, state):
 
         local_map_in = state.get_local_map()[tf.newaxis, ...]
-        tf.debugging.assert_all_finite(local_map_in, message='Nan in lm_in')
+        # tf.debugging.assert_all_finite(local_map_in, message='Nan in lm_in')
         global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
-        tf.debugging.assert_all_finite(global_map_in, message='Nan in gm_in')
+        # tf.debugging.assert_all_finite(global_map_in, message='Nan in gm_in')
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
-        tf.debugging.assert_all_finite(scalars, message='Nan in scal')
+        # tf.debugging.assert_all_finite(scalars, message='Nan in scal')
         p = self._get_soft_max_exploration(local_map_in, global_map_in, scalars).numpy()[0]
-        tf.debugging.assert_all_finite(p, message='Nan in p')
+        # tf.debugging.assert_all_finite(p, message='Nan in p')
         return np.random.choice(range(self.num_actions), size=1, p=p)
 
     @tf.function
@@ -230,14 +230,14 @@ class DDQNAgent(object):
 
         q_star = self.q_prime_model(
             [next_local_map, next_global_map, next_scalars])
-        tf.debugging.assert_all_finite(q_star, message='Nan in qprime')
+        # tf.debugging.assert_all_finite(q_star, message='Nan in qprime')
         # Train Value network
         with tf.GradientTape() as tape:
             q_loss = self.q_loss_model(
                 [local_map, global_map, scalars, action, reward,
                  terminated, tf.stop_gradient(q_star)])
         q_grads = tape.gradient(q_loss, self.q_network.trainable_variables)
-        [tf.debugging.assert_all_finite(grads, message='Nan in grads') for grads in q_grads]
+        # [tf.debugging.assert_all_finite(grads, message='Nan in grads') for grads in q_grads]
         self.q_optimizer.apply_gradients(zip(q_grads, self.q_network.trainable_variables))
 
 

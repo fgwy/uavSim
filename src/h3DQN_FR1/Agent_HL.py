@@ -312,7 +312,7 @@ class HL_DDQNAgent(object):
         self.training = True
         q_prime = self.q_prime_model_hl(
             [next_local_map, next_global_map, next_scalars])
-        tf.debugging.assert_all_finite(q_prime, message='Nan in qprime')
+        # tf.debugging.assert_all_finite(q_prime, message='Nan in qprime')
         # Train Value network
         with tf.GradientTape() as tape:
             q_loss = self.q_loss_model_hl(
@@ -320,7 +320,7 @@ class HL_DDQNAgent(object):
                  terminated, tf.stop_gradient(q_prime)])
         # tf.debugging.assert_all_finite(q_loss, message='Nan in q_loss')
         q_grads = tape.gradient(q_loss, self.q_network_hl.trainable_variables)
-        [tf.debugging.assert_all_finite(grads, message='Nan in grads') for grads in q_grads]
+        # [tf.debugging.assert_all_finite(grads, message='Nan in grads') for grads in q_grads]
         self.q_optimizer_hl.apply_gradients(zip(q_grads, self.q_network_hl.trainable_variables))
 
     def save_weights_hl(self, path_to_weights):

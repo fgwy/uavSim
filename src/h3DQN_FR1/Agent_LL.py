@@ -172,21 +172,33 @@ class LL_DDQNAgent(object):
         local_map_in = state.get_local_map_ll()[tf.newaxis, ...]
         scalars = np.array(state.get_scalars_ll(), dtype=np.single)[tf.newaxis, ...]
 
-        return self.exploit_model_ll([local_map_in, scalars]).numpy()[0]
+        return self._get_exploitation_action(local_map_in, scalars)[0].numpy()[0]
+
+    @tf.function
+    def _get_exploitation_action(self, local_map_in, scalars):
+        return self.exploit_model_ll([local_map_in, scalars])
 
     def get_soft_max_exploration(self, state):
 
         local_map_in = state.get_local_map_ll()[tf.newaxis, ...]
         scalars = np.array(state.get_scalars_ll(), dtype=np.single)[tf.newaxis, ...]
-        p = self.soft_explore_model_ll([local_map_in, scalars])[0].numpy()[0]
+        p = self._get_soft_max_exploration( local_map_in, scalars)[0].numpy()[0]
         return np.random.choice(range(self.num_actions_ll), size=1, p=p)
+
+    @tf.function
+    def _get_soft_max_exploration(self, local_map_in, scalars):
+        return self.soft_explore_model_ll([local_map_in, scalars])
 
     def get_exploitation_action_target(self, state):
 
         local_map_in = state.get_local_map_ll()[tf.newaxis, ...]
         scalars = np.array(state.get_scalars_ll(), dtype=np.single)[tf.newaxis, ...]
 
-        return self.exploit_model_target_ll([local_map_in, scalars]).numpy()[0]
+        return self._get_exploitation_action_target(local_map_in, scalars).numpy()[0]
+
+    @tf.function
+    def _get_exploitation_action_target(self, local_map_in, scalars):
+        return self.exploit_model_target_ll([local_map_in, scalars])
 
     def hard_update_ll(self):
         self.target_network_ll.set_weights(self.q_network_ll.get_weights())
@@ -200,14 +212,14 @@ class LL_DDQNAgent(object):
     def train_ll(self, experiences):
         local_map = tf.convert_to_tensor(experiences[0])
         global_map = tf.convert_to_tensor(experiences[1])
-        scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float64)
-        action = tf.convert_to_tensor(np.asarray(experiences[3]).astype(np.int64), dtype=tf.int64)
-        reward = tf.convert_to_tensor(experiences[4])
-        next_local_map = tf.convert_to_tensor(experiences[5])
+        scalars = tf.convert_to_tensor(experiences[1], dtype=tf.float64)
+        action = tf.convert_to_tensor(np.asarray(experiences[2]).astype(np.int64), dtype=tf.int64)
+        reward = tf.convert_to_tensor(experiences[3])
+        next_local_map = tf.convert_to_tensor(experiences[4])
         next_global_map = tf.convert_to_tensor(experiences[6])
-        next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float64)
-        terminated = tf.convert_to_tensor(experiences[8])
-        self._train_ll(local_map, global_map, scalars, action, reward, next_local_map, next_global_map, next_scalars, terminated)
+        next_scalars = tf.convert_to_tensor(experiences[5], dtype=tf.float64)
+        terminated = tf.convert_to_tensor(experiences[6])
+        self._train_ll(local_map, scalars, action, reward, next_local_map, next_scalars, terminated)
 
         self.soft_update_ll(self.params.alpha)
 

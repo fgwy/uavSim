@@ -187,7 +187,7 @@ def build_flat_model_no_mask(states_in, num_actions, initial_mb, path_to_local_p
     Q_vals = tf.keras.layers.Dense(units=num_actions, activation=None, name=name + 'last_dense_layer_hl')(
         norm)
 
-    tf.debugging.assert_all_finite(Q_vals, message='Nan in Q_vals')
+    # tf.debugging.assert_all_finite(Q_vals, message='Nan in Q_vals')
 
     print(f'Qvals: {Q_vals}')
 

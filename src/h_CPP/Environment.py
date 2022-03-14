@@ -74,7 +74,7 @@ class H_CPPEnvironment(BaseEnvironment):
             steps_ins_mdp = self.run_MDP(last_step, bar, episode_num=self.episode_count, test=test, random_h=self.agent_manager.params.pretrain_ll)
 
             self.stats.on_episode_end(self.episode_count)
-            self.stats.log_training_data(step=self.step_count)
+            self.stats.log_training_data(step=self.hl_steps)
             self.stats.save_if_best()
 
             self.episode_count += 1

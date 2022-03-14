@@ -32,6 +32,8 @@ class H_CPPState(CPPState):
         self.movement_budget = 100
         self.local_map_size = 17
         self.goal_covered = False
+        self.hierarchical = True
+        self.multimap = True
 
     def reset_target_h(self, h_target):
         # if h_target.shape == self.get_boolean_map_shape():
@@ -151,12 +153,24 @@ class H_CPPState(CPPState):
 
     def get_global_map(self, global_map_scaling):
         pm = self.get_padded_map()
-        # print(f'global map shape: {pm.shape}')
-        pm = pad_with_nfz_gm(pm)[tf.newaxis, ...]
-        # print(f'global map shape: {pm.shape}')
+
+        if self.multimap:
+            pm = pad_with_nfz_gm(pm)
+        pm = pm[tf.newaxis, ...]
         self.global_map = AvgPool2D((global_map_scaling, global_map_scaling))(pm)
         self.global_map = tf.squeeze(self.global_map).numpy()
-        # print(f'global map shape: {self.global_map.shape}')
+
+        return self.global_map
+
+    def get_global_map_ll(self, global_map_scaling):
+        pm = self.get_padded_map_ll()
+
+        if self.multimap:
+            pm = pad_with_nfz_gm(pm)
+        pm = pm[tf.newaxis, ...]
+        self.global_map_ll = AvgPool2D((global_map_scaling, global_map_scaling))(pm)
+        self.global_map_ll = tf.squeeze(self.global_map).numpy()
+
         return self.global_map
 
     def get_float_map_ll_shape(self):

@@ -36,8 +36,9 @@ class GridPhysics:
         self.state.set_terminal(self.state.landed or (self.state.movement_budget == 0))
 
         # Added code
-        self.state.decrement_ll_mb()
-        self.state.set_terminal_h(self.state.landed or (self.state.current_ll_mb <= 0) or (self.state.movement_budget <= 0) or not (bool(self.state.get_remaining_h_target_cells())))
+        if self.state.hierarchical:
+            self.state.decrement_ll_mb()
+            self.state.set_terminal_h(self.state.landed or (self.state.current_ll_mb <= 0) or (self.state.movement_budget <= 0) or not (bool(self.state.get_remaining_h_target_cells())))
         return x, y
 
     def reset(self, state):

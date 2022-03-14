@@ -39,13 +39,13 @@ class H_DDQNTrainer:
 
     def add_experience_ll(self, state, action, reward, next_state):
         # print(f'action: {action}')
-        self.replay_memory_ll.store((state.get_boolean_map_ll(),
-                                  state.get_float_map_ll(),
+        self.replay_memory_ll.store((state.get_local_map_ll(),
+                                  # state.get_global_map_ll(self.agent_hl.params.global_map_scaling),
                                   state.get_scalars_ll(),
                                   action,
                                   reward,
-                                  next_state.get_boolean_map_ll(),
-                                  next_state.get_float_map_ll(),
+                                  next_state.get_local_map_ll(),
+                                  # next_state.get_global_map_ll(self.agent_hl.params.global_map_scaling),
                                   next_state.get_scalars_ll(),
                                   next_state.h_terminal))
 

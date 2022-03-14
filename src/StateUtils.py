@@ -19,12 +19,12 @@ def pad_centered(state, map_in, pad_value):
     return map_out
 
 def pad_with_nfz_gm(map_in):
-    # max_map_size = 80/159
+    max_map_size = 60*2 -1
 
-    if map_in.shape[0] == 159:
+    if map_in.shape[0] == max_map_size:
         return map_in
     else:
-        msd = int((159-map_in.shape[0])/2)
+        msd = int((max_map_size-map_in.shape[0])/2)
         # print(msd)
 
         # print(f'shape 01: {map_in[..., 0].shape}, shape 23: {map_in[..., 2:4].shape}')

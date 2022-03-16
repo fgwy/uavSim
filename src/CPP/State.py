@@ -45,14 +45,14 @@ class CPPState(BaseState):
         return self.initial_target_cell_count
 
     def get_local_map_shape(self):
-        return self.get_local_map().shape
+        return tf.squeeze(self.get_local_map()).numpy().shape
 
     def get_padded_map(self):
         bm = self.get_boolean_map()[tf.newaxis, ...]
         fm = self.get_float_map()[tf.newaxis, ...]
         map_cast_hl = tf.cast(bm, dtype=tf.float32)
         padded_map_hl = tf.concat([map_cast_hl, fm], axis=3)
-        padded_map_hl = tf.squeeze(padded_map_hl).numpy()
+        # padded_map_hl = tf.squeeze(padded_map_hl).numpy()
         return padded_map_hl
 
     def get_coverage_ratio(self):
@@ -64,8 +64,8 @@ class CPPState(BaseState):
     def get_num_scalars(self):
         return 1
 
-    def get_goal_target_shape(self):
-        return self.h_target.shape
+    # def get_goal_target_shape(self):
+    #     return self.h_target.shape
 
     def get_boolean_map_shape(self):
         return self.get_boolean_map().shape
@@ -115,24 +115,33 @@ class CPPState(BaseState):
         return self.terminal
 
     def get_local_map(self):
-        conv_in = self.get_padded_map()[tf.newaxis, ...]
+        conv_in = self.get_padded_map() # [tf.newaxis, ...]
+        crop_frac = float(self.local_map_size) / float(self.get_boolean_map_shape()[0])
+        local_map = central_crop(conv_in, crop_frac)
+        # local_map = tf.squeeze(local_map).numpy()
+        return local_map
+
+    def get_local_map_np(self):
+        conv_in = self.get_padded_map() # [tf.newaxis, ...]
         crop_frac = float(self.local_map_size) / float(self.get_boolean_map_shape()[0])
         local_map = central_crop(conv_in, crop_frac)
         local_map = tf.squeeze(local_map).numpy()
         return local_map
 
-    def get_global_map(self, global_map_scaling):
+    def get_global_map(self, global_map_scaling, multimap=False):
         pm = self.get_padded_map()
-        # print(f'global map shape: {pm.shape}')
-        pm = pad_with_nfz_gm(pm)[tf.newaxis, ...]
-        # print(f'global map shape: {pm.shape}')
+        self.global_map = AvgPool2D((global_map_scaling, global_map_scaling))(pm)
+        # self.global_map = tf.squeeze(self.global_map).numpy()
+        return self.global_map
+
+    def get_global_map_np(self, global_map_scaling, multimap=False):
+        pm = self.get_padded_map()
         self.global_map = AvgPool2D((global_map_scaling, global_map_scaling))(pm)
         self.global_map = tf.squeeze(self.global_map).numpy()
-        # print(f'global map shape: {self.global_map.shape}')
         return self.global_map
 
     def get_global_map_shape(self, gms):
-        return self.get_global_map(gms).shape
+        return tf.squeeze(self.get_global_map(gms)).numpy().shape
 
     def get_initial_mb(self):
         return self.initial_movement_budget

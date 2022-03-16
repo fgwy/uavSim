@@ -41,6 +41,7 @@ class DDQNAgentParams:
         self.print_summary = False
 
         self.masked = True
+        self.multimap = False
 
 
 class DDQNAgent(object):
@@ -56,7 +57,7 @@ class DDQNAgent(object):
         self.scalars = example_state.get_num_scalars()
         self.num_actions = len(type(example_action))
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
-        self.local_map_shape = example_state.get_local_map_shape()
+        # self.local_map_shape = example_state.get_local_map_shape()
         self.global_map_shape = example_state.get_global_map_shape(self.params.global_map_scaling)
         self.initial_mb = tf.convert_to_tensor(example_state.get_initial_mb(), dtype=tf.float32)
 
@@ -155,8 +156,8 @@ class DDQNAgent(object):
 
     def get_exploitation_action(self, state):
 
-        local_map_in = state.get_local_map()[tf.newaxis, ...]
-        global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
+        local_map_in = state.get_local_map() # [tf.newaxis, ...]
+        global_map_in = state.get_global_map(self.params.global_map_scaling, self.params.multimap) # [tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
 
         return self._get_exploitation_action(local_map_in, global_map_in, scalars).numpy()[0]
@@ -169,9 +170,9 @@ class DDQNAgent(object):
 
     def get_soft_max_exploration(self, state):
 
-        local_map_in = state.get_local_map()[tf.newaxis, ...]
+        local_map_in = state.get_local_map() # [tf.newaxis, ...]
         # tf.debugging.assert_all_finite(local_map_in, message='Nan in lm_in')
-        global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
+        global_map_in = state.get_global_map(self.params.global_map_scaling, self.params.multimap) # [tf.newaxis, ...]
         # tf.debugging.assert_all_finite(global_map_in, message='Nan in gm_in')
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         # tf.debugging.assert_all_finite(scalars, message='Nan in scal')
@@ -185,8 +186,8 @@ class DDQNAgent(object):
 
     def get_exploitation_action_target(self, state):
 
-        local_map_in = state.get_local_map()[tf.newaxis, ...]
-        global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
+        local_map_in = state.get_local_map() # [tf.newaxis, ...]
+        global_map_in = state.get_global_map(self.params.global_map_scaling, self.params.multimap) # [tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
 
         return self._get_exploitation_action_target(local_map_in, global_map_in, scalars).numpy()[0]
@@ -211,12 +212,16 @@ class DDQNAgent(object):
         #     for val in e:
         #         if np.isnan(np.any(val)):
         #             print('NAN in exp')
+        # local_map = experiences[0]
         local_map = tf.convert_to_tensor(experiences[0])
+        # global_map = experiences[1]
         global_map = tf.convert_to_tensor(experiences[1])
         scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
         action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
         reward = tf.convert_to_tensor(experiences[4])
+        # next_local_map = experiences[5]
         next_local_map = tf.convert_to_tensor(experiences[5])
+        # next_global_map = experiences[6]
         next_global_map = tf.convert_to_tensor(experiences[6])
         next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float32)
         terminated = tf.convert_to_tensor(experiences[8])
@@ -226,7 +231,7 @@ class DDQNAgent(object):
 
     @tf.function
     def _train(self, next_local_map, next_global_map, next_scalars, local_map, global_map, scalars, action, reward,
-                 terminated ):
+                 terminated):
 
         q_star = self.q_prime_model(
             [next_local_map, next_global_map, next_scalars])

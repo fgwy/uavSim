@@ -38,7 +38,7 @@ class CPPEnvironment(BaseEnvironment):
         self.trainer = DDQNTrainer(params=params.trainer_params, agent=self.agent)
 
     def init_episode(self, init_state=None, test=False):
-        if self.params.trainer_params.random_map:
+        if self.params.agent_params.multimap:
             # print("random map!")
             if test:
                 state, path = copy.deepcopy(self.grid.random_new_map_image_test())

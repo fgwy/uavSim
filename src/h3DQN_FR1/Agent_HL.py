@@ -70,6 +70,7 @@ class HL_DDQNAgentParams:
         self.use_global_local = True
         self.global_map_scaling = 3
         self.goal_size = 17
+        self.multimap = False
 
         # Printing
         self.print_summary = False
@@ -224,8 +225,8 @@ class HL_DDQNAgent(object):
         return arr
 
     def get_exploitation_goal(self, state):
-        local_map_in = state.get_local_map()[tf.newaxis, ...]
-        global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
+        local_map_in = state.get_local_map() # [tf.newaxis, ...]
+        global_map_in = state.get_global_map(self.params.global_map_scaling, self.params.multimap) # [tf.newaxis, ...]
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         goal, q = self._get_exploitation_goal(local_map_in, global_map_in, scalars)
         q = q.numpy()[0]
@@ -253,8 +254,8 @@ class HL_DDQNAgent(object):
         return a
 
     def get_soft_max_exploration(self, state):
-        local_map_in = state.get_local_map()[tf.newaxis, ...]
-        global_map_in = state.get_global_map(self.params.global_map_scaling)[tf.newaxis, ...]
+        local_map_in = state.get_local_map() # [tf.newaxis, ...]
+        global_map_in = state.get_global_map(self.params.global_map_scaling, self.params.multimap) # [tf.newaxis, ...]
         scalars_in = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         p, q = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in)
         p = p.numpy()[0]
@@ -281,16 +282,20 @@ class HL_DDQNAgent(object):
             [w_new * alpha + w_old * (1. - alpha) for w_new, w_old in zip(weights, target_weights)])
 
     def train_hl(self, experiences):
-        nan = [np.any(np.isnan(experiences[i])) for i in range(len(experiences))]
-        if np.any(nan):
-            print(f'###################### Nan in experiences: {np.isnan(experiences)}')
+        # nan = [np.any(np.isnan(experiences[i])) for i in range(len(experiences))]
+        # if np.any(nan):
+        #     print(f'###################### Nan in experiences: {np.isnan(experiences)}')
+        # local_map = experiences[0]
         local_map = tf.convert_to_tensor(experiences[0],
-                                         dtype=tf.float64)  # np.asarray(experiences[0]).astype(np.float32))
+                                        dtype=tf.float64)  # np.asarray(experiences[0]).astype(np.float32))
+        # global_map = experiences[1]
         global_map = tf.convert_to_tensor(experiences[1], dtype=tf.float64)
         scalars = tf.convert_to_tensor(experiences[2], dtype=tf.float32)
         action = tf.convert_to_tensor(experiences[3], dtype=tf.int64)
         reward = tf.convert_to_tensor(experiences[4], dtype=tf.float64)
+        # next_local_map = experiences[5]
         next_local_map = tf.convert_to_tensor(experiences[5], dtype=tf.float64)
+        # next_global_map = experiences[6]
         next_global_map = tf.convert_to_tensor(experiences[6], dtype=tf.float64)
         next_scalars = tf.convert_to_tensor(experiences[7], dtype=tf.float64)
         terminated = tf.convert_to_tensor(experiences[8])

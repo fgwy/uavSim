@@ -22,7 +22,8 @@
             "res/barrier50.png",
             "res/center60.png",
             "res/maze60.png",
-            "res/random60.png"
+            "res/random60.png",
+            "res/simley60.png"
         ],
         "test_map_set": [
             "res/manhattan32.png",
@@ -53,7 +54,6 @@
         "eval_period": 5,
         "rm_size": 50000,
         "load_model": "",
-        "random_map": true,
         "rm_pre_fill_multiplier": 1
     },
     "agent_params": {
@@ -70,7 +70,8 @@
         "global_map_scaling": 3,
         "local_map_size": 17,
         "print_summary": false,
-        "masked": false
+        "masked": false,
+        "multimap": false
     },
     "physics_params": {
         "camera_params": {

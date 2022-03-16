@@ -50,10 +50,10 @@ class A_star:
         min_idx = ((r - x) ** 2 + (c - y) ** 2).argmin()
         return r[min_idx], c[min_idx]
 
-    @staticmethod
+    # @staticmethod
     # @nb.jit(npython=True) # TODO: add input data classez
     # @nb.jit
-    def astar(maze, start, end):
+    def astar(self, maze, start, end):
         """
         Returns a list of tuples as a path from the given start to the given end in the given maze
         Maze position is initia.lized as (0,0) in top left corner
@@ -84,12 +84,12 @@ class A_star:
             current_node = open_list[0]
             current_index = 0
             for index, item in enumerate(open_list):
-                n +=1
+                n += 1
                 if item.f < current_node.f:
                     current_node = item
                     current_index = index
-                if n > limit:
-                    # print('breaking A0star search!!')
+                if n % limit == 0:
+                    # print(f'n: {n}')
                     return None
 
             # Pop current off open list, add to closed list
@@ -130,8 +130,8 @@ class A_star:
             # Loop through children
             for child in children:
                 i += 1
-                if i > limit:
-                    # print('breaking A0star search!!')
+                if i % limit == 0:
+                    # print(f'i: {i}')
                     return None
                 # print(i)
                 # Child is on the closed list
@@ -160,17 +160,19 @@ class A_star:
             start = (y, x) # TODO: keep track!!
             obstacles = state.no_fly_zone*1
             end = np.where(state.h_target == 1)
+            if obstacles[y, x] or obstacles[end[0], end[1]]:
+                print(f'obstacles on position or target: start: {obstacles[y,x]} end: {obstacles[end[0], end[1]]}')
             # self.path = self.astar(obstacles,start,end)
-            try:
-                self.path = self.astar(obstacles, start, end)
-                self.one_random = False
-                # print(f'path: {self.path}')
-            except:
+            # try:
+            self.path = self.astar(obstacles, start, end)
+            self.one_random = False
+            # print(f'path: {self.path}')
+            if self.path is None:
                 self.one_random = True
                 print(f'A-star: one random action right away!!')
                 return np.random.randint(0, 4)
 
-        if self.path == None:
+        if self.path is None:
             print('A-star: random action!!!')
             self.one_random = True
             return np.random.randint(0, 4)
@@ -218,8 +220,8 @@ def main():
     maze = [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
             [1, 1, 0, 0, 1, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
             [0, 0, 0, 0, 1, 1, 1, 0, 0, 0],
@@ -227,14 +229,32 @@ def main():
             [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]]
 
 
-    print(np.asarray(maze))
+
+    print(np.asarray(maze), np.asarray(maze).shape)
 
     start = (0, 0)
-    end = (9, 9)
+    end = (0, 9)
     ast = A_star()
 
     path = ast.astar(maze, start, end)
     print(path)
+
+    # print(f'steps in smdp: {steps_in_smdp}')
+    for i in range(15):
+        a = path[i+1][0] - path[i][0]  # x
+        b = path[i+1][1] - path[i][1]  # y
+        # print(f'Internal NFZ check: {self.is_in_no_fly_zone(self.path[1], obstacles)}')
+        action = [a, b]
+        # print(f'pre action: {action}')
+        if action[0] == 1:
+            action = 0
+        elif action[1] == 1:
+            action = 1
+        elif action[0] == -1:
+            action = 2
+        elif action[1] == -1:
+            action = 3
+        print(f'action {action} path: {[a,b]}')
 
 
 if __name__ == '__main__':

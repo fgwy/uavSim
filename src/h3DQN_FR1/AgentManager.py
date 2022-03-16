@@ -19,7 +19,7 @@ class AgentManager_Params():
         self.use_ddqn = True
         self.use_ddpg = False
         self.use_ppo = False
-        self.random_map = True
+        # self.random_map = True
         self.h_trainer = H_DDQNTrainerParams()
         self.ll_agent = LL_DDQNAgentParams()
         self.hl_agent = HL_DDQNAgentParams()

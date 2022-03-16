@@ -12,7 +12,6 @@ class DDQNTrainerParams:
         self.eval_period = 5
         self.rm_size = 50000
         self.load_model = ""
-        self.random_map = False
         self.rm_pre_fill_multiplier = 2
 
 
@@ -29,13 +28,13 @@ class DDQNTrainer:
         self.prefill_bar = None
 
     def add_experience(self, state, action, reward, next_state):
-        self.replay_memory.store((state.get_local_map(),
-                                  state.get_global_map(self.agent.params.global_map_scaling),
+        self.replay_memory.store((state.get_local_map_np(),
+                                  state.get_global_map_np(self.agent.params.global_map_scaling, self.agent.params.multimap),
                                   state.get_scalars(),
                                   action,
                                   reward,
-                                  next_state.get_local_map(),
-                                  next_state.get_global_map(self.agent.params.global_map_scaling),
+                                  next_state.get_local_map_np(),
+                                  next_state.get_global_map_np(self.agent.params.global_map_scaling, self.agent.params.multimap),
                                   next_state.get_scalars(),
                                   next_state.terminal))
 

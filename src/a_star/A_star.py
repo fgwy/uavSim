@@ -76,7 +76,7 @@ class A_star:
         i = 0
         n = 0
         m = 0
-        limit = 30000
+        limit = 300000
         while len(open_list) > 0:
             m +=1
 
@@ -157,7 +157,7 @@ class A_star:
 
         if steps_in_smdp == 1 or self.one_random:
             x, y = state.position
-            start = (y, x) # TODO: keep track!!
+            start = (y, x)  # TODO: keep track!!
             obstacles = state.no_fly_zone*1
             end = np.where(state.h_target == 1)
             if obstacles[y, x] or obstacles[end[0], end[1]]:

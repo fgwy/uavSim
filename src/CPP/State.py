@@ -70,7 +70,7 @@ class CPPState(BaseState):
     def get_boolean_map_shape(self):
         return self.get_boolean_map().shape
 
-    def get_boolean_map(self):
+    def get_boolean_map(self, multimap=False):
         padded_red = pad_centered(self, np.concatenate([np.expand_dims(self.no_fly_zone, -1),
                                                         np.expand_dims(self.obstacles, -1)], axis=-1), 1)
         padded_rest = pad_centered(self, np.concatenate([np.expand_dims(self.landing_zone, -1),

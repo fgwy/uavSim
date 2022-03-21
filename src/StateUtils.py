@@ -1,44 +1,62 @@
 import math
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 
 def pad_centered(state, map_in, pad_value):
-    max_map_size = 60  # * 2 - 1
+    max_map_size = 60
 
-    # padding_rows = math.ceil(state.no_fly_zone.shape[0] / 2.0)
-    # padding_cols = math.ceil(state.no_fly_zone.shape[1] / 2.0)
+    # if not multimap:
+    #     padding_rows = math.ceil(state.no_fly_zone.shape[0] / 2.0)
+    #     padding_cols = math.ceil(state.no_fly_zone.shape[1] / 2.0)
+    #
+    #     position_x, position_y = 0, 0  # state.position
+    #     position_row_offset = padding_rows - position_y  # + actual_size_y  # offset is padding for 0,0
+    #     position_col_offset = padding_cols - position_x  # + actual_size_x
+    #     map_out = np.pad(map_in,
+    #                      pad_width=[[padding_rows + position_row_offset - 1, padding_rows - position_row_offset],
+    #                                 [padding_cols + position_col_offset - 1, padding_cols - position_col_offset],
+    #                                 [0, 0]],  # pad_width paddings
+    #                      mode='constant',
+    #                      constant_values=pad_value)
+    #
+    #     return map_out
+
     if state.no_fly_zone.shape[0] > max_map_size:
-        # max_map_size = state.no_fly_zone.shape[0]
         padding_rows = math.ceil(state.no_fly_zone.shape[0] / 2.0)
         padding_cols = math.ceil(state.no_fly_zone.shape[1] / 2.0)
         position_x, position_y = state.position
         position_row_offset = padding_rows - position_y
         position_col_offset = padding_cols - position_x
+        map_out = np.pad(map_in,
+                         pad_width=[[padding_rows + position_row_offset - 1,
+                                     padding_rows - position_row_offset],
+                                    [padding_cols + position_col_offset - 1,
+                                     padding_cols - position_col_offset],
+                                    [0, 0]],  # pad_width paddings
+                         mode='constant',
+                         constant_values=pad_value)
+        return map_out
     else:
 
         padding_rows = math.ceil(max_map_size / 2.0)
         padding_cols = math.ceil(max_map_size / 2.0)
-        # actual_size_y = padding_rows - math.ceil(state.no_fly_zone.shape[0]/2.0)
-        # actual_size_x = padding_cols - math.ceil(state.no_fly_zone.shape[1]/2.0)
-        padding_rows = math.ceil(state.no_fly_zone.shape[0] / 2.0)
-        padding_cols = math.ceil(state.no_fly_zone.shape[1] / 2.0)
-        position_x, position_y = state.position
-        position_row_offset = padding_rows - position_y  # + actual_size_y# offset is padding for 0,0
-        position_col_offset = padding_cols - position_x  # + actual_size_x
-    map_out = np.pad(map_in,
-                     pad_width=[[padding_rows + position_row_offset - 1, padding_rows - position_row_offset],
-                                [padding_cols + position_col_offset - 1, padding_cols - position_col_offset],
-                                [0, 0]],  # pad_width paddings
-                     mode='constant',
-                     constant_values=pad_value)
+        pr_for_offset = math.ceil(state.no_fly_zone.shape[0] / 2.0)
+        pc_for_offset = math.ceil(state.no_fly_zone.shape[1] / 2.0)
 
-    # if np.isnan(np.any(map_out)):
-    #     print('nan in map!!')
+        position_x, position_y = 0, 0  #state.position
+        position_row_offset = pr_for_offset - position_y # + actual_size_y  # offset is padding for 0,0
+        position_col_offset = pc_for_offset - position_x # + actual_size_x
+        map_out = np.pad(map_in,
+                         pad_width=[[padding_rows + position_row_offset - 1, padding_rows - position_row_offset],
+                                    [padding_cols + position_col_offset - 1, padding_cols - position_col_offset],
+                                    [0, 0]],  # pad_width paddings
+                         mode='constant',
+                         constant_values=pad_value)
 
-    # print(map_out.shape)
 
-    return map_out
+        return map_out
 
 
 def pad_with_nfz_gm(map_in):

@@ -4,7 +4,7 @@
         "moving_average_length": 200,
         "log_file_name": "test",
         "training_images": false,
-        "draw": true
+        "draw": false
     },
     "grid_params": {
         "movement_range": [
@@ -15,7 +15,7 @@
             20,
             30
         ],
-        "map_path": "res/manhattan32.png",
+        "map_path": "res/easy50.png",
         "local_map_size": 17,
         "train_map_set": [
             "res/manhattan32.png",
@@ -72,7 +72,7 @@
             "rm_size_ll": 50000,
             "rm_size_hl": 50000,
             "load_model": "",
-            "use_astar": false,
+            "use_astar": true,
             "rm_pre_fill_multiplier_ll": 10,
             "rm_pre_fill_multiplier_hl": 1
         },
@@ -106,7 +106,7 @@
             "use_global_local": true,
             "global_map_scaling": 3,
             "goal_size": 17,
-            "multimap": false,
+            "multimap": true,
             "print_summary": true,
             "use_skip": true,
             "use_pretrained_local_map_preproc": false,
@@ -120,7 +120,7 @@
     "physics_params": {
         "camera_params": {
             "half_length": 2,
-            "map_path": "res/manhattan32.png"
+            "map_path": "res/easy50.png"
         }
     }
 }

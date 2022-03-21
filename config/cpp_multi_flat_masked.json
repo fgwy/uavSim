@@ -7,8 +7,8 @@
     },
     "grid_params": {
         "movement_range": [
-            200,
-            300
+            100,
+            200
         ],
         "movement_range_ll": [
             20,
@@ -70,8 +70,8 @@
         "global_map_scaling": 3,
         "local_map_size": 17,
         "print_summary": false,
-        "masked": false,
-        "multimap": false
+        "masked": true,
+        "multimap": true
     },
     "physics_params": {
         "camera_params": {

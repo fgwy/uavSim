@@ -219,7 +219,7 @@ class AgentManager():
             inside_bounds = bool(np.sum(total_goal))
             on_position = np.any(total_goal * view*1) == 1
             if on_nfz:
-                print(f'on-nfz: {np.sum()} test:{test}')
+                print(f'on-nfz: {np.sum(total_goal)} test:{test}')
             elif on_obs:
                 print(f'on-obs')
             elif not inside_bounds:

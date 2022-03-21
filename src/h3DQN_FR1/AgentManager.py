@@ -19,7 +19,7 @@ class AgentManager_Params():
         self.use_ddqn = True
         self.use_ddpg = False
         self.use_ppo = False
-        self.random_map = True
+        # self.random_map = True
         self.h_trainer = H_DDQNTrainerParams()
         self.ll_agent = LL_DDQNAgentParams()
         self.hl_agent = HL_DDQNAgentParams()
@@ -219,7 +219,7 @@ class AgentManager():
             inside_bounds = bool(np.sum(total_goal))
             on_position = np.any(total_goal * view*1) == 1
             if on_nfz:
-                print(f'on-nfz: {np.sum()} test:{test}')
+                print(f'on-nfz: {np.sum(total_goal)} test:{test}')
             elif on_obs:
                 print(f'on-obs')
             elif not inside_bounds:

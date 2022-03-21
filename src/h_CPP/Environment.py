@@ -144,6 +144,9 @@ class H_CPPEnvironment(BaseEnvironment):
                                                              copy.deepcopy(self.physics.state))
                 self.agent_manager.trainer.train_h()
 
+        # self.stats.on_episode_end(self.episode_count)
+        # self.stats.log_training_data(step=self.step_count)
+
         # print(f'H-Steps in episode: {i}')
         if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded:
             self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
@@ -214,7 +217,7 @@ class H_CPPEnvironment(BaseEnvironment):
                 state = copy.deepcopy(next_state)
 
     def init_episode(self, init_state=None, test=False):
-        if self.params.agent_params.random_map:
+        if self.params.agent_params.hl_agent.multimap:
             if test:
                 state, path = copy.deepcopy(self.grid.random_new_map_image_test())
                 self.physics.reset_camera(path)

@@ -53,7 +53,7 @@ def build_lm_preproc_model(local_map_in, name=''):
 
 
 def build_flat_model_masked(states_in, num_actions, initial_mb, path_to_local_pretrained_weights=None,
-                   name=''):  # local:17,17,4; global:21:21,4
+                            name=''):  # local:17,17,4; global:21:21,4
     '''
      usage: model = build_hl_model(lm[tf.newaxis, ...], gm[tf.newaxis, ...], states_proc[tf.newaxis, ...])
     '''
@@ -112,24 +112,26 @@ def build_flat_model_masked(states_in, num_actions, initial_mb, path_to_local_pr
         norm)
 
     # Masking of invalid actions
-    c = tf.zeros_like(local_map_in[:,0,0,0])
-    c = c[..., tf.newaxis]
-    a = tf.convert_to_tensor([local_map_in[:,8,7,0], local_map_in[:,9,9,0], local_map_in[:,7,8,0], local_map_in[:,7,7,0]]) #, local_map_in[:,7,8,0], local_map_in[:,8,7,0], local_map_in[:,9,9,0]])
-    a_1 = tf.transpose(a, [1,0])
 
-    b = tf.cast((tf.keras.layers.Concatenate(axis=1)([a_1,c])), dtype=tf.bool)
+    lz = 1-local_map_in[:, 8, 8, 2] # negation of landing zone -> if no landing zone on position mask to -inf
+    b = tf.cast(tf.stack([local_map_in[:, 9, 8, 0],
+                          local_map_in[:, 8, 9, 0],
+                          local_map_in[:, 7, 8, 0],
+                          local_map_in[:, 8, 7, 0],
+                         lz], axis=-1), tf.bool)
 
+    # b = tf.cast((tf.keras.layers.Concatenate(axis=1)([a_1, c])), dtype=tf.bool)
 
     Q_vals = tf.where(b, -np.inf, Q_vals)
 
     print(f'Qvals: {Q_vals}')
 
-
     model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
     return model
 
+
 def build_flat_model_no_mask(states_in, num_actions, initial_mb, path_to_local_pretrained_weights=None,
-                   name=''):  # local:17,17,4; global:21:21,4
+                             name=''):  # local:17,17,4; global:21:21,4
     '''
      usage: model = build_hl_model(lm[tf.newaxis, ...], gm[tf.newaxis, ...], states_proc[tf.newaxis, ...])
     '''
@@ -193,4 +195,3 @@ def build_flat_model_no_mask(states_in, num_actions, initial_mb, path_to_local_p
 
     model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
     return model
-

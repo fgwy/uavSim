@@ -87,6 +87,14 @@ def build_ll_model(states_in, initial_mb, num_actions, path_to_local_pretrained_
     norm_out = swish(norm_out)
     q_vals = tf.keras.layers.Dense(units=num_actions, activation=None, name=name + 'q_layer')(norm_out)
 
+    # lz = 1-local_map_in[:, 8, 8, 2]
+    b = tf.cast(tf.stack([local_map_in[:, 9, 8, 0],
+                          local_map_in[:, 8, 9, 0],
+                          local_map_in[:, 7, 8, 0],
+                          local_map_in[:, 8, 7, 0]],
+                           axis=-1), tf.bool)
+
+    q_vals = tf.where(b, -np.inf, q_vals)
     model = tf.keras.Model (inputs=[local_map_in, states_proc_in], outputs=q_vals)
 
     return model

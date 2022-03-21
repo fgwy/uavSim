@@ -7,7 +7,7 @@ class GridPhysics:
         self.boundary_counter = 0
         self.state = None
 
-    def movement_step(self, action: GridActions):
+    def movement_step(self, action: GridActions, hierarchical=False):
         old_position = self.state.position
         x, y = old_position
 
@@ -39,6 +39,8 @@ class GridPhysics:
         if self.state.hierarchical:
             self.state.decrement_ll_mb()
             self.state.set_terminal_h(self.state.landed or (self.state.current_ll_mb <= 0) or (self.state.movement_budget <= 0) or not (bool(self.state.get_remaining_h_target_cells())))
+        # self.state.decrement_ll_mb()
+        # self.state.set_terminal_h(self.state.landed or (self.state.current_ll_mb <= 0) or (self.state.movement_budget <= 0) or not (bool(self.state.get_remaining_h_target_cells())))
         return x, y
 
     def reset(self, state):

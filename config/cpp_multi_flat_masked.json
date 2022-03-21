@@ -1,8 +1,8 @@
 {
     "model_stats_params": {
-        "save_model": "models/save_model/",
+        "save_model": "models/save_model",
         "moving_average_length": 50,
-        "log_file_name": "multimap_flatag_masked",
+        "log_file_name": "20211118-143848",
         "training_images": false
     },
     "grid_params": {
@@ -23,7 +23,7 @@
             "res/center60.png",
             "res/maze60.png",
             "res/random60.png",
-            "res/smiley60.png"
+            "res/simley60.png"
         ],
         "test_map_set": [
             "res/manhattan32.png",
@@ -54,8 +54,7 @@
         "eval_period": 5,
         "rm_size": 50000,
         "load_model": "",
-        "random_map": true,
-        "rm_pre_fill_multiplier": 10
+        "rm_pre_fill_multiplier": 1
     },
     "agent_params": {
         "conv_layers": 2,
@@ -71,7 +70,8 @@
         "global_map_scaling": 3,
         "local_map_size": 17,
         "print_summary": false,
-        "masked": true
+        "masked": true,
+        "multimap": true
     },
     "physics_params": {
         "camera_params": {

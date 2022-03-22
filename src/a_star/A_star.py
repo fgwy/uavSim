@@ -179,9 +179,12 @@ class A_star:
         else:
             self.one_random = False
             # print(f'steps in smdp: {steps_in_smdp}')
-            a = self.path[steps_in_smdp][0]-self.path[steps_in_smdp-1][0] # x
-            b = self.path[steps_in_smdp][1]-self.path[steps_in_smdp-1][1] # y
+            try:
+                a = self.path[steps_in_smdp][0]-self.path[steps_in_smdp-1][0] # x
+                b = self.path[steps_in_smdp][1]-self.path[steps_in_smdp-1][1] # y
             # print(f'Internal NFZ check: {self.is_in_no_fly_zone(self.path[1], obstacles)}')
+            except:
+                a = b = None
             action = [a, b]
             # print(f'pre action: {action}')
             if action[0] == 1:
@@ -192,7 +195,9 @@ class A_star:
                 action = 2
             elif action[1] == -1:
                 action = 3
-            # print(f'A-Star action: {action}')
+            elif a is None:
+                action = 5 # hover and wait
+                print(f'@@@A-Star Hover!!!: {action}')
         return action
 
 

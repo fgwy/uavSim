@@ -1,20 +1,20 @@
 {
     "model_stats_params": {
-        "save_model": "models/save_model",
+        "save_model": "models/save_model/flat_maze80_NM/",
         "moving_average_length": 50,
-        "log_file_name": "20211118-143848",
+        "log_file_name": "flat_maze80_nonmasked_0904",
         "training_images": false
     },
     "grid_params": {
         "movement_range": [
-            100,
-            200
+            200,
+            300
         ],
         "movement_range_ll": [
             20,
             50
         ],
-        "map_path": "res/urban50.png",
+        "map_path": "res/maze80.png",
         "train_map_set": [
             "res/manhattan32.png",
             "res/urban50.png",
@@ -23,7 +23,7 @@
             "res/center60.png",
             "res/maze60.png",
             "res/random60.png",
-            "res/simley60.png"
+            "res/smiley60.png"
         ],
         "test_map_set": [
             "res/manhattan32.png",
@@ -54,7 +54,9 @@
         "eval_period": 5,
         "rm_size": 50000,
         "load_model": "",
-        "rm_pre_fill_multiplier": 1
+        "rm_pre_fill_multiplier": 10,
+        "eval": false,
+        "eval_greedy": false
     },
     "agent_params": {
         "conv_layers": 2,
@@ -76,7 +78,7 @@
     "physics_params": {
         "camera_params": {
             "half_length": 2,
-            "map_path": "res/urban50.png"
+            "map_path": "res/maze80.png"
         }
     }
 }

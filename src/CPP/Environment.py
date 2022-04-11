@@ -62,18 +62,30 @@ class CPPEnvironment(BaseEnvironment):
 
         print('Running ', self.stats.params.log_file_name)
 
-        bar = tqdm.tqdm(total=int(self.trainer.params.num_steps))
+        if self.trainer.params.eval:
+            max_steps = 400000
+        else:
+            max_steps = self.trainer.params.num_steps
+
+        bar = tqdm.tqdm(total=int(max_steps))
         last_step = 0
-        while self.step_count < self.trainer.params.num_steps:
+        self.stats.training_ended()
+
+        while self.step_count < max_steps:
             bar.update(self.step_count - last_step)
             last_step = self.step_count
-            self.train_episode()
+            if self.trainer.params.eval:
+                self.train_episode()
+            else:
+                self.train_episode()
 
-            if self.episode_count % self.trainer.params.eval_period == 0:
-                self.test_episode()
+                if self.episode_count % self.trainer.params.eval_period == 0:
+                    self.test_episode()
 
             self.stats.save_if_best()
 
+        # self.agent.save_model(params.)
+        # self.agent.save_model()
         self.stats.training_ended()
 
     def test_episode(self, scenario=None):
@@ -94,7 +106,8 @@ class CPPEnvironment(BaseEnvironment):
         self.stats.on_episode_begin(self.episode_count)
         while not state.is_terminal():
             state = self.step(state)
-            self.trainer.train_agent()
+            if not self.trainer.params.eval:
+                self.trainer.train_agent()
 
         self.stats.on_episode_end(self.episode_count)
         self.stats.log_training_data(step=self.step_count)

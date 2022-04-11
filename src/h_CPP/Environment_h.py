@@ -3,14 +3,14 @@ import tqdm
 import distutils.util
 import numpy as np
 
-from src.h3DQN_FR1.Agent import H_DDQNAgentParams, H_DDQNAgent
+from src.H2D2.Agent import H_DDQNAgentParams, H_DDQNAgent
 from src.CPP.Display import CPPDisplay
 from src.h_CPP.Grid import H_CPPGrid, H_CPPGridParams
 from src.h_CPP.Physics import H_CPPPhysics, H_CPPPhysicsParams
 from src.h_CPP.State import CPPState
 from src.h_CPP.Rewards import H_CPPRewardParams, H_CPPRewards
 
-from src.h3DQN_FR1.Trainer import H_DDQNTrainerParams, H_DDQNTrainer
+from src.H2D2.Trainer import H_DDQNTrainerParams, H_DDQNTrainer
 from src.base.Environment import BaseEnvironment, BaseEnvironmentParams
 from src.base.GridActions import GridActions
 

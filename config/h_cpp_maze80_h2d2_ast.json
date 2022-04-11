@@ -2,7 +2,7 @@
     "model_stats_params": {
         "save_model": "models/saved_models/",
         "moving_average_length": 200,
-        "log_file_name": "test",
+        "log_file_name": "h2d2_maze80_astar_0304",
         "training_images": false,
         "draw": false
     },
@@ -98,7 +98,7 @@
             "hidden_layer_size": 256,
             "hidden_layer_num": 3,
             "only_valid_targets": true,
-            "no_goal_view": 9,
+            "no_goal_view": 5,
             "learning_rate": 3e-05,
             "alpha": 0.005,
             "gamma": 0.95,

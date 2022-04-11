@@ -1,10 +1,10 @@
 import numpy as np
 import copy
-from src.h3DQN_FR1.Agent import H_DDQNAgent, H_DDQNAgentParams
-from src.h3DQN_FR1.PPO_Agent import PPOAgent, PPOAgentParams
-from src.h3DQN_FR1.Agent_HL import HL_DDQNAgent, HL_DDQNAgentParams
-from src.h3DQN_FR1.Agent_LL import LL_DDQNAgent, LL_DDQNAgentParams
-from src.h3DQN_FR1.Trainer import H_DDQNTrainer, H_DDQNTrainerParams
+from src.H2D2.Agent import H_DDQNAgent, H_DDQNAgentParams
+from src.H2D2.PPO_Agent import PPOAgent, PPOAgentParams
+from src.H2D2.Agent_HL import HL_DDQNAgent, HL_DDQNAgentParams
+from src.H2D2.Agent_LL import LL_DDQNAgent, LL_DDQNAgentParams
+from src.H2D2.Trainer import H_DDQNTrainer, H_DDQNTrainerParams
 from src.h_CPP.Rewards import H_CPPRewardParams, H_CPPRewards
 from src.a_star.A_star import A_star
 
@@ -19,6 +19,8 @@ class AgentManager_Params():
         self.use_ddqn = True
         self.use_ddpg = False
         self.use_ppo = False
+        self.eval = False
+        self.eval_exploit = False
         # self.random_map = True
         self.h_trainer = H_DDQNTrainerParams()
         self.ll_agent = LL_DDQNAgentParams()
@@ -143,13 +145,15 @@ class AgentManager():
         q = 0
         if random:
             self.current_goal_idx = self.agent_hl.get_random_goal()
+            print(f'random: {random}')
         elif exploit:
             self.current_goal_idx, q = self.agent_hl.get_exploitation_goal(state)
-            # print(q)
+            # print(f'exploit: {exploit}')
 
         else:
             if self.params.use_soft_max:
                 self.current_goal_idx, q = self.agent_hl.get_softmax_goal(state)
+                # print(f'softmax goal')
             else:
                 print(f'epsilon_greedy!!')
                 self.current_goal_idx = self.agent_hl.get_eps_greedy_action(state)
@@ -241,11 +245,11 @@ class AgentManager():
     def save_models(self, path):
         if not self.trainer.params.use_astar:
             self.agent_ll.save_model_ll(path)
-        if not self.params.pretrain_ll:
-            self.agent_hl.save_model_hl(path)
+        # if not self.params.pretrain_ll:
+        self.agent_hl.save_model_hl(path)
 
     def save_weights(self, path):
         if not self.trainer.params.use_astar:
             self.agent_ll.save_weights_ll(path)
-        if not self.params.pretrain_ll:
-            self.agent_hl.save_weights_hl(path)
+        # if not self.params.pretrain_ll:
+        self.agent_hl.save_weights_hl(path)

@@ -1,7 +1,7 @@
-from src.h3DQN_FR1.Agent import H_DDQNAgent
-from src.h3DQN_FR1.Agent_HL import HL_DDQNAgent
-from src.h3DQN_FR1.Agent_LL import LL_DDQNAgent
-from src.h3DQN_FR1.ReplayMemory import ReplayMemory
+from src.H2D2.Agent import H_DDQNAgent
+from src.H2D2.Agent_HL import HL_DDQNAgent
+from src.H2D2.Agent_LL import LL_DDQNAgent
+from src.H2D2.ReplayMemory import ReplayMemory
 from src.h_CPP.State import H_CPPState
 import tqdm
 
@@ -17,6 +17,7 @@ class H_DDQNTrainerParams:
         self.rm_size_ll = 50000
         self.rm_size_hl = 50000
         self.load_model = ""
+        self.load_model_hl = ""
         self.use_astar = False
         self.rm_pre_fill_multiplier_ll = 10
         self.rm_pre_fill_multiplier_hl = 5
@@ -32,6 +33,10 @@ class H_DDQNTrainer:
 
         self.agent_ll = agent_ll
         self.agent_hl = agent_hl
+
+        if self.params.load_model_hl != "":
+            print("Loading model", self.params.load_model_hl, "for HL-Agent")
+            self.agent_hl.load_weights_hl(self.params.load_model_hl)
 
         self.prefill_bar = None
         self.i = 0

@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 
 def pad_centered(state, map_in, pad_value):
     max_map_size = 60
+    # print(map_in.shape)
+
+    msd = int((max_map_size - map_in.shape[0]))
+    # print(msd)
 
     # if not multimap:
     #     padding_rows = math.ceil(state.no_fly_zone.shape[0] / 2.0)
@@ -24,6 +28,7 @@ def pad_centered(state, map_in, pad_value):
     #     return map_out
 
     if state.no_fly_zone.shape[0] > max_map_size:
+    # if True:
         padding_rows = math.ceil(state.no_fly_zone.shape[0] / 2.0)
         padding_cols = math.ceil(state.no_fly_zone.shape[1] / 2.0)
         position_x, position_y = state.position
@@ -37,30 +42,42 @@ def pad_centered(state, map_in, pad_value):
                                     [0, 0]],  # pad_width paddings
                          mode='constant',
                          constant_values=pad_value)
+        # print(map_in.shape, map_out.shape, map_out.shape)
         return map_out
     else:
 
+        msd_halves = msd #//2
         padding_rows = math.ceil(max_map_size / 2.0)
-        padding_cols = math.ceil(max_map_size / 2.0)
+        padding_cols = math.ceil(msd / 2.0)
         pr_for_offset = math.ceil(state.no_fly_zone.shape[0] / 2.0)
         pc_for_offset = math.ceil(state.no_fly_zone.shape[1] / 2.0)
+        padding_rows = math.ceil(state.no_fly_zone.shape[0] / 2.0)
+        padding_cols = math.ceil(state.no_fly_zone.shape[1] / 2.0)
 
-        position_x, position_y = 0, 0  #state.position
-        position_row_offset = pr_for_offset - position_y # + actual_size_y  # offset is padding for 0,0
-        position_col_offset = pc_for_offset - position_x # + actual_size_x
+        position_x, position_y = state.position
+
+        # position_x, position_y = 0, 0  #state.position
+        # position_row_offset = pr_for_offset - position_y # + actual_size_y  # offset is padding for 0,0
+        # position_col_offset = pc_for_offset - position_x # + actual_size_x
+
+        position_row_offset = padding_rows - position_y # + actual_size_y  # offset is padding for 0,0
+        position_col_offset = padding_cols - position_x # + actual_size_x
         map_out = np.pad(map_in,
-                         pad_width=[[padding_rows + position_row_offset - 1, padding_rows - position_row_offset],
-                                    [padding_cols + position_col_offset - 1, padding_cols - position_col_offset],
+                         pad_width=[[padding_rows + position_row_offset - 1 + msd_halves, padding_rows - position_row_offset + msd_halves],
+                                    [padding_cols + position_col_offset - 1 + msd_halves, padding_cols - position_col_offset + msd_halves],
                                     [0, 0]],  # pad_width paddings
                          mode='constant',
                          constant_values=pad_value)
-
-
+        # print(map_in.shape, map_out.shape)
+        #
+        # print(position_x, position_y)
+        # plt.imshow(map_out[:,:,0])
+        # plt.show()
         return map_out
 
 
 def pad_with_nfz_gm(map_in):
-    max_map_size = 60 * 2 - 1
+    max_map_size = 60 # * 2 - 1
 
     if map_in.shape[0] == max_map_size:
         return map_in

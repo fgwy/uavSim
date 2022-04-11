@@ -13,6 +13,8 @@ class DDQNTrainerParams:
         self.rm_size = 50000
         self.load_model = ""
         self.rm_pre_fill_multiplier = 2
+        self.eval = False
+        self.eval_greedy = False
 
 
 class DDQNTrainer:

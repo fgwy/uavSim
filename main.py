@@ -45,10 +45,11 @@ if __name__ == "__main__":
 
     parser.add_argument('--params', nargs='*', default=None)
 
-    parser.add_argument('--h_cpp', action='store_true', help='Run Coverage Path Planning with hierarchical Agent', default=True)
-    parser.add_argument('--cpp', action='store_true', help='Run Coverage Path Planning')
+    parser.add_argument('--h_cpp', action='store_true', help='Run Coverage Path Planning with hierarchical Agent', default=False)
+    parser.add_argument('--cpp', action='store_true', help='Run Coverage Path Planning', default=False)
     parser.add_argument('--dh', action='store_true', help='Run Path Planning for Data Harvesting')
     parser.add_argument('--multi', action='store_true', help='Run Path Planning for Multi (So far only DH)')
+    # parser.add_argument('--eval', action='store_true', help='Run Evaluation Mode', default=False)
 
     args = parser.parse_args()
 
@@ -79,8 +80,9 @@ if __name__ == "__main__":
         params.model_stats_params.save_model = "models/" + args.id
         params.model_stats_params.log_file_name = args.id
 
-    save_json_to_logs(params, params.model_stats_params.save_model + f'{params.model_stats_params.log_file_name}/')
-    save_json_to_logs(params, 'logs/plots/' + str(params.model_stats_params.log_file_name) + '/')
+    if args.h_cpp:
+        save_json_to_logs(params, params.model_stats_params.save_model + f'{params.model_stats_params.log_file_name}/')
+        save_json_to_logs(params, 'logs/plots/' + str(params.model_stats_params.log_file_name) + '/')
 
     if args.cpp:
         main_cpp(params)

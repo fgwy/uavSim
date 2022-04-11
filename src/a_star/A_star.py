@@ -76,7 +76,7 @@ class A_star:
         i = 0
         n = 0
         m = 0
-        limit = 300000
+        limit = 6000
         while len(open_list) > 0:
             m +=1
 

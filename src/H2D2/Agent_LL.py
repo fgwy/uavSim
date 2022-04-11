@@ -4,7 +4,7 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, AvgPool2D, Reshape
 
 import numpy as np
-from src.h3DQN_FR1.models import build_ll_model
+from src.H2D2.models import build_ll_model
 
 
 def print_node(x):

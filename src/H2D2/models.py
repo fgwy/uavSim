@@ -95,7 +95,7 @@ def build_ll_model(states_in, initial_mb, num_actions, path_to_local_pretrained_
                            axis=-1), tf.bool)
 
     q_vals = tf.where(b, -np.inf, q_vals)
-    model = tf.keras.Model (inputs=[local_map_in, states_proc_in], outputs=q_vals)
+    model = tf.keras.Model(inputs=[local_map_in, states_proc_in], outputs=q_vals)
 
     return model
 

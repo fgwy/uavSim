@@ -67,13 +67,20 @@ class BaseEnvironment:
     #     self.stats.training_ended()
 
     def step(self, state, random=False):
-        if random:
-            action = self.agent.get_random_action()
+        if self.trainer.params.eval:
+            if self.trainer.params.eval_greedy:
+                action = self.agent.get_exploitation_action_target(state)
+            else:
+                action = self.agent.act(state)
         else:
-            action = self.agent.act(state)
+            if random:
+                action = self.agent.get_random_action()
+            else:
+                action = self.agent.act(state)
         next_state = self.physics.step(GridActions(action))
         reward = self.rewards.calculate_reward(state, GridActions(action), next_state)
-        self.trainer.add_experience(state, action, reward, next_state)
+        if not self.trainer.params.eval:
+            self.trainer.add_experience(state, action, reward, next_state)
         self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))
         self.step_count += 1
         return copy.deepcopy(next_state)

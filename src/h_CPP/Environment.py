@@ -2,14 +2,14 @@ import copy
 import tqdm
 import numpy as np
 
-from src.h3DQN_FR1.AgentManager import AgentManager_Params, AgentManager
+from src.H2D2.AgentManager import AgentManager_Params, AgentManager
 from src.h_CPP.Display import h_CPPDisplay
 from src.h_CPP.Grid import H_CPPGrid, H_CPPGridParams
 from src.h_CPP.Physics import H_CPPPhysics, H_CPPPhysicsParams
 from src.h_CPP.State import H_CPPState
 from src.h_CPP.Rewards import H_CPPRewardParams, H_CPPRewards
 
-from src.h3DQN_FR1.Trainer import H_DDQNTrainerParams, H_DDQNTrainer
+from src.H2D2.Trainer import H_DDQNTrainerParams, H_DDQNTrainer
 from src.base.Environment import BaseEnvironment, BaseEnvironmentParams
 from src.base.GridActions import GridActions
 
@@ -26,7 +26,7 @@ class H_CPPEnvironmentParams(BaseEnvironmentParams):
 
 class H_CPPEnvironment(BaseEnvironment):
 
-    def __init__(self, params: H_CPPEnvironmentParams):
+    def __init__(self, params: H_CPPEnvironmentParams, eval=False):
         self.display = h_CPPDisplay()
         super().__init__(params, self.display)
         self.params = params
@@ -39,6 +39,7 @@ class H_CPPEnvironment(BaseEnvironment):
                                           example_state=self.example_state,
                                           example_action=self.physics.get_example_action(),
                                           stats=self.stats)
+        self.eval = self.agent_manager.params.eval
         # self.display.init_plt(self.example_state)
         # super().__init__(params, self.display)
         self.hl_steps = 0
@@ -49,13 +50,17 @@ class H_CPPEnvironment(BaseEnvironment):
         # self.fill_replay_memory()
 
         print('Running ', self.stats.params.log_file_name)
-        bar = tqdm.tqdm(total=int(self.agent_manager.trainer.params.num_steps))
+        if self.eval:
+            max_steps = 400000
+        else:
+            max_steps = self.agent_manager.trainer.params.num_steps
+        bar = tqdm.tqdm(total=int(max_steps))
         last_step = 0
         w = 0
         steps_ins_mdp = 0
 
         # while self.step_count < self.agent_manager.trainer.params.num_steps:
-        while self.hl_steps < self.agent_manager.trainer.params.num_steps:
+        while self.hl_steps < max_steps:
         # while True:
             # print(w)
             w+=1
@@ -83,7 +88,7 @@ class H_CPPEnvironment(BaseEnvironment):
         self.agent_manager.save_models(self.stats.params.save_model + 'end')
         self.stats.training_ended()
 
-    def run_MDP(self, last_step, bar, episode_num, test=False, prefill=False, random_h=True, random_l=False):
+    def run_MDP(self, last_step, bar, episode_num, test=False, prefill=False, random_h=False, random_l=False):
         """
         Runs MDP: High level interaction loop
         """
@@ -101,7 +106,7 @@ class H_CPPEnvironment(BaseEnvironment):
             bar.update(1)
             last_step = self.hl_steps
             goal, goal_idx, try_landing, q = self.agent_manager.generate_goal(self.physics.state, random=random_h,
-                                                                           exploit=test)
+                                                                           exploit=(test or self.agent_manager.params.eval_exploit))
             # if self.hl_steps %1000 == 0:
             #     print(f'sum qval = {sum(q[0])}')
 
@@ -138,22 +143,24 @@ class H_CPPEnvironment(BaseEnvironment):
 
             # print(f'reward_h: {reward_h}')
 
-            if not test and not self.agent_manager.params.pretrain_ll:
+            if not test and not self.agent_manager.params.pretrain_ll and not self.eval:
 
                 self.agent_manager.trainer.add_experience_hl(state_h, goal_idx, reward_h,
                                                              copy.deepcopy(self.physics.state))
                 self.agent_manager.trainer.train_h()
+            self.stats.add_experience((state, goal_idx, reward_h, copy.deepcopy(self.physics.state)))
 
         # self.stats.on_episode_end(self.episode_count)
         # self.stats.log_training_data(step=self.step_count)
 
         # print(f'H-Steps in episode: {i}')
-        if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded:
+        if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded and not self.eval:
             self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
                                        name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h, hl_steps=self.hl_steps)
             # self.display.save_state_and_hm(state=state_h, q_vals=q, name=self.stats.params.log_file_name, episode_num=episode_num)
+            # pass
 
-        if test:
+        if test and not self.eval:
             self.agent_manager.save_weights(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}/')
             self.agent_manager.save_models(self.stats.params.save_model + f'/{self.stats.params.log_file_name}/{episode_num}/')
 
@@ -193,11 +200,11 @@ class H_CPPEnvironment(BaseEnvironment):
                 next_state = self.physics.step(GridActions(action))
                 reward = self.rewards.calculate_reward_l(state, GridActions(action), next_state)
                 # print(f'reward_l: {reward}')
-                if not test and not self.agent_manager.trainer.params.use_astar:
+                if not test and not self.agent_manager.trainer.params.use_astar and not self.eval:
                     self.agent_manager.trainer.add_experience_ll(state, action, reward, next_state)
                     self.agent_manager.trainer.train_l()
 
-                self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
+                # self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
             if test and self.stats.params.draw:
                 self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
             display_trajectory.append(copy.deepcopy(self.physics.state))

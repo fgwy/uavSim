@@ -181,10 +181,9 @@ class h_CPPDisplay(CPPDisplay):
         props = dict(boxstyle='round', facecolor='white', alpha=0.5)
 
         # place a text box in upper left in axes coords
-        plt.text(-70, 60, textstr, fontsize=11,
+        plt.text(-70, -30, textstr, fontsize=11,
                  verticalalignment='top', bbox=props)  # transform=plt.transAxes,
         plt.subplots_adjust(left=0.3)
-
         axs[0].imshow(data, alpha=1, cmap=self.cmap, vmin=0, vmax=5)
         axs[1].imshow(data_end, alpha=1, cmap=self.cmap, vmin=0, vmax=5)
         axs[0].set_title('First State')

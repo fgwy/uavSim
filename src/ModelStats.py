@@ -101,7 +101,7 @@ class ModelStats:
             self.eval_best = eval_mean
             if self.params.save_model != '':
                 print('Saving best with:', eval_mean)
-                self.model.save_weights(self.params.save_model + '_best')
+                self.model.save_weights(self.params.save_model + self.params.log_file_name + '_best')
 
     def get_log_dir(self):
         return self.log_dir
@@ -109,8 +109,8 @@ class ModelStats:
     def training_ended(self):
 
         if self.params.save_model != '':
-            self.model.save_weights(self.params.save_model + '_unfinished')
-            print('Model saved as', self.params.save_model + '_unfinished')
+            self.model.save_weights(self.params.save_model + self.params.log_file_name + '_unfinished_final')
+            print('Model saved as', self.params.save_model + self.params.log_file_name + '_unfinished_final')
 
     def save_episode(self, save_path):
         f = open(save_path + ".txt", "w")

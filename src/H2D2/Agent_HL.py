@@ -10,7 +10,7 @@ import numpy as np
 # from tensorflow.keras.utils.generic_utils import get_custom_objects
 
 
-from src.h3DQN_FR1.models import *
+from src.H2D2.models import *
 
 
 def print_node(x):
@@ -56,7 +56,7 @@ class HL_DDQNAgentParams:
 
         # Hierarchical Params
         self.only_valid_targets = True
-        self.no_goal_view = 9
+        self.no_goal_view = 5
 
         # Training Params
         self.learning_rate = 3e-5
@@ -335,7 +335,7 @@ class HL_DDQNAgent(object):
         self.target_network_hl.save(path_to_model + '-hl_model')
 
     def load_weights_hl(self, path_to_weights):
-        self.q_network_hl.load_weights(path_to_weights)
+        self.q_network_hl.load_weights(path_to_weights) # .assert_consumed() # .expect_partial()
         self.hard_update_hl()
 
     # @tf.RegisterGradient("ZeroGrad")

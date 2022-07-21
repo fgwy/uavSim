@@ -181,8 +181,8 @@ class h_CPPDisplay(CPPDisplay):
         props = dict(boxstyle='round', facecolor='white', alpha=0.5)
 
         # place a text box in upper left in axes coords
-        plt.text(-70, -30, textstr, fontsize=11,
-                 verticalalignment='top', bbox=props)  # transform=plt.transAxes,
+        # plt.text(-70, -40, textstr, fontsize=11,
+        #          verticalalignment='top', bbox=props)  # transform=plt.transAxes,
         plt.subplots_adjust(left=0.3)
         axs[0].imshow(data, alpha=1, cmap=self.cmap, vmin=0, vmax=5)
         axs[1].imshow(data_end, alpha=1, cmap=self.cmap, vmin=0, vmax=5)
@@ -210,14 +210,15 @@ class h_CPPDisplay(CPPDisplay):
     def save_state_and_hm(self, state, q_vals, name, episode_num):
         grid_kws = {"height_ratios": (.9, .05), "hspace": .3}
 
-        f, (ax, cbar_ax, lm_ax) = plt.subplots(3, gridspec_kw=grid_kws)
-
+        f, (ax, cbar_ax, lm_ax) = plt.subplots(3) #, gridspec_kw=grid_kws)
+        q_vals = q_vals[0]
+        np.asarray(q_vals)
         q_vals.squeeze()
         print(q_vals.shape)
 
         q = q_vals[:-1]
-        root = int(np.sqrt(q.size))
-        q_vals = q.reshape(root, root)
+        # root = int(np.sqrt(q.size))
+        q_vals = q.reshape(17, 17)
 
         ax = sns.heatmap(q_vals, ax=ax,
 
@@ -225,11 +226,11 @@ class h_CPPDisplay(CPPDisplay):
 
                          cbar_kws={"orientation": "horizontal"})
 
-        data = self.get_data(state)
+        data = self.get_lm_data(state)
         lm_ax = data
 
         my_file = f'{name}/heat_map_ep{episode_num}_figure.png'
-        self.save_fig(plt, my_file, name)
+        # self.save_fig(plt, my_file, name)
         plt.show()
 
         plt.clf()

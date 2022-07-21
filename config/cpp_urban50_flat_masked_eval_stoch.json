@@ -1,8 +1,8 @@
 {
     "model_stats_params": {
-        "save_model": "models/save_model/flat_urb50_masked_0604_eval_stoch/",
+        "save_model": "models/save_model/flat_urb50_masked_1104_eval_stoch/",
         "moving_average_length": 50,
-        "log_file_name": "flat_urban50_masked_0604_eval_stoch",
+        "log_file_name": "flat_urban50_masked_1104_eval_stoch",
         "training_images": false
     },
     "grid_params": {
@@ -53,7 +53,7 @@
         "rm_pre_fill_random": true,
         "eval_period": 5,
         "rm_size": 50000,
-        "load_model": "./models/trained_models/flat_urb50_masked_0604/flat_urban50_masked_0604_best",
+        "load_model": "./models/trained_models/flat_urb50_masked_1104/flat_urban50_masked_1104_unfinished_final",
         "load_model_hl": "",
         "rm_pre_fill_multiplier": 10,
         "eval": true,
@@ -73,7 +73,7 @@
         "global_map_scaling": 3,
         "local_map_size": 17,
         "print_summary": false,
-        "masked": false,
+        "masked": true,
         "multimap": false
     },
     "physics_params": {

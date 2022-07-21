@@ -55,7 +55,6 @@ class CurveVis():
             labels), f"Invalid num of labels: {len(csv_file)} for csv_files but {len(labels)} for labels"
         self.i=0
         for i in range(len(csv_file)):
-            self.i+=1
             # if self.data_form == self.sup_data_form[0]:
             #     data = self._load_csv_data(csv_file[i])[:]
             # elif self.data_form == self.sup_data_form[1]:
@@ -69,6 +68,7 @@ class CurveVis():
             data = self._smooth_data(data, self.smooth_k)
             data = self._index_data(data)
             self._add_curve(data, labels[i])
+            self.i += 1
 
     def _load_csv_data(self, csv_file):
         return pd.read_csv(csv_file)["Value"].to_numpy()
@@ -124,7 +124,8 @@ class CurveVis():
         if self.mean:
             mean_y = [np.mean(data.y)] * len(data.x)
             print(mean_y[0], self.i)
-            ax = sns.lineplot(x=data.x, y=mean_y, linestyle='--', linewidth=0.5, markersize=6, label=f"mean {curve_label}", color=plt_colors[self.i])
+            # ax = sns.lineplot(x=data.x, y=mean_y, linestyle='--', linewidth=0.5, markersize=6, label=f"mean {curve_label}", color=plt_colors[self.i])
+            ax = sns.lineplot(x=data.x, y=mean_y, linestyle='--', linewidth=0.5, markersize=6, color=plt_colors[self.i])
 
     def show(self):
         # plt.figure.set_dpi(self.dpi)
@@ -136,4 +137,6 @@ class CurveVis():
         plt.suptitle(self.suptitle, fontweight="bold")
         plt.xlabel(self.x_label, fontsize=14)
         plt.ylabel(self.y_label, fontsize=14)
-        plt.show()
+        path = (f'./{self.i}_fig_{self.y_label}_{self.suptitle}')
+        plt.savefig(path, dpi=600)
+        plt.show(block=True)

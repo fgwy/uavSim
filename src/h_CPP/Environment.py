@@ -154,7 +154,8 @@ class H_CPPEnvironment(BaseEnvironment):
         # self.stats.log_training_data(step=self.step_count)
 
         # print(f'H-Steps in episode: {i}')
-        if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded and not self.eval:
+        # if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded and not self.eval:
+        if True:
             self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
                                        name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h, hl_steps=self.hl_steps)
             # self.display.save_state_and_hm(state=state_h, q_vals=q, name=self.stats.params.log_file_name, episode_num=episode_num)

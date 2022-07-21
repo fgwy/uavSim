@@ -30,11 +30,20 @@ def generate_config(params, file_path):
 
 
 def save_json_to_logs(params, path):
+    # old_mask = os.umask(0)
     try:
-        os.mkdir(path)
+        os.makedirs(path)
+    # except OSError as e:
+    #     if e.errno != errno.EEXIST:
+    #         raise
     except:
-        print(f"couldn't create path: {path}")
-    with open(f'{path}.json', 'w', encoding='utf-8') as f:
+        print('not created')
+
+    else:
+        print('nested dir created')
+    # s.umask(old_mask)
+
+    with open(f'{path}_config.json', 'w', encoding='utf-8') as f:
         json_data = json.dumps(params.__dict__, default=lambda o: o.__dict__, indent=4)
         # json.dump(json_data, f, ensure_ascii=False, indent=4)
         f.write(json_data)

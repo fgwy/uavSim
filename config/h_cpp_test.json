@@ -1,8 +1,8 @@
 {
     "model_stats_params": {
-        "save_model": "models/saved_models/test",
+        "save_model": "models/saved_models/",
         "moving_average_length": 200,
-        "log_file_name": "test",
+        "log_file_name": "test_h_cpp",
         "training_images": false,
         "draw": false
     },
@@ -62,6 +62,7 @@
         "use_ddqn": true,
         "use_ddpg": false,
         "use_ppo": false,
+        "eval": false,
         "eval_exploit": false,
         "h_trainer": {
             "batch_size_h": 128,
@@ -73,6 +74,7 @@
             "rm_size_ll": 50000,
             "rm_size_hl": 50000,
             "load_model": "",
+            "load_model_hl":"",
             "use_astar": true,
             "rm_pre_fill_multiplier_ll": 10,
             "rm_pre_fill_multiplier_hl": 10
@@ -107,7 +109,7 @@
             "use_global_local": true,
             "global_map_scaling": 3,
             "goal_size": 17,
-            "multimap": true,
+            "multimap": false,
             "print_summary": true,
             "use_skip": true,
             "use_pretrained_local_map_preproc": false,

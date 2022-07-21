@@ -158,7 +158,8 @@ class A_star:
         if steps_in_smdp == 1 or self.one_random:
             x, y = state.position
             start = (y, x)  # TODO: keep track!!
-            obstacles = state.no_fly_zone*1
+            # obstacles = state.no_fly_zone*1
+            obstacles = np.where(state.no_fly_zone>1, state.no_fly_zone, 1)
             end = np.where(state.h_target == 1)
             if obstacles[y, x] or obstacles[end[0], end[1]]:
                 print(f'obstacles on position or target: start: {obstacles[y,x]} end: {obstacles[end[0], end[1]]}')

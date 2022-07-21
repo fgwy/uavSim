@@ -313,11 +313,15 @@ class h_CPPDisplay(CPPDisplay):
 
     def get_lm_data(self, state):
         # lm_1 = np.apply_over_axes(np.sum, lm, [2])
-        lm = state.get_local_map().astype(bool)
-        data = lm[:, :, 0]*1
-        data += (~lm[:, :, 0].astype(bool) *1) * lm[:, :, 1] *2
-        data += (~data.astype(bool) *1) *lm[:,:,2] *3
-        data += (~data.astype(bool) * 1) * lm[:, :, 3] * 4
+        lm = state.get_local_map().astype(bool)*1
+        data = np.shape(lm[:,:,0])
+        data = np.where(lm[:,:,0]>0, data, 1)
+        data = np.where(((~lm[:, :, 0].astype(bool) *1) * lm[:, :, 1])>0, data, 2)
+        data = np.where(((~data.astype(bool) *1) *lm[:,:,2])>0, data, 3)
+        data = np.where(((~data.astype(bool) * 1) * lm[:, :, 3])>0, data, 4)
+        # data += (~lm[:, :, 0].astype(bool) *1) * lm[:, :, 1] *2
+        # data += (~data.astype(bool) *1) *lm[:,:,2] *3
+        # data += (~data.astype(bool) * 1) * lm[:, :, 3] * 4
         data[state.position[1], state.position[0]] = 5
         # data += (~data.astype(bool) * 1) * lm[:, :, 4] * 5
         return data

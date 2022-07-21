@@ -175,6 +175,14 @@ class A_star:
         if self.path is None:
             print('A-star: random action!!!')
             self.one_random = True
+            if obstacles[y-1,x]:
+                pass
+            elif obstacles[y+1,x]:
+                pass
+            elif obstacles[y,x-1]:
+                pass
+            elif obstacles[y,x+1]:
+                pass
             return np.random.randint(0, 4)
         else:
             self.one_random = False

@@ -3,7 +3,10 @@ import pandas as pd
 import numpy as np
 
 # specifying the path to csv files
+
 path = "./data/eval/urban50/"
+
+path = "./data/multi_last"
 
 # csv files in the path
 files = glob.glob(path + "/*.csv")

@@ -160,7 +160,7 @@ class AgentManager():
 
         # generate goal out of idx
         if self.current_goal_idx == self.agent_hl.num_actions_hl - 1:
-            print('tried landing')
+            # print('tried landing')
             try_landing = True
             self.current_goal = np.zeros((self.hl_agent_params.goal_size, self.hl_agent_params.goal_size))  # todo please
         else:

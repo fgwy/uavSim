@@ -182,12 +182,12 @@ class H_CPPEnvironment(BaseEnvironment):
             if try_landing:
                 # todo: check!! enters twice before landing
                 print('tried landing')
-                action = 4  # Landing action
+                action = GridActions.LAND  # Landing action
                 next_state = self.physics.step(GridActions(action))
                 # next_state = self.physics.set_terminal_h(True)
                 tried_landing_and_succeeded = next_state.landed
                 if tried_landing_and_succeeded:
-                    print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {GridActions(4)}')
+                    print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {GridActions.LAND}')
             elif not valid:
                 # print('invalid!')
                 action = 5  # Hover such that state changes (mb is decreased and different goal generated)

@@ -10,6 +10,8 @@ from src.StateUtils import pad_centered, pad_with_nfz_gm
 from tensorflow.image import central_crop
 from tensorflow.keras.layers import AvgPool2D
 
+from math import sqrt
+
 
 class CPPScenario:
     def __init__(self):
@@ -108,8 +110,11 @@ class CPPState(BaseState):
     def set_position(self, position):
         self.position = position
 
-    def decrement_movement_budget(self):
-        self.movement_budget -= 1
+    def decrement_movement_budget(self, diagonal = False):
+        if diagonal:
+            self.movement_budget -= sqrt(2)
+        else:
+            self.movement_budget -= 1
 
     def is_terminal(self):
         return self.terminal

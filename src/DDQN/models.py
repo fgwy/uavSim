@@ -114,10 +114,15 @@ def build_flat_model_masked(states_in, num_actions, initial_mb, path_to_local_pr
     # Masking of invalid actions
 
     lz = 1-local_map_in[:, 8, 8, 2] # negation of landing zone -> if no landing zone on position mask to -inf
-    b = tf.cast(tf.stack([local_map_in[:, 9, 8, 0],
-                          local_map_in[:, 8, 9, 0],
-                          local_map_in[:, 7, 8, 0],
-                          local_map_in[:, 8, 7, 0],
+    b = tf.cast(tf.stack([local_map_in[:, 9, 8, 0], # north
+                          local_map_in[:, 9, 9, 0], # north east
+                          local_map_in[:, 8, 9, 0], # east
+                          local_map_in[:, 7, 9, 0], # south east
+                          local_map_in[:, 7, 8, 0], # south
+                          local_map_in[:, 7, 7, 0], #south west
+                          local_map_in[:, 8, 7, 0], # west
+                          local_map_in[:, 9, 7, 0], # north west
+
                          lz], axis=-1), tf.bool)
 
     # b = tf.cast((tf.keras.layers.Concatenate(axis=1)([a_1, c])), dtype=tf.bool)

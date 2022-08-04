@@ -20,6 +20,21 @@ class GridPhysics:
             x -= 1
         elif action == GridActions.EAST:
             x += 1
+
+        #diagonal actions
+        elif action == GridActions.NORTH_EAST:
+            y+=1
+            x+=1
+        elif action == GridActions.NORTH_WEST:
+            y+=1
+            x-=1
+        elif action == GridActions.SOUTH_EAST:
+            y-=1
+            x+=1
+        elif action == GridActions.SOUTH_WEST:
+            y-=1
+            x-=1
+
         elif action == GridActions.LAND:
             self.landing_attempts += 1
             if self.state.is_in_landing_zone():

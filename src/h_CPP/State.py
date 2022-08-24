@@ -1,6 +1,7 @@
 import numpy as np
 
 from src.Map.Map import Map
+from src.Map.Mask import MaskUnreachable
 from src.StateUtils import pad_centered, pad_with_nfz_gm
 from src.CPP.State import CPPState
 
@@ -33,6 +34,7 @@ class H_CPPState(CPPState):
         self.local_map_size = 17
         self.goal_covered = False
         self.hierarchical = True
+        self.UnreachableMask =
         # self.multimap = False
 
     def reset_target_h(self, h_target):

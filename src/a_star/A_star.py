@@ -240,7 +240,6 @@ class A_star:
                     print(f'@@@A-Star Hover!!!: {action}')
         return action
 
-
     @staticmethod
     def do_kdtree(combined_x_y_arrays, points):
         mytree = kd(combined_x_y_arrays)

@@ -3,8 +3,12 @@ from tensorflow import argmax as argmx
 import numpy as np
 import numba as nb
 
+# from astar_python.astar import Astar
+
+from time import time, perf_counter_ns, perf_counter
+
 # @nb.experimental.jitclass
-class Node():
+class Node:
     """A node class for A* Pathfinding"""
 
     def __init__(self, parent=None, position=None):
@@ -20,10 +24,13 @@ class Node():
 
 
 class A_star:
-    def __init__(self):
+    def __init__(self, diag=False):
         self.stuff = None
         self.path = None
         self.one_random = True
+        self.diag = diag
+        self.moves = [(0, -1), (0, 1), (-1, 0), (1, 0)] if not self.diag else [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1),
+                                                                 (1, -1), (1, 1)]
 
 
     ####### adapted from: https://stackoverflow.com/questions/43306291/find-the-nearest-nonzero-element-and-corresponding-index-in-a-2d-numpy-array
@@ -88,9 +95,9 @@ class A_star:
                 if item.f < current_node.f:
                     current_node = item
                     current_index = index
-                if n % limit == 0:
-                    # print(f'n: {n}')
-                    return None
+                # if n % limit == 0:
+                #     # print(f'n: {n}')
+                #     return None
 
             # Pop current off open list, add to closed list
             open_list.pop(current_index)
@@ -108,7 +115,7 @@ class A_star:
 
             # Generate children
             children = []
-            for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]: #, (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
+            for new_position in self.moves: # Adjacent squares
 
                 # Get node position
                 node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
@@ -130,9 +137,9 @@ class A_star:
             # Loop through children
             for child in children:
                 i += 1
-                if i % limit == 0:
-                    # print(f'i: {i}')
-                    return None
+                # if i % limit == 0:
+                #     # print(f'i: {i}')
+                #     return None
                 # print(i)
                 # Child is on the closed list
                 for closed_child in closed_list:
@@ -141,7 +148,8 @@ class A_star:
 
                 # Create the f, g, and h values
                 child.g = current_node.g + 1
-                child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
+                #heuristic fior diag act
+                child.h = np.sqrt((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
                 child.f = child.g + child.h
 
                 # Child is already in the open list
@@ -159,7 +167,7 @@ class A_star:
             x, y = state.position
             start = (y, x)  # TODO: keep track!!
             # obstacles = state.no_fly_zone*1
-            obstacles = np.where(state.no_fly_zone>1, state.no_fly_zone, 1)
+            obstacles = np.where(state.no_fly_zone>=1, state.no_fly_zone, 1)
             end = np.where(state.h_target == 1)
             if obstacles[y, x] or obstacles[end[0], end[1]]:
                 print(f'obstacles on position or target: start: {obstacles[y,x]} end: {obstacles[end[0], end[1]]}')
@@ -196,17 +204,40 @@ class A_star:
                 a = b = None
             action = [a, b]
             # print(f'pre action: {action}')
-            if action[0] == 1:
-                action = 0
-            elif action[1] == 1:
-                action = 1
-            elif action[0] == -1:
-                action = 2
-            elif action[1] == -1:
-                action = 3
-            elif a is None:
-                action = 5 # hover and wait
-                print(f'@@@A-Star Hover!!!: {action}')
+
+            if self.diag:
+
+                if action[0] == 1 and action[1] == 0:
+                    action = 0
+                elif action[1] == 1 and action[0] == 0:
+                    action = 1
+                elif action[0] == -1 and action[1] == 0:
+                    action = 2
+                elif action[1] == -1 and action[0] == 0:
+                    action = 3
+                elif action[0] == 1 and action[1] == 0:
+                    action = 0
+                elif action[1] == 1 and action[0] == 0:
+                    action = 1
+                elif action[0] == -1 and action[1] == 0:
+                    action = 2
+                elif action[1] == -1 and action[0] == 0:
+                    action = 2
+                elif a is None:
+                    action = 5 # hover and wait
+                    print(f'@@@A-Star Hover!!!: {action}')
+            else:
+                if action[0] == 1 and action[1] == 0:
+                    action = 0
+                elif action[1] == 1 and action[0] == 0:
+                    action = 1
+                elif action[0] == -1 and action[1] == 0:
+                    action = 2
+                elif action[1] == -1 and action[0] == 0:
+                    action = 3
+                elif a is None:
+                    action = 5  # hover and wait
+                    print(f'@@@A-Star Hover!!!: {action}')
         return action
 
 
@@ -248,10 +279,13 @@ def main():
 
     start = (0, 0)
     end = (0, 9)
-    ast = A_star()
-
+    diag = True
+    ast = A_star(diag)
+    t1= perf_counter()
     path = ast.astar(maze, start, end)
-    print(path)
+    t2=perf_counter()
+    print(path, t2-t1)
+    print(len(path))
 
     # print(f'steps in smdp: {steps_in_smdp}')
     for i in range(15):

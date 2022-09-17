@@ -1,7 +1,7 @@
 from src.CPP.State import CPPState
 from src.CPP.SimpleSquareCamera import SimpleSquareCameraParams, SimpleSquareCamera
 from src.ModelStats import ModelStats
-from src.base.GridActions import GridActions, GridActionsNoHover
+from src.base.GridActions import GridActions, GridActionsNoHover, GridActionsDiagonal
 from src.base.GridPhysics import GridPhysics
 
 
@@ -37,7 +37,7 @@ class CPPPhysics(GridPhysics):
 
         # self.camera = SimpleSquareCamera(self.params.camera_params)
 
-    def step(self, action: GridActions):
+    def step(self, action: GridActionsDiagonal):
         self.movement_step(action)
         if not self.state.terminal:
             self.vision_step()
@@ -52,7 +52,7 @@ class CPPPhysics(GridPhysics):
         self.state.add_explored(view)
 
     def get_example_action(self):
-        return GridActionsNoHover.LAND
+        return GridActionsDiagonal.NORTH_WEST
 
     def is_in_landing_zone(self):
         return self.state.is_in_landing_zone()

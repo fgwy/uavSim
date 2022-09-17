@@ -1,311 +1,161 @@
 # MIT License
 
-# Copyright (c) 2019 Martin Slomczykowski
+# https://github.com/theadambyrne/astar
 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-# http://homepages.abdn.ac.uk/f.guerin/pages/teaching/CS1013/practicals/aStarTutorial.htm
-# ^ ty
-
+import random
+import heapq
+import numpy as np
 import matplotlib.pyplot as plt
-import math
+from matplotlib.pyplot import figure
+from time import time, perf_counter_ns, perf_counter
 
+grid = np.array([
+    [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0],
+    [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-class coordinates:
-    corner1 = []  # These contain trupls of EVERY shape's corner1
-    corner2 = []
-    corner3 = []
-    corner4 = []
+grid1 = np.array([[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [1, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [1, 1, 0, 0, 1, 0, 0, 0, 1, 1],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-    length = None
+# Points of Interest
+start = (0,0)
+goal = (0,19)
 
-    def __init__(self):
-        # This will read the text file just parse it then fill the corner lists
-        with open('./submarineD2.txt') as f:
-            lines = f.readlines()
+#Heuristic - Pythagoras' theorem
+def heuristic(a,b):
+    return np.sqrt((b[0]-a[0])**2 + (b[1]-a[1])**2)
 
-        for line in lines:
-            if line.find("corner1") != -1:
-                self.corner1.append(self.ParseTruple(line))
-            elif line.find("corner2") != -1:
-                self.corner2.append(self.ParseTruple(line))
-            elif line.find("corner3") != -1:
-                self.corner3.append(self.ParseTruple(line))
-            elif line.find("corner4") != -1:
-                self.corner4.append(self.ParseTruple(line))
-
-        self.length = len(self.corner1)
-
-    def ParseTruple(self, line):
-        arrowPosition = line.find("->")
-        line = line[arrowPosition + 2: len(line)]
-        output = tuple(map(float, line.split(',')))
-        return output
-
-
-coObject = coordinates()
-
-
-def GetCoordinateStatus(x, y, z):
-    if x > -2500 and x < 2000:
-        if y > -1270 and y < 3200:
-            if z == 0 or z == 1:
-                for count in range(0, coObject.length):
-                    if x > coObject.corner1[count][0] and x < coObject.corner2[count][0]:
-                        if y < coObject.corner1[count][1] and y > coObject.corner3[count][1]:
-                            return True
-                return False
-            else:
-                return False
-        else:
-            return False
+def astar(array, start, goal, movement):
+    #possible movemnt
+    neighbours = []
+    if movement:
+        neighbors = [(0,1),(0,-1),(1,0),(-1,0),(1,1),(1,-1),(-1,1),(-1,-1)]
     else:
-        return False
+        neighbors = [(0,1),(0,-1),(1,0),(-1,0)]
+   #tiles not to choose ever again
+    close_set = set()
+    came_from = {}
+    gscore = {start:0}
+    fscore = {start:heuristic(start,goal)}
 
+    #contains all positions considered
+    oheap = []
+    heapq.heappush(oheap, (fscore[start], start))
 
-class Astar:
-    # add the starting coordinates to the children list
-    # repeat:
-    # which ever of the children has that lowest F, add to closedList
-    # this child has now become the parent
-    # add each of the 8 adjacent nodes to the children list
-    # filter out the non-walkable options as well as the options on the closed list
-    # cycle through the children list:
-    # find G H and F <- G IS ADDED ONTO THE FULL PATH OF Gs
-    # if it isnt on the open list, add it to the open list
-    # if it is already on the open list, check to see if that node is better using G as the means to determine.
-    # if that G is better (lower) set it as the parent :repeat:
-    # :repeat:
-    # stop when you:
-    # Add the target square to the closed list, in which case the path has been found or
-    # Fail to find the target square, and the open list is empty, there is no path
-
-    # Save the path. Working backwards from the target square, go from each square to its parent square until you reach the starting square. That is your path.
-
-    # I think that this has been a success but we need to adjust the mapping. Instead of mapping the entire map into huge rectangles, I think we need to split the
-    # entire map into an army of 10x10 (or whatever) nodes. This way pathfinding will be better and it will just be better in general. If we need a precise location
-    # whether it be for nades or etc, you can still operate on that basis, but for most cases, 10x10 units should be more than accurate enough
-    # Also, we can map every 10x10 node as corner, cover, obstacle, vaultable, jumpable, etc
-
-    graphX = []
-    graphY = []
-
-    def __init__(self, x, y, z, target):
-        self.children = [[x, y, z, False, 0, 0, 0]]  # 0, 0, 0 = F G H
-        self.openList = []
-        self.closedList = []
-        self.parent = None
-
-        self.xOrigin = x
-        self.yOrigin = y
-        self.zOrigin = z
-
-        self.target = target
-        self.AtTarget = False
-
-        self.assingParent = True
-
-        while self.AtTarget == False:
-            self.Sequence()
-
-        """for xGraphWorker in self.closedList:
-            self.graphX.append(xGraphWorker[0])
-        for yGraphWorker in self.closedList:
-            self.graphY.append(yGraphWorker[1])"""
-
-    def Sequence(self):
-        while self.AtTarget == False:
-            position = self.LowestFValue()
-
-            if self.assingParent == True:
-                self.parent = self.children[position]
-                self.graphX.append(self.parent[0])  # delete this
-                self.graphY.append(self.parent[1])
-                self.closedList.append(self.children[position])
-            else:
-                self.closedList.append(self.parent)
-                self.assingParent = True
-            self.children = []
-
-            self.AdjacentNodeFiller()
-            self.NodeKiller()
-
-            # not implemented correctly V
-            for count, a in enumerate(self.children):
-                self.WriteKeyValues(count)
-
-            if self.WriteOpenList() == True:
-                self.assingParent = False
-                self.closedList.pop()
-                return 1
-
-            print(self.parent)
-
-            self.AtTarget = self.TargetCheck()
-
-    def LowestFValue(self):
-        CurrentLowest = self.children[0][4]
-        CurrentLowestCount = 0
-        for count, potential in enumerate(self.children):
-            if CurrentLowest == 0 and potential[4] == 0:
-                return count
-            elif potential[4] < CurrentLowest:
-                CurrentLowest = potential[4]
-                CurrentLowestCount = count
-        return CurrentLowestCount
-
-    def AdjacentNodeFiller(self):
-        x = self.parent[0]
-        y = self.parent[1]
-        z = self.parent[2]
-
-        distance = 1
-
-        self.children.append([x, y + distance, z, False, 0, 0,
-                              0])  # zeros here because we have not defined their F G H values yet - could be replaced with none
-        self.children.append([x + distance, y + distance, z, True, 0, 0, 0])
-        self.children.append([x + distance, y, z, False, 0, 0, 0])
-        self.children.append([x + distance, y - distance, z, True, 0, 0, 0])
-        self.children.append([x, y - distance, z, False, 0, 0, 0])
-        self.children.append([x - distance, y - distance, z, True, 0, 0, 0])
-        self.children.append([x - distance, y, z, False, 0, 0, 0])
-        self.children.append([x - distance, y + distance, z, True, 0, 0, 0])
-
-    def NodeKiller(self):
-        # here we eliminate non-walkable nodes, as well as nodes already on the closed list
-        length = len(self.children)
-        count = 0
-
-        while count < length:
-            x = self.children[count][0]
-            y = self.children[count][1]
-            z = self.children[count][2]
-            walkable = GetCoordinateStatus(x, y, z)
-
-            if walkable == False:
-                del self.children[count]
-
-                length = len(self.children)
-            else:
-                count = count + 1
-
-        length = len(self.children)
-        count = 0
-
-        while count < length:
-            testNode = self.children[count]
-            removeNode = False
-
-            for item in self.closedList:
-                if item[0] == testNode[0] and item[1] == testNode[1]:
-                    removeNode = True
-                    break
-
-            if removeNode == True:
-                del self.children[count]
-                length = len(self.children)
-            else:
-                count = count + 1
-
-    def WriteKeyValues(self, nodeNumber):
-        self.WriteHValue(nodeNumber)
-        self.WriteGValue(nodeNumber)
-
-        self.children[nodeNumber][4] = self.children[nodeNumber][5] + self.children[nodeNumber][6]
-
-    def WriteHValue(self, nodeNumber):
-        currentTuple = self.children[nodeNumber]
-        currentX = currentTuple[0]
-        currentY = currentTuple[1]
-        currentZ = currentTuple[2]
-
-        # I think that there is something inaccurate here
-        diffX = 10 * (abs(currentX - self.target[0]))  # 50 here because demoing 50 per node
-        diffY = 10 * (abs(currentY - self.target[1]))
-
-        self.children[nodeNumber][6] = math.sqrt(diffX ** 2 + diffY ** 2)
-
-    def WriteGValue(self, nodeNumber):
-        if len(self.closedList) != 0:
-            if self.children[nodeNumber][3] == True:
-                self.children[nodeNumber][5] = 14 + self.closedList[len(self.closedList) - 1][5]  # 5 * 10 per node
-            else:
-                self.children[nodeNumber][5] = 10 + self.closedList[len(self.closedList) - 1][5]
-        else:
-            if self.children[nodeNumber][3] == True:
-                self.children[nodeNumber][5] = 14  # 5 * 10 per node
-            else:
-                self.children[nodeNumber][5] = 10
-
-    def WriteOpenList(self):
-
-        for count, node in enumerate(self.children):
-            isInOpen = node in self.openList
-
-            if isInOpen == False:
-                self.openList.append(node)
-            else:
-                gCheck = self.BetterGCheck(count)
-
-                if gCheck == True:
-                    self.parent = self.children[count]
-                    return True
+    #checking for open positions
+    while oheap:
+        #find the one with the smallest f score(overall cost (g+h))
+        current = heapq.heappop(oheap)[1]
+        if current == goal:
+            data = []
+            while current in came_from:
+                data.append(current)
+                current = came_from[current]
+            return data
+        #forget that one then
+        close_set.add(current)
+        #calculate g scores for all possible neighbors
+        for i,j in neighbors:
+            neighbor = current[0] + i, current[1] +j
+            tentative_g_score = gscore[current] + heuristic(current, neighbor)
+            if 0 <= neighbor[0] < array.shape[0]:
+                if 0 <= neighbor[1] < array.shape[1]:
+                    if not array[neighbor[0]][neighbor[1]] == 1:
+                        if array[current[0] + i][current[1]] or array[current[0]][current[1]+j]:
+                            continue
+                    else:
+                        continue
                 else:
-                    # continue
-                    pass
+                     #array bound y walls
+                    continue
+            else:
+                #array bound x walls
+                continue
 
-    def BetterGCheck(self, nodeNumber):
-        if self.parent[5] == self.children[nodeNumber][5]:
-            return False
-
-        if self.parent[5] < self.children[nodeNumber][5]:
-            return False
-        else:
-            self.parent = self.children[nodeNumber]
-            return True
-
-    def TargetCheck(self):
-        targetFound = False
-
-        tx = self.target[0]
-        ty = self.target[1]
-        tz = self.target[2]
-
-        for items in self.closedList:
-            x = items[0]
-            y = items[1]
-            z = items[2]
-
-            if tx == x and ty == y:
-                targetFound = True
-
-        return targetFound
+            if neighbor in close_set and tentative_g_score >= gscore.get(neighbor, 0):
+                continue
+            if tentative_g_score < gscore.get(neighbor, 0) or neighbor not in [i[1] for i in oheap]:
+                came_from[neighbor] = current
+                gscore[neighbor] = tentative_g_score
+                fscore[neighbor] = tentative_g_score + heuristic(neighbor, goal)
+                heapq.heappush(oheap, (fscore[neighbor], neighbor))
 
 
-astarinst = Astar(-1710, -880, 0, (-2150, -920, 0))
+if __name__ == '__main__':
+    #implementation
+    # start = (0, 0)
+    # goal = (0, 9)
+    t1 = perf_counter()
+    route1 = astar(grid, start, goal, 1)
+    t2 = perf_counter()
+    print(route1)
+    print(t2 - t1)
+    x1 = []
+    y1 = []
+    distance1 = 0
 
-xTest = []
-yTest = []
-for count in range(0, len(astarinst.closedList)):
-    xTest.append(astarinst.closedList[count][0])
-for count in range(0, len(astarinst.closedList)):
-    yTest.append(astarinst.closedList[count][1])
+    #add route into two seperate arrays for plotting
+    for i in range(0, len(route1)):
+        nx = route1[i][0]
+        ny = route1[i][1]
+        x1.append(nx)
+        y1.append(ny)
+        distance1 += np.sqrt((nx)**2 + (ny)**2)
+    #add start point > not included, skips itself as a step
+    x1.append(start[0])
+    y1.append(start[1])
+    print(distance1)
 
-plt.plot(xTest, yTest)
-plt.show()
+    #implementation
+    route2 = astar(grid, start, goal, 1)
+    x2 = []
+    y2 = []
+    distance2 = 0
+
+    #add route into two seperate arrays for plotting
+    for i in range(0, len(route2)):
+        nx = route2[i][0]
+        ny = route2[i][1]
+        x2.append(nx)
+        y2.append(ny)
+        distance2 += np.sqrt((nx)**2 + (ny)**2)
+    #add start point > not included, skips itself as a step
+    x2.append(start[0])
+    y2.append(start[1])
+    print(distance2)
+
+
+    fig, ax = plt.subplots(figsize=(20,20))
+    ax.imshow(grid, cmap=plt.cm.binary)
+    ax.plot(y1,x1, color="#bdc3c7", linewidth=3, zorder=10, label=str(round(distance1,1)) + " units")
+    ax.plot(y2,x2, color="blue", linewidth=3, zorder=10, label =  str(round(distance2,1)) + " units")
+    ax.scatter(start[1],start[0], marker = "*", color = "#27ae60", s = 200, zorder=20)
+    ax.scatter(goal[1],goal[0], marker = "*", color = "#c0392b", s = 200, zorder=20)
+    plt.title("A* implementations")
+    ax.legend()
+    plt.show()

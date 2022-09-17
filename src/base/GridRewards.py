@@ -1,4 +1,4 @@
-from src.base.GridActions import GridActions
+from src.base.GridActions import GridActionsDiagonal
 
 
 class GridRewardParams:
@@ -18,7 +18,7 @@ class GridRewards:
     def get_cumulative_reward(self):
         return self.cumulative_reward
 
-    def calculate_motion_rewards(self, state, action: GridActions, next_state):
+    def calculate_motion_rewards(self, state, action: GridActionsDiagonal, next_state):
         reward = 0.0
         if not next_state.landed:
             # Penalize battery Consumption
@@ -26,7 +26,7 @@ class GridRewards:
 
         # Penalize not moving (This happens when it either tries to land or fly into a boundary or hovers or fly into
         # a cell occupied by another agent)
-        if state.position == next_state.position and not next_state.landed and not action == GridActions.HOVER:
+        if state.position == next_state.position and not next_state.landed and not action == GridActionsDiagonal.HOVER:
             reward -= self.params.boundary_penalty
 
         # Penalize battery dead

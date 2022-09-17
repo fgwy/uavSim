@@ -1,13 +1,15 @@
 import numpy as np
 
 from src.Map.Map import Map
-from src.Map.Mask import MaskUnreachable
-from src.StateUtils import pad_centered, pad_with_nfz_gm
+# from src.Map.Mask import load_or_create_mask, load_or_create_distance_mask
+from src.StateUtils import pad_centered, pad_with_nfz_gm, flood_fill
 from src.CPP.State import CPPState
 
 from tensorflow.image import central_crop
 from tensorflow.keras.layers import AvgPool2D
 import tensorflow as tf
+
+import matplotlib.pyplot as plt
 
 
 class H_CPPScenario:
@@ -34,8 +36,28 @@ class H_CPPState(CPPState):
         self.local_map_size = 17
         self.goal_covered = False
         self.hierarchical = True
-        self.UnreachableMask =
+        self.UnreachableMask = None
+        self.initialize_masks()
         # self.multimap = False
+
+    def initialize_masks(self):
+        pass
+        # load_or_create_distance_mask()
+        # load_or_create_mask()
+
+    def get_local_map_shape(self):
+        return tf.squeeze(self.get_local_map()).numpy().shape
+
+    def get_local_map(self):
+        conv_in = self.get_padded_map() # [tf.newaxis, ...]
+        crop_frac = float(self.local_map_size) / float(self.get_boolean_map_shape()[0])
+        local_map = central_crop(conv_in, crop_frac)
+        # local_map = tf.squeeze(local_map).numpy()
+        flood_mask = self.generate_local_flood_mask(local_map)
+        print('shape lm end', local_map.shape, 'shaope flood mask', flood_mask.shape)
+        lm = np.concatenate((local_map, flood_mask), axis=3)
+        print('shape lm end',lm.shape)
+        return lm
 
     def reset_target_h(self, h_target):
         # if h_target.shape == self.get_boolean_map_shape():
@@ -47,6 +69,25 @@ class H_CPPState(CPPState):
         self.reset_ll_mb()
         self.set_terminal_h(False)
         self.set_goal_covered(False)
+
+    def generate_local_flood_mask(self, local_map):
+        # print('shape lm', local_map.shape)
+        nfz = local_map.numpy()[0][:,:,0]*1
+        # print('shape nfz lm', nfz.shape)
+        x = int(nfz.shape[0]/2)+1
+        flooded_lm = flood_fill(nfz, x, x, 0, 2)
+        # print(flooded_lm)
+        # print(tf.equal(flooded_lm, 2))
+        # mask = tf.where(tf.equal(flooded_lm, 2), False, True)
+        mask = np.expand_dims(np.expand_dims(np.equal(flooded_lm, 2), axis=0), axis=3)
+        # print(mask.shape)
+        # plt.figure()
+        # plt.imshow(flooded_lm)
+        # plt.show()
+        # plt.figure()
+        # plt.imshow(mask)
+        # plt.show()
+        return mask
 
     def pad_lm_to_total_size(self, h_target):
         """
@@ -185,8 +226,8 @@ class H_CPPState(CPPState):
     def get_scalars_ll(self):
         return np.array([self.current_ll_mb])
 
-    def decrement_ll_mb(self):
-        self.current_ll_mb -= 1
+    def decrement_ll_mb(self, diagonal=False):
+        self.movement_budget = np.sqrt(2) if diagonal else 1
 
     def set_terminal_h(self, terminal):
         self.h_terminal = terminal

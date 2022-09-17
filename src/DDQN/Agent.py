@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, 
 
 import numpy as np
 
-from src.DDQN.models import build_flat_model_masked, build_flat_model_no_mask
+from src.DDQN.models import build_flat_model_masked, build_flat_model_no_mask, build_smaller_flat_model_masked, build_smaller_flat_model_no_mask
 
 
 def print_node(x):
@@ -42,6 +42,8 @@ class DDQNAgentParams:
 
         self.masked = True
         self.multimap = False
+        self.diagonal = False
+        self.tinymodel = False
 
 
 class DDQNAgent(object):
@@ -56,6 +58,7 @@ class DDQNAgent(object):
         self.float_map_shape = example_state.get_float_map_shape()
         self.scalars = example_state.get_num_scalars()
         self.num_actions = len(type(example_action))
+        print('################# Example Action Length',len(type(example_action)))
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
         # self.local_map_shape = example_state.get_local_map_shape()
         self.global_map_shape = example_state.get_global_map_shape(self.params.global_map_scaling)
@@ -78,12 +81,23 @@ class DDQNAgent(object):
         states = [local_map_input,
                   global_map_input,
                   scalars_input]
-        if self.params.masked:
-            self.q_network = build_flat_model_masked(states, self.num_actions, self.initial_mb)
-            self.target_network = build_flat_model_masked(states, self.num_actions, self.initial_mb, None, 'target_')
+        if self.params.tinymodel:
+            if self.params.masked:
+                print('######### Masked tinymodel')
+                self.q_network = build_smaller_flat_model_masked(states, self.num_actions, self.initial_mb)
+                self.target_network = build_smaller_flat_model_masked(states, self.num_actions, self.initial_mb, None, 'target_')
+            else:
+                self.q_network = build_smaller_flat_model_no_mask(states, self.num_actions, self.initial_mb)
+                self.target_network = build_smaller_flat_model_no_mask(states, self.num_actions, self.initial_mb, None,
+                                                                      'target_')
         else:
-            self.q_network = build_flat_model_no_mask(states, self.num_actions, self.initial_mb)
-            self.target_network = build_flat_model_no_mask(states, self.num_actions, self.initial_mb, None, 'target_')
+            if self.params.masked:
+                self.q_network = build_flat_model_masked(states, self.num_actions, self.initial_mb)
+                self.target_network = build_flat_model_masked(states, self.num_actions, self.initial_mb, None, 'target_')
+            else:
+                self.q_network = build_flat_model_no_mask(states, self.num_actions, self.initial_mb)
+                self.target_network = build_flat_model_no_mask(states, self.num_actions, self.initial_mb, None,
+                                                                      'target_')
         self.hard_update()
 
         # if self.params.use_global_local:

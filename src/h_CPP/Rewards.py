@@ -1,5 +1,5 @@
 from src.h_CPP.State import H_CPPState
-from src.base.GridActions import GridActions
+from src.base.GridActions import GridActionsDiagonal
 from src.base.GridRewards import GridRewardParams, GridRewards
 
 
@@ -72,7 +72,7 @@ class H_CPPRewards(GridRewards):
     #
     #     return reward
 
-    def calculate_reward_l(self, state: H_CPPState, action: GridActions, next_state: H_CPPState):
+    def calculate_reward_l(self, state: H_CPPState, action: GridActionsDiagonal, next_state: H_CPPState):
         reward = self.calculate_motion_rewards_l(state, action, next_state)
 
         # reward collected target area
@@ -84,13 +84,13 @@ class H_CPPRewards(GridRewards):
 
         return reward
 
-    def calculate_motion_rewards_l(self, state, action: GridActions, next_state):
+    def calculate_motion_rewards_l(self, state, action: GridActionsDiagonal, next_state):
         reward = 0.0
         reward -= self.params.movement_penalty
 
         # Penalize not moving (This happens when it either tries to land or fly into a boundary or hovers or fly into
         # a cell occupied by another agent)
-        if state.position == next_state.position and not next_state.landed and not action == GridActions.HOVER:
+        if state.position == next_state.position and not next_state.landed and not action == GridActionsDiagonal.HOVER:
             reward -= self.params.boundary_penalty
 
         # Penalize battery dead

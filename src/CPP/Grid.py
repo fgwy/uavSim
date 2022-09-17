@@ -71,8 +71,8 @@ class CPPGrid(BaseGrid):
     def get_target_zone(self):
         return self.target_zone
 
-    def random_new_map_image_train(self):
-        a = np.random.randint(0, len(self.params.train_map_set))
+    def random_new_map_image_train(self, test):
+        a = np.random.randint(0, len(self.params.train_map_set)) if not test else np.random.randint(0, len(self.params.test_map_set))
         self.map_image = Map.load_map(self.params.train_map_set[a])
         self.shape = self.map_image.start_land_zone.shape
         self.generator.update_shape(self.shape)
@@ -80,13 +80,13 @@ class CPPGrid(BaseGrid):
         self.stats.set_env_map_callback(self.get_map_image)
         state = self.init_episode()
         return state, self.params.train_map_set[a]
-
-    def random_new_map_image_test(self):
-        a = np.random.randint(0, len(self.params.test_map_set))
-        self.map_image = Map.load_map(self.params.test_map_set[a])
-        self.shape = self.map_image.start_land_zone.shape
-        self.generator.update_shape(self.shape)
-        self.starting_vector = self.map_image.get_starting_vector()
-        self.stats.set_env_map_callback(self.get_map_image)
-        state = self.init_episode()
-        return state, self.params.test_map_set[a]
+    #
+    # def random_new_map_image_test(self):
+    #     a = np.random.randint(0, len(self.params.test_map_set))
+    #     self.map_image = Map.load_map(self.params.test_map_set[a])
+    #     self.shape = self.map_image.start_land_zone.shape
+    #     self.generator.update_shape(self.shape)
+    #     self.starting_vector = self.map_image.get_starting_vector()
+    #     self.stats.set_env_map_callback(self.get_map_image)
+    #     state = self.init_episode()
+    #     return state, self.params.test_map_set[a]

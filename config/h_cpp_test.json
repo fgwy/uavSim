@@ -64,6 +64,7 @@
         "use_ppo": false,
         "eval": false,
         "eval_exploit": false,
+        "diagonal": true,
         "h_trainer": {
             "batch_size_h": 128,
             "batch_size_l": 128,
@@ -101,7 +102,7 @@
             "hidden_layer_size": 256,
             "hidden_layer_num": 3,
             "only_valid_targets": true,
-            "no_goal_view": 5,
+            "no_goal_view": 9,
             "learning_rate": 3e-05,
             "alpha": 0.005,
             "gamma": 0.95,

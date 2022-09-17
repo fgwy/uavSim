@@ -54,7 +54,8 @@
         "eval_period": 5,
         "rm_size": 50000,
         "load_model": "",
-        "rm_pre_fill_multiplier": 1
+        "rm_pre_fill_multiplier": 1,
+        "eval": false
     },
     "agent_params": {
         "conv_layers": 2,
@@ -71,7 +72,9 @@
         "local_map_size": 17,
         "print_summary": false,
         "masked": false,
-        "multimap": false
+        "multimap": false,
+        "diagonal": true,
+        "tinymodel": true
     },
     "physics_params": {
         "camera_params": {

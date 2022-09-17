@@ -2,6 +2,8 @@ import numpy as np
 import os
 import tqdm
 from src.Map.Map import load_map
+from src.a_star.A_star import A_star
+from skimage import io
 
 def print_field(field):
     # this function will print the contents of the array
@@ -14,33 +16,33 @@ def print_field(field):
                 print('\n')
 
 
-def bresenham(x0, y0, x1, y1, obstacles, shadow_map):
-    x_dist = abs(x0 - x1)
-    y_dist = -abs(y0 - y1)
-    x_step = 1 if x1 > x0 else -1
-    y_step = 1 if y1 > y0 else -1
-
-    error = x_dist + y_dist
-
-    # shadowed = False
-    shadow_map[y0, x0] = False
-
-    while x0 != x1 or y0 != y1:
-        if 2 * error - y_dist > x_dist - 2 * error:
-            # horizontal step
-            error += y_dist
-            x0 += x_step
-        else:
-            # vertical step
-            error += x_dist
-            y0 += y_step
-
-        if obstacles[y0, x0]:
-            # shadowed = True
-            return
-
-        # if shadowed:
-        shadow_map[y0, x0] = False
+# def bresenham(x0, y0, x1, y1, obstacles, shadow_map):
+#     x_dist = abs(x0 - x1)
+#     y_dist = -abs(y0 - y1)
+#     x_step = 1 if x1 > x0 else -1
+#     y_step = 1 if y1 > y0 else -1
+#
+#     error = x_dist + y_dist
+#
+#     # shadowed = False
+#     shadow_map[y0, x0] = False
+#
+#     while x0 != x1 or y0 != y1:
+#         if 2 * error - y_dist > x_dist - 2 * error:
+#             # horizontal step
+#             error += y_dist
+#             x0 += x_step
+#         else:
+#             # vertical step
+#             error += x_dist
+#             y0 += y_step
+#
+#         if obstacles[y0, x0]:
+#             # shadowed = True
+#             return
+#
+#         # if shadowed:
+#         shadow_map[y0, x0] = False
 
 # def flood_recursive(matrix):
 #     width = len(matrix)
@@ -69,22 +71,22 @@ def bresenham(x0, y0, x1, y1, obstacles, shadow_map):
 #     fill(start_x, start_y, start_color, 9)
 #     return matrix
 
-def flood_fill(field, x, y, old, new):
-    # y, x = position
-    # we need the x and y of the start position, the old value,
-    # and the new value    # the flood fill has 4 parts
-    # firstly, make sure the x and y are inbounds
-    if x < 0 or x >= len(field[0]) or y < 0 or y >= len(field):
-        return  # secondly, check if the current position equals the old value
-    if field[y][x] != old:
-        return
-
-    # thirdly, set the current position to the new value
-    field[y][x] = new  # fourthly, attempt to fill the neighboring positions
-    flood_fill(field, x + 1, y, old, new)
-    flood_fill(field, x - 1, y, old, new)
-    flood_fill(field, x, y + 1, old, new)
-    flood_fill(field, x, y - 1, old, new)
+# def flood_fill(field, x, y, old, new):
+#     # y, x = position
+#     # we need the x and y of the start position, the old value,
+#     # and the new value    # the flood fill has 4 parts
+#     # firstly, make sure the x and y are inbounds
+#     if x < 0 or x >= len(field[0]) or y < 0 or y >= len(field):
+#         return  # secondly, check if the current position equals the old value
+#     if field[y][x] != old:
+#         return
+#
+#     # thirdly, set the current position to the new value
+#     field[y][x] = new  # fourthly, attempt to fill the neighboring positions
+#     flood_fill(field, x + 1, y, old, new)
+#     flood_fill(field, x - 1, y, old, new)
+#     flood_fill(field, x, y + 1, old, new)
+#     flood_fill(field, x, y - 1, old, new)
 
 # if __name__ == "__main__":
 #     field = [
@@ -103,30 +105,73 @@ def flood_fill(field, x, y, old, new):
 #     print_field(field)
 
 
-def calculate_unreachable_mask(map_path, save_as, lm_size=17):
-    print("Calculating Unreachable Masks")
+# def calculate_unreachable_mask(map_path, save_as, lm_size=17):
+#     print("Calculating Unreachable Masks")
+#     total_map = load_map(map_path)
+#     obstacles = total_map.obstacles
+#     size = total_map.obstacles.shape[0]
+#     total = size * size
+#
+#
+#     total_mask_map = np.ones((size, size, lm_size, lm_size), dtype=bool)
+#     with tqdm.tqdm(total=total) as pbar:
+#         for i, j in np.ndindex(total_map.obstacles.shape):
+#             mask_map = np.ones((size, size), dtype=bool)
+#
+#
+#
+#             total_mask_map[j, i] = mask_map
+#             pbar.update(1)
+#
+#     np.save(save_as, total_mask_map)
+#     return total_mask_map
+
+# def load_or_create_mask(map_path):
+#     mask_file_name = os.path.splitext(map_path)[0] + "_masked_unreachable.npy"
+#     if os.path.exists(mask_file_name):
+#         return np.load(mask_file_name)
+#     else:
+#         return calculate_unreachable_mask(map_path, mask_file_name)
+
+
+def calculate_distance_mask(map_path, save_as, local_map_size):
+    print("Calculating distance masks")
     total_map = load_map(map_path)
-    obstacles = total_map.obstacles
+    obstacles = total_map.no_fly_zone
     size = total_map.obstacles.shape[0]
     total = size * size
+    astar=A_star()
 
-
-    total_mask_map = np.ones((size, size, lm_size, lm_size), dtype=bool)
+    total_shadow_map = np.ones((size, size, local_map_size, local_map_size), dtype=bool)
     with tqdm.tqdm(total=total) as pbar:
         for i, j in np.ndindex(total_map.obstacles.shape):
-            mask_map = np.ones((size, size), dtype=bool)
+            shadow_map = np.ones((size, size), dtype=bool)
 
+            for x in range(size):
+                bresenham(i, j, x, 0, obstacles, shadow_map)
+                bresenham(i, j, x, size - 1, obstacles, shadow_map)
+                bresenham(i, j, 0, x, obstacles, shadow_map)
+                bresenham(i, j, size - 1, x, obstacles, shadow_map)
 
-
-            total_mask_map[j, i] = mask_map
+            total_shadow_map[j, i] = shadow_map
             pbar.update(1)
 
-    np.save(save_as, total_mask_map)
-    return total_mask_map
+    np.save(save_as, total_shadow_map)
+    return total_shadow_map
 
-def load_or_create_mask(map_path):
-    mask_file_name = os.path.splitext(map_path)[0] + "_masked_unreachable.npy"
+def save_image(path, image):
+    if type(path) is not str:
+        raise TypeError('path needs to be a string')
+    if image.dtype == bool:
+        io.imsave(path, image * np.uint8(255))
+    else:
+        io.imsave(path, image)
+
+
+def load_or_create_distance_mask(map_path, local_map_size):
+    mask_file_name = os.path.splitext(map_path)[0] + "_masked_distances.npy"
     if os.path.exists(mask_file_name):
         return np.load(mask_file_name)
     else:
-        return calculate_unreachable_mask(map_path, mask_file_name)
+        return calculate_distance_mask(map_path, mask_file_name, local_map_size)
+

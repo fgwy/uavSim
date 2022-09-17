@@ -6,6 +6,8 @@ from src.ModelStats import ModelStatsParams, ModelStats
 from src.base.BaseDisplay import BaseDisplay
 from src.base.GridActions import GridActions
 
+import matplotlib.pyplot as plt
+
 
 class BaseEnvironmentParams:
     def __init__(self):
@@ -78,6 +80,15 @@ class BaseEnvironment:
             else:
                 action = self.agent.act(state)
         next_state = self.physics.step(GridActions(action))
+
+
+        im = state.no_fly_zone*1
+        im[state.position[1], state.position[0]] = 2
+        plt.imshow(im)
+        plt.show()
+        print("mb base env", state.movement_budget)
+
+
         reward = self.rewards.calculate_reward(state, GridActions(action), next_state)
         if not self.trainer.params.eval:
             self.trainer.add_experience(state, action, reward, next_state)

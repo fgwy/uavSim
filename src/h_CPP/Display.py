@@ -100,7 +100,7 @@ class h_CPPDisplay(CPPDisplay):
         # ax = self.get_plt(ax, state)
         plt.imshow(data, alpha=1, cmap=self.cmap, vmin=0, vmax=5)
         ax = plt.gca()
-        ax = self.get_plt(state, ax)
+        # ax = self.get_plt(state, ax)
         plt.sca(ax)
 
 

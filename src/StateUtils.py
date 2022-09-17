@@ -110,3 +110,21 @@ def pad_with_nfz_gm(map_in):
         # print(f'newmap: {new_map.shape}')
 
         return new_map
+
+def flood_fill(field, x, y, old, new):
+    # y, x = position
+    # we need the x and y of the start position, the old value,
+    # and the new value    # the flood fill has 4 parts
+    # firstly, make sure the x and y are inbounds
+    if x < 0 or x >= len(field[0]) or y < 0 or y >= len(field):
+        return  # secondly, check if the current position equals the old value
+    if field[y][x] != old:
+        return
+
+    # thirdly, set the current position to the new value
+    field[y][x] = new  # fourthly, attempt to fill the neighboring positions
+    flood_fill(field, x + 1, y, old, new)
+    flood_fill(field, x - 1, y, old, new)
+    flood_fill(field, x, y + 1, old, new)
+    flood_fill(field, x, y - 1, old, new)
+    return field

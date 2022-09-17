@@ -40,12 +40,8 @@ class CPPEnvironment(BaseEnvironment):
     def init_episode(self, init_state=None, test=False):
         if self.params.agent_params.multimap:
             # print("random map!")
-            if test:
-                state, path = copy.deepcopy(self.grid.random_new_map_image_test())
-                self.physics.reset_camera(path)
-            else:
-                state, path = copy.deepcopy(self.grid.random_new_map_image_train())
-                self.physics.reset_camera(path)
+            state, path = copy.deepcopy(self.grid.random_new_map_image_train(test))
+            self.physics.reset_camera(path)
         else:
             if init_state:
                 state = copy.deepcopy(self.grid.init_scenario(init_state))

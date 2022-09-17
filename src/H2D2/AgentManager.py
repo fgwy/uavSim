@@ -21,6 +21,7 @@ class AgentManager_Params():
         self.use_ppo = False
         self.eval = False
         self.eval_exploit = False
+        self.diagonal = False
         # self.random_map = True
         self.h_trainer = H_DDQNTrainerParams()
         self.ll_agent = LL_DDQNAgentParams()
@@ -44,7 +45,7 @@ class AgentManager():
 
         self.trainer = H_DDQNTrainer(self.trainer_params, self.agent_ll, self.agent_hl)
         # self.rewards = H_CPPRewards(H_CPPRewardParams(), self.stats)
-        self.astar = A_star()
+        self.astar = A_star(self.params.diagonal)
 
         if self.params.use_ppo or self.params.use_ddpg:
             self.multigoal = True
@@ -196,7 +197,7 @@ class AgentManager():
             return self.agent_ll.get_random_action()
         if use_astar:
             # print(f'Using A_star!')
-            return self.astar.get_A_star_action(copy.deepcopy(state), steps_in_smdp)
+            return self.astar.get_A_star_action(None, steps_in_smdp, state.no_fly_zone*1, state.position, state.h_target, None)
             # return self.agent_ll.get_random_action()
         if exploit:
             return self.agent_ll.get_exploitation_action(state)

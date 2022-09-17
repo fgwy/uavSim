@@ -1,5 +1,5 @@
 from src.CPP.State import CPPState
-from src.base.GridActions import GridActions
+from src.base.GridActions import GridActionsDiagonal
 from src.base.GridRewards import GridRewardParams, GridRewards
 
 
@@ -17,7 +17,7 @@ class CPPRewards(GridRewards):
         self.params = reward_params
         self.reset()
 
-    def calculate_reward(self, state: CPPState, action: GridActions, next_state: CPPState):
+    def calculate_reward(self, state: CPPState, action: GridActionsDiagonal, next_state: CPPState):
         reward = self.calculate_motion_rewards(state, action, next_state)
 
         # Reward the collected data

@@ -419,6 +419,11 @@ def build_hl_model_ddqn_masked_non_dueling(states_in, goal_size, local_map_shape
 
     # states_proc = states_proc_in / initial_mb + 1e-6
 
+    local_map_in = local_map_in[:,:,:,0:4]
+
+    local_mask = local_map_in[:,:,:,5]
+    # print('localm map in shape',local_map_in.shape)
+
     states_proc = states_proc_in / 100
 
     local_map_model = build_lm_preproc_model(local_map_in, name)
@@ -538,6 +543,7 @@ def build_hl_model_ddqn_masked_non_dueling(states_in, goal_size, local_map_shape
     nfz_mask = tf.image.central_crop(tf.expand_dims(local_map_in[..., 0], -1), crop_frac)
     view_nfz_mask = tf.math.logical_or(tf.expand_dims(tf.expand_dims(view, 0),-1), tf.cast(nfz_mask, tf.bool))
     crop = tf.where(tf.squeeze(view_nfz_mask, -1), -np.inf, crop)
+    crop = tf.where(tf.squeeze(local_mask, -1), -np.inf, crop) # TODO: not working!
 
 
     not_on_lz = 1 - local_map_in[:, local_map_shape[0] // 2, local_map_shape[1] // 2, 2]

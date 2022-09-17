@@ -11,7 +11,7 @@ from src.h_CPP.Rewards import H_CPPRewardParams, H_CPPRewards
 
 from src.H2D2.Trainer import H_DDQNTrainerParams, H_DDQNTrainer
 from src.base.Environment import BaseEnvironment, BaseEnvironmentParams
-from src.base.GridActions import GridActions
+from src.base.GridActions import GridActions, GridActionsDiagonal
 
 
 class H_CPPEnvironmentParams(BaseEnvironmentParams):
@@ -40,6 +40,7 @@ class H_CPPEnvironment(BaseEnvironment):
                                           example_action=self.physics.get_example_action(),
                                           stats=self.stats)
         self.eval = self.agent_manager.params.eval
+        self.actions = GridActions if not self.params.agent_params.diagonal else GridActionsDiagonal
         # self.display.init_plt(self.example_state)
         # super().__init__(params, self.display)
         self.hl_steps = 0
@@ -155,9 +156,9 @@ class H_CPPEnvironment(BaseEnvironment):
 
         # print(f'H-Steps in episode: {i}')
         # if test or episode_num % (self.agent_manager.trainer.params.eval_period - 1) == 0 or tried_landing_and_succeeded and not self.eval:
-        if True:
-            self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
-                                       name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h, hl_steps=self.hl_steps)
+        # if True:
+        #     self.display.save_plot_map(trajectory=display_trajectory, episode_num=episode_num, testing=test,
+        #                                name=self.stats.params.log_file_name, las=tried_landing_and_succeeded, cum_rew=cumulative_reward_h, hl_steps=self.hl_steps)
             # self.display.save_state_and_hm(state=state_h, q_vals=q, name=self.stats.params.log_file_name, episode_num=episode_num)
             # pass
 
@@ -182,28 +183,30 @@ class H_CPPEnvironment(BaseEnvironment):
             if try_landing:
                 # todo: check!! enters twice before landing
                 print('tried landing')
-                action = GridActions.LAND  # Landing action
-                next_state = self.physics.step(GridActions(action))
+                action = self.actions.LAND  # Landing action
+                next_state = self.physics.step(self.actions(action))
                 # next_state = self.physics.set_terminal_h(True)
                 tried_landing_and_succeeded = next_state.landed
                 if tried_landing_and_succeeded:
-                    print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {GridActions.LAND}')
+                    print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {self.actions.LAND}')
             elif not valid:
                 # print('invalid!')
                 action = 5  # Hover such that state changes (mb is decreased and different goal generated)
-                self.physics.step(GridActions(action))
+                self.physics.step(self.actions(action))
                 next_state = self.physics.set_terminal_h(True)
             else:
 
                 action = self.agent_manager.act_l(self.physics.state, i, exploit=test,
                                                   use_astar=self.agent_manager.trainer.params.use_astar,
                                                   random=random_l)
-                next_state = self.physics.step(GridActions(action))
-                reward = self.rewards.calculate_reward_l(state, GridActions(action), next_state)
+                next_state = self.physics.step(self.actions(action))
+                reward = self.rewards.calculate_reward_l(state, self.actions(action), next_state)
                 # print(f'reward_l: {reward}')
                 if not test and not self.agent_manager.trainer.params.use_astar and not self.eval:
                     self.agent_manager.trainer.add_experience_ll(state, action, reward, next_state)
                     self.agent_manager.trainer.train_l()
+
+            print(self.physics.state.is_terminal, )
 
                 # self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
             if test and self.stats.params.draw:

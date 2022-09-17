@@ -1,7 +1,12 @@
 import numpy as np
+import os
 
 from src.Map.Map import Map
 from src.base.BaseState import BaseState
+
+from src.Map.Map import load_map
+from src.a_star.A_star import A_star
+from skimage import io
 
 import tensorflow as tf
 
@@ -10,7 +15,9 @@ from src.StateUtils import pad_centered, pad_with_nfz_gm
 from tensorflow.image import central_crop
 from tensorflow.keras.layers import AvgPool2D
 
-from math import sqrt
+import matplotlib.pyplot as plt
+
+import tqdm
 
 
 class CPPScenario:
@@ -24,7 +31,7 @@ class CPPState(BaseState):
     def __init__(self, map_init: Map):
         super().__init__(map_init)
         self.target = None
-        self.position = [17, 17]
+        self.position = [0, 0]
         self.movement_budget = None
         self.landed = False
         self.terminal = False
@@ -34,6 +41,7 @@ class CPPState(BaseState):
         self.coverage = None
         self.local_map_size = 17
         self.hierarchical = False
+        self.load_or_create_distance_mask('res/urban50.png', self.local_map_size)
 
     def reset_target(self, target):
         self.target = target
@@ -111,10 +119,7 @@ class CPPState(BaseState):
         self.position = position
 
     def decrement_movement_budget(self, diagonal = False):
-        if diagonal:
-            self.movement_budget -= sqrt(2)
-        else:
-            self.movement_budget -= 1
+        self.movement_budget -= np.sqrt(2) if diagonal else 1
 
     def is_terminal(self):
         return self.terminal
@@ -150,3 +155,68 @@ class CPPState(BaseState):
 
     def get_initial_mb(self):
         return self.initial_movement_budget
+
+    def calculate_distance_mask(self, map_path, save_as, local_map_size):
+        print("Calculating distance masks")
+        total_map = load_map(map_path)
+        obstacles = total_map.nfz
+        size = total_map.obstacles.shape[0]
+        total = size * size * size * size
+        astar = A_star()
+
+        total_distance_map = np.ones((size, size, size, size), dtype=bool)
+
+        print('total distance map shape', total_distance_map.shape)
+        with tqdm.tqdm(total=total) as pbar:
+            for i, j in np.ndindex(total_map.obstacles.shape):
+                distance_map = np.ones((size, size), dtype=bool)
+
+                for ii, jj in np.ndindex(total_map.obstacles.shape):
+                    # distance to same pixel is none
+                    if ii == i and jj == j:
+                        distance = None
+                        total_distance_map[j, i][jj, ii] = distance
+
+                    # distance to obstacle is none
+                    elif obstacles[j,i] or obstacles[jj,ii]:
+                        distance = None
+                        total_distance_map[j, i][jj, ii] = distance
+                        # total_distance_map[jj, ii][j, i] = distance
+
+                    # already calculated distances are ignored
+                    elif total_distance_map[j, i][jj, ii] > 0 and False:
+                        continue
+
+                    # else calculate distance and insert it in both slots
+                    else:
+                        # print('astar running')
+
+                        bla = astar.astar(obstacles, (j,i), (jj,ii))
+                        # print('blbla list and shape', bla, len(bla))
+                        distance = len(bla)
+                        total_distance_map[j, i][jj, ii] = distance
+                        # total_distance_map[jj, ii][j, i] = distance
+                    pbar.update(1)
+
+        plt.imshow(total_distance_map[0][0])
+        plt.show()
+
+        np.save(save_as, total_distance_map)
+        return total_distance_map
+
+    def save_image(self, path, image):
+        if type(path) is not str:
+            raise TypeError('path needs to be a string')
+        if image.dtype == bool:
+            io.imsave(path, image * np.uint8(255))
+        else:
+            io.imsave(path, image)
+
+    def load_or_create_distance_mask(self, map_path, local_map_size):
+        mask_file_name = os.path.splitext(map_path)[0] + "_masked_distances.npy"
+        if os.path.exists(mask_file_name):
+            return np.load(mask_file_name)
+        else:
+            return self.calculate_distance_mask(map_path, mask_file_name, local_map_size)
+
+

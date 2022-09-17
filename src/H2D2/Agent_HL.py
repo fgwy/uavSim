@@ -1,12 +1,12 @@
-import copy
-
-import matplotlib.pyplot as plt
-import tensorflow as tf
-import math
-
-from tensorflow.keras import Model
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, AvgPool2D, Reshape, Activation
-import numpy as np
+# import copy
+#
+# import matplotlib.pyplot as plt
+# import tensorflow as tf
+# import math
+#
+# from tensorflow.keras import Model
+# from tensorflow.keras.layers import Conv2D, Dense, Flatten, Concatenate, Input, AvgPool2D, Reshape, Activation
+# import numpy as np
 # from tensorflow.keras.utils.generic_utils import get_custom_objects
 
 
@@ -17,30 +17,29 @@ def print_node(x):
     print(x)
     return x
 
-
-# @staticmethod
-def norm(v):
-    sum = float(0)
-    for i in range(len(v)):
-        sum += v[i] ** 2
-    return sum ** (0.5)
-
-
-def identify_idx_highest_val_in_tensor(tensor):
-    return tf.math.argmax(tensor)
-
-
-def check_is_nan_in_here(x, name):
-    try:
-        for i in x:
-            if np.any(tf.math.is_nan(i).numpy()):
-                print(f'nan in {name}: {i}')
-    except:
-        try:
-            if np.any(tf.math.is_nan(x).numpy()):
-                print(f'nan in {name}: {x}')
-        except AssertionError:
-            print(f'Couldnt iterate over {x}')
+# # @staticmethod
+# def norm(v):
+#     sum = float(0)
+#     for i in range(len(v)):
+#         sum += v[i] ** 2
+#     return sum ** (0.5)
+#
+#
+# def identify_idx_highest_val_in_tensor(tensor):
+#     return tf.math.argmax(tensor)
+#
+#
+# def check_is_nan_in_here(x, name):
+#     try:
+#         for i in x:
+#             if np.any(tf.math.is_nan(i).numpy()):
+#                 print(f'nan in {name}: {i}')
+#     except:
+#         try:
+#             if np.any(tf.math.is_nan(x).numpy()):
+#                 print(f'nan in {name}: {x}')
+#         except AssertionError:
+#             print(f'Couldnt iterate over {x}')
 
 
 class HL_DDQNAgentParams:
@@ -252,6 +251,8 @@ class HL_DDQNAgent(object):
             self.epsilon -= (self.params.initial_epsilon - self.params.final_epsilon) / self.params.eps_steps
 
         return a
+
+
 
     def get_soft_max_exploration(self, state):
         local_map_in = state.get_local_map() # [tf.newaxis, ...]

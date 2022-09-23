@@ -13,6 +13,8 @@ from src.H2D2.Trainer import H_DDQNTrainerParams, H_DDQNTrainer
 from src.base.Environment import BaseEnvironment, BaseEnvironmentParams
 from src.base.GridActions import GridActions, GridActionsDiagonal
 
+from matplotlib import pyplot as plt
+
 
 class H_CPPEnvironmentParams(BaseEnvironmentParams):
     def __init__(self):
@@ -210,7 +212,13 @@ class H_CPPEnvironment(BaseEnvironment):
 
                 # self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
             if test and self.stats.params.draw:
-                self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
+                im = state.no_fly_zone*1
+                im[state.position[1], state.position[0]] = 2
+                # state.
+                plt.imshow(im)
+                plt.draw()
+                plt.pause(0.01)
+            #     self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
             display_trajectory.append(copy.deepcopy(self.physics.state))
             # if next_state.h_terminal or next_state.goal_covered:
             #     print(f'next state term?terminal: {next_state.is_terminal()} terminal_h: {next_state.h_terminal} goal active: {next_state.goal_active} goal_covered: {next_state.goal_covered}')

@@ -2,7 +2,7 @@
     "model_stats_params": {
         "save_model": "models/save_model",
         "moving_average_length": 50,
-        "log_file_name": "CPP_urb50_nomask_little",
+        "log_file_name": "CPP_urb50_nomask_little_2009",
         "training_images": false
     },
     "grid_params": {
@@ -54,7 +54,7 @@
         "eval_period": 5,
         "rm_size": 50000,
         "load_model": "",
-        "rm_pre_fill_multiplier": 1,
+        "rm_pre_fill_multiplier": 10,
         "eval": false
     },
     "agent_params": {
@@ -73,7 +73,7 @@
         "print_summary": false,
         "masked": false,
         "multimap": false,
-        "diagonal": true,
+        "diagonal": false,
         "tinymodel": true
     },
     "physics_params": {

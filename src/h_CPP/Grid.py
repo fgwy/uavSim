@@ -17,14 +17,19 @@ class H_CPPGridParams(BaseGridParams):
         self.train_map_set = ['res/manhattan32.png',
                               'res/urban50.png',
                               'res/easy50.png',
-                              'res/barrier50.png']
+                              'res/barrier50.png',
+                              'res/center60.png',
+                              'res/maze60.png',
+                              'res/smiley60.png'
+                              ]
         self.test_map_set = ['']
 
 
 class H_CPPGrid(BaseGrid):
 
-    def __init__(self, params: H_CPPGridParams, stats):
+    def __init__(self, params: H_CPPGridParams, stats, diagonal=False):
         super().__init__(params, stats)
+        self.diagonal = diagonal
         self.params = params
 
         self.generator = RandomTargetGenerator(params.generator_params, self.map_image.get_size())
@@ -34,7 +39,7 @@ class H_CPPGrid(BaseGrid):
         self.generator.update_shape(self.map_image.get_size())
         self.target_zone = self.generator.generate_target(self.map_image.obstacles)
 
-        state = H_CPPState(self.map_image)
+        state = H_CPPState(self.map_image, self.diagonal)
         state.reset_target(self.target_zone)
 
         idx = np.random.randint(0, len(self.starting_vector))
@@ -71,7 +76,7 @@ class H_CPPGrid(BaseGrid):
         return state
 
     def get_example_state(self):
-        state = H_CPPState(self.map_image)
+        state = H_CPPState(self.map_image, True)
         state.reset_target(self.target_zone)
         # state.reset_h_target(np.zeros((self.params.local_map_size, self.params.local_map_size)))
         state.reset_target_h(np.zeros_like(self.target_zone))

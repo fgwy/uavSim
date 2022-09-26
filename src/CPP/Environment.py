@@ -32,7 +32,7 @@ class CPPEnvironment(BaseEnvironment):
 
         self.grid = CPPGrid(params.grid_params, self.stats)
         self.rewards = CPPRewards(params.reward_params, stats=self.stats)
-        self.physics = CPPPhysics(params=params.physics_params, stats=self.stats)
+        self.physics = CPPPhysics(params=params.physics_params, diagonal=params.agent_params.diagonal, stats=self.stats)
         self.agent = DDQNAgent(params.agent_params, self.grid.get_example_state(), self.physics.get_example_action(),
                                stats=self.stats)
         self.trainer = DDQNTrainer(params=params.trainer_params, agent=self.agent)

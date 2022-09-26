@@ -28,8 +28,9 @@ class CPPScenario:
 
 
 class CPPState(BaseState):
-    def __init__(self, map_init: Map):
+    def __init__(self, map_init: Map, diagonal=False):
         super().__init__(map_init)
+        self.diagonal = diagonal
         self.target = None
         self.position = [0, 0]
         self.movement_budget = None
@@ -162,7 +163,7 @@ class CPPState(BaseState):
         obstacles = total_map.nfz
         size = total_map.obstacles.shape[0]
         total = size * size * size * size
-        astar = A_star()
+        astar = A_star(self.diagonal)
 
         total_distance_map = np.ones((size, size, size, size), dtype=bool)
 
@@ -198,8 +199,8 @@ class CPPState(BaseState):
                         # total_distance_map[jj, ii][j, i] = distance
                     pbar.update(1)
 
-        plt.imshow(total_distance_map[0][0])
-        plt.show()
+        # plt.imshow(total_distance_map[0][0])
+        # plt.show()
 
         np.save(save_as, total_distance_map)
         return total_distance_map
@@ -212,8 +213,38 @@ class CPPState(BaseState):
         else:
             io.imsave(path, image)
 
-    def load_or_create_distance_mask(self, map_path, local_map_size):
+    def calculate_all_dms(self, local_map_size):
+        train_map_set = ['res/manhattan32.png',
+                              'res/urban50.png',
+                              'res/easy50.png',
+                              'res/barrier50.png',
+                              'res/center60.png',
+                              'res/maze60.png',
+                              'res/smiley60.png',
+                                'maze80.png'
+                              ]
+        map_path = 'res/urban50.png'
         mask_file_name = os.path.splitext(map_path)[0] + "_masked_distances.npy"
+        total_distance_map = np.load(mask_file_name)
+
+        plt.imshow(total_distance_map[0][0])
+        plt.show()
+
+        for i in range(2):
+            diag = False if i==0 else True
+            for mp in train_map_set:
+                if diag:
+                    mask_file_name = os.path.splitext(mp)[0] + "_diag_masked_distances.npy"
+
+                self.calculate_distance_mask(mp, mask_file_name, local_map_size)
+
+    def load_or_create_distance_mask(self, map_path, local_map_size):
+        # self.calculate_all_dms(local_map_size)
+        if self.diagonal:
+            mask_file_name = os.path.splitext(map_path)[0] + "_diag_masked_distances.npy"
+        else:
+            mask_file_name = os.path.splitext(map_path)[0] + "_masked_distances.npy"
+
         if os.path.exists(mask_file_name):
             return np.load(mask_file_name)
         else:

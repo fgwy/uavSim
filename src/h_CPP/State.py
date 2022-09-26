@@ -22,8 +22,9 @@ class H_CPPScenario:
 
 
 class H_CPPState(CPPState):
-    def __init__(self, map_init: Map):
+    def __init__(self, map_init: Map, diagonal=False):
         super().__init__(map_init)
+        self.diagonal = diagonal
         self.h_target = np.zeros_like(self.landing_zone)
         # print(self.h_target.shape)
         self.initial_h_target_cell_count = 0
@@ -46,17 +47,18 @@ class H_CPPState(CPPState):
         # load_or_create_mask()
 
     def get_local_map_shape(self):
+        # print('lm shape: ', tf.squeeze(self.get_local_map()).numpy().shape)
         return tf.squeeze(self.get_local_map()).numpy().shape
 
     def get_local_map(self):
         conv_in = self.get_padded_map() # [tf.newaxis, ...]
         crop_frac = float(self.local_map_size) / float(self.get_boolean_map_shape()[0])
         local_map = central_crop(conv_in, crop_frac)
+        # lm = central_crop(conv_in, crop_frac)
         # local_map = tf.squeeze(local_map).numpy()
         flood_mask = self.generate_local_flood_mask(local_map)
-        print('shape lm end', local_map.shape, 'shaope flood mask', flood_mask.shape)
         lm = np.concatenate((local_map, flood_mask), axis=3)
-        print('shape lm end',lm.shape)
+        # print('get lm',lm)
         return lm
 
     def reset_target_h(self, h_target):

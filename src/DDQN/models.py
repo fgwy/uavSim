@@ -51,6 +51,35 @@ def build_lm_preproc_model(local_map_in, name=''):
 
     return model
 
+def build_gm_preproc_model(global_map_in, name=''):
+    global_map = Conv2D(4, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(0 + 1))(global_map_in)
+
+    global_map = Conv2D(8, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(1 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(2 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(3 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(4 + 1))(global_map)
+    # global_map = Conv2D(16, 5, activation='relu',
+    #                     strides=(1, 1),
+    #                     name=name + 'global_conv_' + str(5 + 1))(global_map)
+
+    norm = tf.keras.layers.LayerNormalization()(global_map)
+
+    flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
+
+    model = tf.keras.Model(inputs=[global_map_in], outputs=[flatten_global])
+
+    return model
+
 
 def build_flat_model(states_in, num_actions, initial_mb, diagonal=False, little=False, mask=False, path_to_local_pretrained_weights=None,
                             name=''):  # local:17,17,4; global:21:21,4
@@ -65,14 +94,6 @@ def build_flat_model(states_in, num_actions, initial_mb, diagonal=False, little=
 
     # states_proc = states_proc_in / initial_mb + 1e-6
     states_proc = states_proc_in / 100
-
-    local_map_model = build_lm_preproc_model(local_map_in, name)
-    # if path_to_local_pretrained_weights:
-    #     print(f'Loading weights from: {path_to_local_pretrained_weights}')
-    #     local_map_model.load_weights(path_to_local_pretrained_weights)
-    flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
-
-    # global map processing layers
 
     if little:
         local_map = Conv2D(16, 5, activation='relu',
@@ -105,23 +126,37 @@ def build_flat_model(states_in, num_actions, initial_mb, diagonal=False, little=
         layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(2))(
             layer)
     else:
-        global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
-                                              strides=(1, 1),
-                                              name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
-        norm = tf.keras.layers.LayerNormalization()(global_map_1)
-        norm = swish(norm)
-        global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
-                                              strides=(1, 1),
-                                              name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
-        norm = tf.keras.layers.LayerNormalization()(global_map_2)
-        norm = swish(norm)
-        global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
-                                              strides=(1, 1),
-                                              name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
-        norm = tf.keras.layers.LayerNormalization()(global_map_3)
-        norm = swish(norm)
 
-        flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
+        local_map_model = build_lm_preproc_model(local_map_in, name)
+        # if path_to_local_pretrained_weights:
+        #     print(f'Loading weights from: {path_to_local_pretrained_weights}')
+        #     local_map_model.load_weights(path_to_local_pretrained_weights)
+        flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
+
+        global_map_model = build_gm_preproc_model(global_map_in)
+
+        # global map processing layers
+
+        flatten_global = global_map_model.output
+
+
+        # global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
+        #                                       strides=(1, 1),
+        #                                       name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
+        # norm = tf.keras.layers.LayerNormalization()(global_map_1)
+        # norm = swish(norm)
+        # global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
+        #                                       strides=(1, 1),
+        #                                       name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
+        # norm = tf.keras.layers.LayerNormalization()(global_map_2)
+        # norm = swish(norm)
+        # global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
+        #                                       strides=(1, 1),
+        #                                       name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
+        # norm = tf.keras.layers.LayerNormalization()(global_map_3)
+        # norm = swish(norm)
+
+        # flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
 
         flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
             [flatten_global, flatten_local, states_proc])

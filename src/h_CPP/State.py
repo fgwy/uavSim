@@ -61,6 +61,15 @@ class H_CPPState(CPPState):
         # print('get lm',lm)
         return lm
 
+    def get_local_map_np(self):
+        conv_in = self.get_padded_map() # [tf.newaxis, ...]
+        crop_frac = float(self.local_map_size) / float(self.get_boolean_map_shape()[0])
+        local_map = central_crop(conv_in, crop_frac)
+        flood_mask = self.generate_local_flood_mask(local_map)
+        lm = np.concatenate((local_map, flood_mask), axis=3)
+        local_map = tf.squeeze(lm).numpy()
+        return local_map
+
     def reset_target_h(self, h_target):
         # if h_target.shape == self.get_boolean_map_shape():
         #     self.h_target = h_target
@@ -75,13 +84,21 @@ class H_CPPState(CPPState):
     def generate_local_flood_mask(self, local_map):
         # print('shape lm', local_map.shape)
         nfz = local_map.numpy()[0][:,:,0]*1
+        # print(nfz)
         # print('shape nfz lm', nfz.shape)
         x = int(nfz.shape[0]/2)+1
+        # print(x)
         flooded_lm = flood_fill(nfz, x, x, 0, 2)
+        # if np.any(np.equal(flooded_lm, 0)):
+        #     print(flooded_lm, 'flooded shape', flooded_lm.shape)
         # print(flooded_lm)
         # print(tf.equal(flooded_lm, 2))
         # mask = tf.where(tf.equal(flooded_lm, 2), False, True)
-        mask = np.expand_dims(np.expand_dims(np.equal(flooded_lm, 2), axis=0), axis=3)
+        mask = np.invert(np.expand_dims(np.expand_dims(np.equal(flooded_lm, 2), axis=0), axis=3))
+        # print(mask.shape)
+        # if mask.any() == False:
+        #     print('issue with flood',  mask)
+        # print("mask", np.squeeze(np.squeeze(mask)), "\n mask shape", mask.shape)
         # print(mask.shape)
         # plt.figure()
         # plt.imshow(flooded_lm)
@@ -90,6 +107,11 @@ class H_CPPState(CPPState):
         # plt.imshow(mask)
         # plt.show()
         return mask
+
+    def get_goal_idx(self):
+        idx = np.where(self.h_target)
+        # print('hstate goal idx', self.h_target.shape, idx)
+        return idx
 
     def pad_lm_to_total_size(self, h_target):
         """

@@ -152,7 +152,7 @@ class A_star:
         obstacles = obstacles*1
 
         if steps_in_smdp == 1 or self.one_random:
-            print('calculating path')
+            # print('calculating path')
             x, y = position
             start = (y, x)  # TODO: keep track!!
             # obstacles = state.no_fly_zone*1
@@ -164,7 +164,7 @@ class A_star:
             # try:
             self.path = self.astar(np.array(obstacles), start, end)
             self.one_random = False
-            print(f'path: {self.path}')
+            # print(f'path_length: {len(self.path)}')
             if self.path is None:
                 self.one_random = True
                 print(f'A-star: one random action right away!!')
@@ -194,18 +194,18 @@ class A_star:
                 b = self.path[steps_in_smdp][1]-self.path[steps_in_smdp-1][1] # y
             # print(f'Internal NFZ check: {self.is_in_no_fly_zone(self.path[1], obstacles)}')
             except:
-                print('path exceptions')
+                # print('path exceptions')
                 a = b = None
             action = (a, b)
             # print(f'pre action: {action}')
 
             if a is None or b is None:
                 action1 = 5  # hover and wait
-                print(f'@@@A-Star Hover!!!: {action}')
+                # print(f'@@@A-Star Hover!!!: {action}')
             else:
-                print(action)
+                # print(action)
                 action1 = self.action_dict[str(action)]
-                print(action1)
+                # print(action1)
 
                 # self.action_dict = {'(1, 0)': 0,  # N
                 #                     '(0, 1)': 1,  # E
@@ -216,10 +216,10 @@ class A_star:
                 #                     '(-1, -1)': 8,  # SW
                 #                     '(1, -1)': 9,  # NW
                 #                     }
-        map1 = obstacles + (h_target*3)
-        map1[position[1], position[0]] = 5
-        plt.imshow(map1)
-        plt.show()
+        # map1 = obstacles + (h_target*3)
+        # map1[position[1], position[0]] = 5
+        # plt.imshow(map1)
+        # plt.show()
         return action1
 
 

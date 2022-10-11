@@ -42,7 +42,7 @@ class CPPState(BaseState):
         self.coverage = None
         self.local_map_size = 17
         self.hierarchical = False
-        self.load_or_create_distance_mask('res/urban50.png', self.local_map_size)
+        # self.load_or_create_distance_mask('res/urban50.png', self.local_map_size)
 
     def reset_target(self, target):
         self.target = target
@@ -68,6 +68,9 @@ class CPPState(BaseState):
 
     def get_coverage_ratio(self):
         return 1.0 - float(np.sum(self.get_remaining_cells())) / float(self.initial_target_cell_count)
+
+    def get_tiles_uncovered(self):
+        return float(self.initial_target_cell_count) - float(np.sum(self.get_remaining_cells()))
 
     def get_scalars(self):
         return np.array([self.movement_budget])

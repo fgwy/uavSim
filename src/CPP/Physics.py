@@ -30,6 +30,7 @@ class CPPPhysics(GridPhysics):
         stats.add_log_data_callback('boundary_counter', self.get_boundary_counter)
         stats.add_log_data_callback('landing_attempts', self.get_landing_attempts)
         stats.add_log_data_callback('movement_ratio', self.get_movement_ratio)
+        stats.add_log_data_callback('efficiency ratio', self.get_efficiency_ratio)
 
     def reset(self, state: CPPState):
         GridPhysics.reset(self, state)
@@ -74,6 +75,9 @@ class CPPPhysics(GridPhysics):
 
     def get_movement_ratio(self):
         return float(self.get_movement_budget_used()) / float(self.state.initial_movement_budget)
+
+    def get_efficiency_ratio(self):
+        return float(self.state.get_tiles_uncovered()) / float(self.get_movement_budget_used())
 
     def has_landed(self):
         return self.landed

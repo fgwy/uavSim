@@ -2,7 +2,7 @@
     "model_stats_params": {
         "save_model": "models/save_model",
         "moving_average_length": 50,
-        "log_file_name": "CPP_urb50_diagonal_nomask_tiny_2209",
+        "log_file_name": "CPP_multi_diagonal_big_2709",
         "training_images": false
     },
     "grid_params": {
@@ -71,10 +71,10 @@
         "global_map_scaling": 3,
         "local_map_size": 17,
         "print_summary": false,
-        "masked": false,
-        "multimap": false,
+        "masked": true,
+        "multimap": true,
         "diagonal": true,
-        "tinymodel": true
+        "tinymodel": false
     },
     "physics_params": {
         "camera_params": {

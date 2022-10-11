@@ -112,7 +112,6 @@ class HL_DDQNAgent(object):
         self.example_goal = example_state.get_example_goal()
         self.num_map_channels = self.boolean_map_shape[2] + self.float_map_shape[2]
         self.local_map_shape = example_state.get_local_map_shape()
-        print('blbla', self.local_map_shape)
         self.global_map_shape = example_state.get_global_map_shape(self.params.global_map_scaling)
         self.initial_mb = tf.convert_to_tensor(example_state.get_initial_mb(), dtype=tf.float32)
         scalars_input = Input(shape=(self.scalars,), name='scalars_hl_input', dtype=tf.float32)
@@ -213,6 +212,7 @@ class HL_DDQNAgent(object):
 
     def get_softmax_goal(self, state):
         goal, q = self.get_soft_max_exploration(state)
+        # print("qvals", q, 'shape q', q.shape)
         return goal, q
 
     def get_random_goal(self):
@@ -230,6 +230,7 @@ class HL_DDQNAgent(object):
         scalars = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         goal, q = self._get_exploitation_goal(local_map_in, global_map_in, scalars)
         q = q.numpy()[0]
+
         goal_after = tf.argmax(q, axis=0, output_type=tf.int64).numpy()
 
         return goal_after, [q, 0]
@@ -257,10 +258,15 @@ class HL_DDQNAgent(object):
 
     def get_soft_max_exploration(self, state):
         local_map_in = state.get_local_map() # [tf.newaxis, ...]
-        print('soft', local_map_in[:,:,:,4])
+        # print('lm in mask', local_map_in[:,:,:,4])
+        # print('soft', local_map_in[:,:,:,4])
         global_map_in = state.get_global_map(self.params.global_map_scaling, self.params.multimap) # [tf.newaxis, ...]
         scalars_in = np.array(state.get_scalars(), dtype=np.single)[tf.newaxis, ...]
         p, q = self._get_soft_max_exploration(local_map_in, global_map_in, scalars_in)
+        # if all(q) is -np.inf:
+        #     print('only infs error', q)
+        # else: pass
+
         p = p.numpy()[0]
         a = np.random.choice(range(self.num_actions_hl), size=1, p=p)
         q = q.numpy()[0]

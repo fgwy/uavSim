@@ -2,6 +2,7 @@ import math
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import numba as nb
 
 
 def pad_centered(state, map_in, pad_value):
@@ -111,15 +112,16 @@ def pad_with_nfz_gm(map_in):
 
         return new_map
 
+@nb.jit(nopython=True)
 def flood_fill(field, x, y, old, new):
     # y, x = position
     # we need the x and y of the start position, the old value,
     # and the new value    # the flood fill has 4 parts
     # firstly, make sure the x and y are inbounds
     if x < 0 or x >= len(field[0]) or y < 0 or y >= len(field):
-        return  # secondly, check if the current position equals the old value
+        return  field # secondly, check if the current position equals the old value
     if field[y][x] != old:
-        return
+        return field
 
     # thirdly, set the current position to the new value
     field[y][x] = new  # fourthly, attempt to fill the neighboring positions

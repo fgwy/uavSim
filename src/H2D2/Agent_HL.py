@@ -336,7 +336,7 @@ class HL_DDQNAgent(object):
         self.target_network_hl.save(path_to_model + '-hl_model')
 
     def load_weights_hl(self, path_to_weights):
-        self.q_network_hl.load_weights(path_to_weights) # .assert_consumed() # .expect_partial()
+        self.q_network_hl.load_weights(path_to_weights)  # .assert_consumed() # .expect_partial()
         self.hard_update_hl()
 
     # @tf.RegisterGradient("ZeroGrad")

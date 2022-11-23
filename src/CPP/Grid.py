@@ -73,7 +73,7 @@ class CPPGrid(BaseGrid):
 
     def random_new_map_image_train(self, test):
         a = np.random.randint(0, len(self.params.train_map_set)) if not test else np.random.randint(0, len(self.params.test_map_set))
-        self.map_image = Map.load_map(self.params.train_map_set[a])
+        self.map_image = Map.load_map(self.params.train_map_set[np.random.randint(0, len(self.params.train_map_set))]) if not test else Map.load_map(self.params.test_map_set[np.random.randint(0, len(self.params.test_map_set))])
         self.shape = self.map_image.start_land_zone.shape
         self.generator.update_shape(self.shape)
         self.starting_vector = self.map_image.get_starting_vector()

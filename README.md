@@ -9,9 +9,7 @@
 
 ## Introduction
 
-This repository contains an implementation of the double deep Q-learning (DDQN) approach to control a UAV on a coverage path planning or data harvesting from IoT sensors mission, including global-local map processing. The corresponding paper ["UAV Path Planning using Global and Local Map Information with Deep Reinforcement Learning"](https://arxiv.org/abs/2010.06917) is available on arXiv.
-
-Earlier conference versions ["UAV Coverage Path Planning under Varying Power Constraints using Deep Reinforcement Learning"](https://arxiv.org/abs/2003.02609) and ["UAV Path Planning for Wireless Data Harvesting: A Deep Reinforcement Learning Approach"](https://arxiv.org/abs/2007.00544) are also available on arXiv and are to be presented at IEEE/RSJ IROS 2020 and IEEE Globecom 2020, respectively.
+This repository contains an implementation of the double deep Q-learning (DDQN) approach to control a UAV on a coverage path planning or data harvesting from IoT sensors mission, including global-local map processing. The corresponding paper ["UAV Path Planning using Global and Local Map Information with Deep Reinforcement Learning"](https://ieeexplore.ieee.org/abstract/document/9659413) is available on IEEEXplore. A multi-agent version of the Data Harvesting can be found in ["uav_data_harvesting"](https://github.com/hbayerlein/uav_data_harvesting).
 
 For questions, please contact Mirco Theile via email mirco.theile@tum.de. Please also note that due to github's new naming convention, the 'master' branch is now called 'main' branch.
 
@@ -22,33 +20,33 @@ For questions, please contact Mirco Theile via email mirco.theile@tum.de. Please
 python==3.7 or newer
 numpy==1.18.5 or newer
 keras==2.4.3 or newer
-tensorflow==2.3.0 or newer
+tensorflow==2.5.0 or newer
 matplotlib==3.3.0 or newer
 scikit-image==0.16.2 or newer
 tqdm==4.45.0 or newer
 ```
-
+Developed and tested only on Linux-based systems. In principle, it should also run on Windows, but there might be some compatibility issues.
 
 ## How to use
 
-Train a new DDQN model with the parameters of your choice in the specified config file for CPP or DH:
+Train a new DDQN model with the parameters of your choice in the specified config file for Coverage Path Planning (CPP) or Data Harvesting (DH):
 
 ```
-python main.py --cpp --gpu --config config/manhattan32_cpp.json --id manhattan32_cpp
-python main.py --dh --gpu --config config/manhattan32_dh.json --id manhattan32_dh
+python main_cpp.py --gpu config/cpp.json --id cpp
+python main_dh.py --gpu config/dh.json --id dh
 
 --cpp|--dh                  Activates CPP or DH
 --gpu                       Activates GPU acceleration for DDQN training
---config                    Path to config file in json format
+config                    Path to config file in json format
 --id                        Overrides standard name for logfiles and model
---generate_config           Enable only to write default config from default values in the code
+--generate           Enable only to write default config from default values in the code
 ```
 
 Evaluate a model through Monte Carlo analysis over the random parameter space for the performance indicators 'Successful Landing', 'Collection Ratio', 'Collection Ratio and Landed' as defined in the paper (plus 'Boundary Counter' counting safety controller activations), e.g. for 1000 Monte Carlo iterations:
 
 ```
-python main_mc.py --cpp --weights example/models/manhattan32_cpp --config config/manhattan32_cpp.json --id manhattan32_cpp_mc --samples 1000
-python main_mc.py --dh --weights example/models/manhattan32_dh --config config/manhattan32_dh.json --id manhattan32_dh_mc --samples 1000
+python main_mc.py --cpp --weights example/models/manhattan32_cpp config/manhattan32_cpp.json --id manhattan32_cpp_mc --samples 1000
+python main_mc.py --dh --weights example/models/manhattan32_dh config/manhattan32_dh.json --id manhattan32_dh_mc --samples 1000
 
 --cpp|--dh                  Activates CPP or DH
 --weights                   Path to weights of trained model
@@ -85,43 +83,35 @@ The shadowing maps, defining for each position and each IoT device whether there
 
 If using this code for research purposes, please cite:
 
-[1] M. Theile, H. Bayerlein, R. Nai, D. Gesbert, M. Caccamo, “UAV Path Planning using Global and Local Map Information with Deep Reinforcement Learning" arXiv:2010.06917 [cs.RO], 2020. 
+[1] M. Theile, H. Bayerlein, R. Nai, D. Gesbert, M. Caccamo, “UAV Path Planning using Global and Local Map Information with Deep Reinforcement Learning" 20th International Conference on Advanced Robotics (ICAR), 2021. 
 
 ```
-@article{Theile2020,
-        author  = {Mirco Theile and Harald Bayerlein and Richard Nai and David Gesbert and Marco Caccamo},
-        title   = {{UAV} Path Planning using Global and Local Map Information with Deep Reinforcement Learning},
-        journal = {arXiv:2010.06917 [cs.RO]},
-        year    = {2020},
-        url     = {https://arxiv.org/abs/2010.06917}
+@inproceedings{theile2021uav,
+  title={UAV path planning using global and local map information with deep reinforcement learning},
+  author={Theile, Mirco and Bayerlein, Harald and Nai, Richard and Gesbert, David and Caccamo, Marco},
+  booktitle={2021 20th International Conference on Advanced Robotics (ICAR)},
+  pages={539--546},
+  year={2021},
+  organization={IEEE}
 }
 ```
 
-for the initial Data Harvesting paper:
+for the (multi-agent) Data Harvesting paper:
 
-[2] H. Bayerlein, M. Theile, M. Caccamo, and D. Gesbert, “UAV path planning for wireless data harvesting: A deep reinforcement learning approach,” in IEEE Global Communications Conference (GLOBECOM), 2020.
+[2] H. Bayerlein, M. Theile, M. Caccamo, and D. Gesbert, “Multi-UAV path planning for wireless data harvesting with deep reinforcement learning," IEEE Open Journal of the Communications Society, vol. 2, pp. 1171-1187, 2021.
 
 ```
-@inproceedings{Bayerlein2020short,
-  author={Harald Bayerlein and Mirco Theile and Marco Caccamo and David Gesbert},
-  title={{UAV} Path Planning for Wireless Data Harvesting: A Deep Reinforcement Learning Approach}, 
-  booktitle={IEEE Global Communications Conference (GLOBECOM)}, 
-  year={2020}
+@article{bayerlein2021multi,
+  title={Multi-uav path planning for wireless data harvesting with deep reinforcement learning},
+  author={Bayerlein, Harald and Theile, Mirco and Caccamo, Marco and Gesbert, David},
+  journal={IEEE Open Journal of the Communications Society},
+  volume={2},
+  pages={1171--1187},
+  year={2021},
+  publisher={IEEE}
 }
 ```
 
-or for the initial Coverage Path Planning paper:
-
-[3] M. Theile, H. Bayerlein, R. Nai, D. Gesbert, M. Caccamo, “UAV Coverage Path Planning under Varying Power Constraints using Deep Reinforcement Learning" in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2020. 
-
-```
-@inproceedings{Theile2020_cpp,
-  author={Mirco Theile and Harald Bayerlein and Richard Nai and David Gesbert and Marco Caccamo},
-  title={{UAV} Coverage Path Planning under Varying Power Constraints using Deep Reinforcement Learning}, 
-  booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)}, 
-  year={2020}
-}
-```
 
 
 ## License 

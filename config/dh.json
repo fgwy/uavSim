@@ -1,0 +1,69 @@
+{
+    "trainer": {
+        "training_steps": 2000000,
+        "batch_size": 128,
+        "global_map_scaling": 3,
+        "local_map_size": 17,
+        "temperature": 0.1,
+        "conv_layers": 2,
+        "conv_kernel_size": 5,
+        "conv_kernels": 16,
+        "hidden_layer_size": 256,
+        "hidden_layer_num": 3,
+        "amsgrad": true,
+        "learning_rate": 3e-05,
+        "alpha": 0.005,
+        "gamma": 0.95,
+        "save_period": 10000,
+        "action_mask": false,
+        "memory": {
+            "size": 50000,
+            "cer": true
+        },
+        "rm_prefill": 25000
+    },
+    "gym": {
+        "map_path": "res/manhattan32.png",
+        "budget_range": [
+            50,
+            150
+        ],
+        "budget_std": 0.0,
+        "spawn_anywhere": 0.0,
+        "boundary_penalty": 1.0,
+        "empty_battery_penalty": 150.0,
+        "movement_penalty": 0.2,
+        "render": false,
+        "display_mode": "fixed",
+        "render_fps": 8,
+        "window_size": 768,
+        "data_reward": 1.0,
+        "device_count_range": [
+            3,
+            10
+        ],
+        "data_range": [
+            5.0,
+            20.0
+        ],
+        "comm_steps": 4,
+        "channel": {
+            "cell_edge_snr": -25,
+            "los_path_loss_exp": 2.27,
+            "nlos_path_loss_exp": 3.64,
+            "uav_altitude": 10.0,
+            "cell_size": 10.0,
+            "los_shadowing_variance": 2.0,
+            "nlos_shadowing_variance": 5.0
+        }
+    },
+    "logger": {
+        "loss_period": 100,
+        "evaluation_period": 1000,
+        "save_period": 10000
+    },
+    "evaluator": {
+        "show_eval": false,
+        "use_softmax": false
+    }
+}

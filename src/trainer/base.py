@@ -105,7 +105,7 @@ class BaseTrainer:
         crop_frac = float(self.params.local_map_size) / float(map_layers.shape[1])
         local_map = tf.image.central_crop(map_layers, crop_frac)
 
-        max_budget = self.gym.params.budget_range[1]
+        max_budget = self.gym.params.budget_range[1] # TODO: what is happening
         scalars = budget / max_budget
         return global_map, local_map, scalars
 

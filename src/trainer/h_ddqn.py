@@ -9,7 +9,9 @@ from src.trainer.base import BaseTrainerParams, BaseTrainer
 from src.trainer.utils import ReplayMemory, ReplayMemoryParams
 from src.gym.grid import GridGym
 from src.base.logger import Logger
-from src.model import *
+
+from tensorflow.keras.layers import Input
+from src.trainer.model import build_hl_model_ddqn_masked_non_dueling
 
 
 @dataclass
@@ -19,7 +21,7 @@ class h_DDQNTrainerParams(BaseTrainerParams):
     rm_prefill: int = 25_000
 
 
-class DDQNTrainer(BaseTrainer):
+class h_DDQNTrainer(BaseTrainer):
     def __init__(self, params: DDQNTrainerParams, gym: GridGym, logger: Optional[Logger]):
         super().__init__(params, gym)
         self.params = params
@@ -53,6 +55,15 @@ class DDQNTrainer(BaseTrainer):
 
             if step % self.params.save_period == 0:
                 self.logger.save_weights(self.network)
+
+    def create_network(self):
+        obs = self.observation_space
+        global_map_input = Input(shape=obs["global_map"].shape[1:], dtype=tf.float32)
+        local_map_input = Input(shape=obs["local_map"].shape[1:], dtype=tf.float32)
+        scalars_input = Input(shape=obs["scalars"].shape[1:], dtype=tf.float32)
+
+        return build_hl_model_ddqn_masked_non_dueling(scalars_input, local_map_input, global_map_input)
+
 
     def get_action(self, obs):
         n = self.action_space.n

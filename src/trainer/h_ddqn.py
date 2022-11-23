@@ -9,6 +9,7 @@ from src.trainer.base import BaseTrainerParams, BaseTrainer
 from src.trainer.utils import ReplayMemory, ReplayMemoryParams
 from src.gym.grid import GridGym
 from src.base.logger import Logger
+from src.model import *
 
 
 @dataclass

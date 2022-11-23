@@ -13,6 +13,8 @@ from src.H2D2.Trainer import H_DDQNTrainerParams, H_DDQNTrainer
 from src.base.Environment import BaseEnvironment, BaseEnvironmentParams
 from src.base.GridActions import GridActions, GridActionsDiagonal
 
+from matplotlib import pyplot as plt
+
 
 class H_CPPEnvironmentParams(BaseEnvironmentParams):
     def __init__(self):
@@ -182,13 +184,13 @@ class H_CPPEnvironment(BaseEnvironment):
             # last_step = self.step_count
             if try_landing:
                 # todo: check!! enters twice before landing
-                print('tried landing')
+                # print('tried landing')
                 action = self.actions.LAND  # Landing action
                 next_state = self.physics.step(self.actions(action))
                 # next_state = self.physics.set_terminal_h(True)
                 tried_landing_and_succeeded = next_state.landed
-                if tried_landing_and_succeeded:
-                    print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {self.actions.LAND}')
+                # if tried_landing_and_succeeded:
+                #     print(f'########## tried landing and succeded {tried_landing_and_succeeded}! action: {self.actions.LAND}')
             elif not valid:
                 # print('invalid!')
                 action = 5  # Hover such that state changes (mb is decreased and different goal generated)
@@ -206,16 +208,26 @@ class H_CPPEnvironment(BaseEnvironment):
                     self.agent_manager.trainer.add_experience_ll(state, action, reward, next_state)
                     self.agent_manager.trainer.train_l()
 
-            print(self.physics.state.is_terminal, )
+            # print(self.physics.state.is_terminal(), )
 
                 # self.stats.add_experience((state, action, reward, copy.deepcopy(next_state)))  # TODO Check
             if test and self.stats.params.draw:
-                self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
+                pass
+                # im = state.no_fly_zone*1
+                # im[state.position[1], state.position[0]] = 2
+                # idx = state.get_goal_idx()
+                # im[idx[0], idx[1]] = 3
+                # plt.imshow(im)
+                # plt.draw()
+                # plt.pause(0.1)
+                # self.display.plot_map(copy.deepcopy(next_state), next_state.is_terminal())
             display_trajectory.append(copy.deepcopy(self.physics.state))
             # if next_state.h_terminal or next_state.goal_covered:
             #     print(f'next state term?terminal: {next_state.is_terminal()} terminal_h: {next_state.h_terminal} goal active: {next_state.goal_active} goal_covered: {next_state.goal_covered}')
             # self.step_count += 1
         # print(f'how many setps in smdp: {i}')
+        dist = (next_state.get_goal_idx()[0] - next_state.position()[1], next_state.get_goal_idx[1] - next_state.position()[0])
+        print(f'environment debug: distance to goal: {dist} termination: {next_state.is_terminal()} h: {next_state.is_terminal_h()} movement budget: {next_state.movement_budget()}')
         return tried_landing_and_succeeded, last_step, display_trajectory
 
     def fill_replay_memory(self):

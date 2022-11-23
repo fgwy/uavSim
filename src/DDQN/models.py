@@ -51,86 +51,37 @@ def build_lm_preproc_model(local_map_in, name=''):
 
     return model
 
+def build_gm_preproc_model(global_map_in, name=''):
+    global_map = Conv2D(4, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(0 + 1))(global_map_in)
 
-def build_flat_model_masked(states_in, num_actions, initial_mb, path_to_local_pretrained_weights=None,
-                            name=''):  # local:17,17,4; global:21:21,4
-    '''
-     usage: model = build_hl_model(lm[tf.newaxis, ...], gm[tf.newaxis, ...], states_proc[tf.newaxis, ...])
-    '''
+    global_map = Conv2D(8, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(1 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(2 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(3 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(4 + 1))(global_map)
+    # global_map = Conv2D(16, 5, activation='relu',
+    #                     strides=(1, 1),
+    #                     name=name + 'global_conv_' + str(5 + 1))(global_map)
 
-    local_map_in, global_map_in, states_proc_in = states_in
-    # local_map_in_sg = tf.stop_gradient(local_map_in)
-    # global_map_in_sg = tf.stop_gradient(global_map_in)
-    # states_proc_in_sg = tf.stop_gradient(states_proc_in)
-
-    # states_proc = states_proc_in / initial_mb + 1e-6
-    states_proc = states_proc_in / 100
-
-    local_map_model = build_lm_preproc_model(local_map_in, name)
-    # if path_to_local_pretrained_weights:
-    #     print(f'Loading weights from: {path_to_local_pretrained_weights}')
-    #     local_map_model.load_weights(path_to_local_pretrained_weights)
-    flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
-
-    # global map processing layers
-
-    global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
-    norm = tf.keras.layers.LayerNormalization()(global_map_1)
-    norm = swish(norm)
-    global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
-    norm = tf.keras.layers.LayerNormalization()(global_map_2)
-    norm = swish(norm)
-    global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
-    norm = tf.keras.layers.LayerNormalization()(global_map_3)
-    norm = swish(norm)
+    norm = tf.keras.layers.LayerNormalization()(global_map)
 
     flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
 
-    flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
-        [flatten_global, flatten_local, states_proc])
+    model = tf.keras.Model(inputs=[global_map_in], outputs=[flatten_global])
 
-    # layer = tf.keras.layers.Concatenate(name=name + 'concat')([flatten_map, states_proc_in])
-
-    layer_1 = tf.keras.layers.Dense(256, activation=None, name=name + 'hidden_layer_all_hl_' + str(0))(
-        flatten_map)
-    norm = tf.keras.layers.LayerNormalization()(layer_1)
-    norm = swish(norm)
-    layer_2 = tf.keras.layers.Dense(256, activation=None, name=name + 'hidden_layer_all_hl_' + str(1))(
-        norm)
-    norm = tf.keras.layers.LayerNormalization()(layer_2)
-    norm = swish(norm)
-    # layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
-    #     layer_1)
-
-    Q_vals = tf.keras.layers.Dense(units=num_actions, activation=None, name=name + 'last_dense_layer_hl')(
-        norm)
-
-    # Masking of invalid actions
-
-    lz = 1-local_map_in[:, 8, 8, 2] # negation of landing zone -> if no landing zone on position mask to -inf
-    b = tf.cast(tf.stack([local_map_in[:, 9, 8, 0],
-                          local_map_in[:, 8, 9, 0],
-                          local_map_in[:, 7, 8, 0],
-                          local_map_in[:, 8, 7, 0],
-                         lz], axis=-1), tf.bool)
-
-    # b = tf.cast((tf.keras.layers.Concatenate(axis=1)([a_1, c])), dtype=tf.bool)
-
-    Q_vals = tf.where(b, -np.inf, Q_vals)
-
-    print(f'Qvals: {Q_vals}')
-
-    model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
     return model
 
 
-def build_smaller_flat_model_masked(states_in, num_actions, initial_mb, path_to_local_pretrained_weights=None,
+def build_flat_model(states_in, num_actions, initial_mb, diagonal=False, little=False, mask=False, path_to_local_pretrained_weights=None,
                             name=''):  # local:17,17,4; global:21:21,4
     '''
      usage: model = build_hl_model(lm[tf.newaxis, ...], gm[tf.newaxis, ...], states_proc[tf.newaxis, ...])
@@ -144,188 +95,147 @@ def build_smaller_flat_model_masked(states_in, num_actions, initial_mb, path_to_
     # states_proc = states_proc_in / initial_mb + 1e-6
     states_proc = states_proc_in / 100
 
-    # local_map_model = build_lm_preproc_model(local_map_in, name)
-    # if path_to_local_pretrained_weights:
-    #     print(f'Loading weights from: {path_to_local_pretrained_weights}')
-    #     local_map_model.load_weights(path_to_local_pretrained_weights)
-    # flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
+    if little:
+        local_map = Conv2D(16, 5, activation='relu',
+                           strides=(1, 1),
+                           name=name + 'local_conv_' + str(0 + 1))(local_map_in)
+        local_map = Conv2D(16, 5, activation='relu',
+                           strides=(1, 1),
+                           name=name + 'local_conv_' + str(1 + 1))(local_map)
 
-    local_map = Conv2D(16, 5, activation='relu',
-                       strides=(1, 1),
-                       name=name + 'local_conv_' + str(0 + 1))(local_map_in)
-    local_map = Conv2D(16, 5, activation='relu',
-                       strides=(1, 1),
-                       name=name + 'local_conv_' + str(1 + 1))(local_map)
+        flatten_local = Flatten(name=name + 'local_flatten')(local_map)
 
-    flatten_local = Flatten(name=name + 'local_flatten')(local_map)
+        # for k in range(2):
+        global_map = Conv2D(16, 5, activation='relu',
+                            strides=(1, 1),
+                            name=name + 'global_conv_' + str(0 + 1))(global_map_in)
 
-    # for k in range(2):
-    global_map = Conv2D(16, 5, activation='relu',
-                       strides=(1, 1),
-                       name=name + 'global_conv_' + str(0 + 1))(global_map_in)
+        global_map = Conv2D(16, 5, activation='relu',
+                            strides=(1, 1),
+                            name=name + 'global_conv_' + str(1 + 1))(global_map)
 
-    global_map = Conv2D(16, 5, activation='relu',
-                       strides=(1, 1),
-                       name=name + 'global_conv_' + str(1 + 1))(global_map)
+        flatten_global = Flatten(name=name + 'global_flatten')(global_map)
 
-    flatten_global = Flatten(name=name + 'global_flatten')(global_map)
+        flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
+            [flatten_global, flatten_local, states_proc])
+
+        layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(0))(
+            flatten_map)
+        layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(1))(
+            layer)
+        layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(2))(
+            layer)
+    else:
+
+        local_map_model = build_lm_preproc_model(local_map_in, name)
+        # if path_to_local_pretrained_weights:
+        #     print(f'Loading weights from: {path_to_local_pretrained_weights}')
+        #     local_map_model.load_weights(path_to_local_pretrained_weights)
+        flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
+
+        global_map_model = build_gm_preproc_model(global_map_in)
+
+        # global map processing layers
+
+        flatten_global = global_map_model.output
 
 
-    flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
-        [flatten_global, flatten_local, states_proc])
+        # global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
+        #                                       strides=(1, 1),
+        #                                       name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
+        # norm = tf.keras.layers.LayerNormalization()(global_map_1)
+        # norm = swish(norm)
+        # global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
+        #                                       strides=(1, 1),
+        #                                       name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
+        # norm = tf.keras.layers.LayerNormalization()(global_map_2)
+        # norm = swish(norm)
+        # global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
+        #                                       strides=(1, 1),
+        #                                       name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
+        # norm = tf.keras.layers.LayerNormalization()(global_map_3)
+        # norm = swish(norm)
 
-    layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(0))(
-        flatten_map)
-    layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(1))(
-        layer)
-    layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(2))(
-        layer)
+        # flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
 
+        flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
+            [flatten_global, flatten_local, states_proc])
+
+        # layer = tf.keras.layers.Concatenate(name=name + 'concat')([flatten_map, states_proc_in])
+
+        layer_1 = tf.keras.layers.Dense(256, activation=None, name=name + 'hidden_layer_all_hl_' + str(0))(
+            flatten_map)
+        norm = tf.keras.layers.LayerNormalization()(layer_1)
+        norm = swish(norm)
+        layer_2 = tf.keras.layers.Dense(256, activation=None, name=name + 'hidden_layer_all_hl_' + str(1))(
+            norm)
+        norm = tf.keras.layers.LayerNormalization()(layer_2)
+        layer = swish(norm)
+        # layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
+        #     layer_1)
 
     Q_vals = tf.keras.layers.Dense(units=num_actions, activation=None, name=name + 'last_dense_layer_hl')(
         layer)
+    # NORTH = 0 # down on map array y+1
+    # EAST = 1 # x+1
+    # SOUTH = 2 # y-1
+    # WEST = 3 # x-1
+    # LAND = 4
+    # HOVER = 5
+    # NORTH_EAST = 6 #+1+1
+    # SOUTH_EAST = 7 #-1+1
+    # SOUTH_WEST = 8 #-1-1
+    # NORTH_WEST = 9 #+1-1
+    if mask:
+        if diagonal:
+            lz = 1 - local_map_in[:, 8, 8, 2]  # negation of landing zone -> if no landing zone on position mask to -inf
+            mask = tf.cast(tf.stack([local_map_in[:, 9, 8, 0],
+                                  local_map_in[:, 8, 9, 0],
+                                  local_map_in[:, 7, 8, 0],
+                                  local_map_in[:, 8, 7, 0],
+                                  lz,
+                                  local_map_in[:, 8, 7, 0]*0+1, # Hover always masked
 
-    # Masking of invalid actions
+                                  local_map_in[:, 9, 8, 0] + local_map_in[:, 8, 9, 0] + local_map_in[:, 9, 9, 0],
+                                  local_map_in[:,  7, 8, 0] + local_map_in[:, 8, 9, 0] + local_map_in[:, 7, 9, 0],
+                                  local_map_in[:, 7, 8, 0] + local_map_in[:, 8, 7, 0] + local_map_in[:, 7, 7, 0],
+                                  local_map_in[:, 9, 8, 0] + local_map_in[:, 8, 7, 0] + local_map_in[:, 9, 7, 0],
+                                  ], axis=-1), tf.bool)
 
-    lz = 1-local_map_in[:, 8, 8, 2]  # negation of landing zone -> if no landing zone on position mask to -inf
-    b = tf.cast(tf.stack([local_map_in[:, 9, 8, 0],
-                          local_map_in[:, 8, 9, 0],
-                          local_map_in[:, 7, 8, 0],
-                          local_map_in[:, 8, 7, 0],
-                         lz], axis=-1), tf.bool)
+        else:
 
-    # b = tf.cast((tf.keras.layers.Concatenate(axis=1)([a_1, c])), dtype=tf.bool)
+            # Masking of invalid actions
 
-    Q_vals = tf.where(b, -np.inf, Q_vals)
+            lz = 1-local_map_in[:, 8, 8, 2] # negation of landing zone -> if no landing zone on position mask to -inf
+            mask = tf.cast(tf.stack([local_map_in[:, 9, 8, 0],
+                                  local_map_in[:, 8, 9, 0],
+                                  local_map_in[:, 7, 8, 0],
+                                  local_map_in[:, 8, 7, 0],
+                                 lz,
+                                  local_map_in[:, 8, 7, 0]*0+1,
+                                  local_map_in[:, 8, 7, 0]*0+1,
+                                  local_map_in[:, 8, 7, 0]*0+1,
+                                  local_map_in[:, 8, 7, 0]*0+1,
+                                  local_map_in[:, 8, 7, 0]*0+1],
+                                  #   1,
+                                  #    1,
+                                  #    1,
+                                  #    1,
+                                  #    1],
+                                    axis=-1), tf.bool)
 
-    print(f'Qvals: {Q_vals}')
+    else:
+        if diagonal:
+            mask = (False, False, False, False, False, True, False, False, False, False)
+        else:
+            mask = (False, False, False, False, False, True, True, True, True, True)
+
+    Q_vals = tf.where(mask, -np.inf, Q_vals)
 
     model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
     return model
 
-def build_flat_model_no_mask(states_in, num_actions, initial_mb, path_to_local_pretrained_weights=None,
-                             name=''):  # local:17,17,4; global:21:21,4
-    '''
-     usage: model = build_hl_model(lm[tf.newaxis, ...], gm[tf.newaxis, ...], states_proc[tf.newaxis, ...])
-    '''
-
-    local_map_in, global_map_in, states_proc_in = states_in
-    # local_map_in_sg = tf.stop_gradient(local_map_in)
-    # global_map_in_sg = tf.stop_gradient(global_map_in)
-    # states_proc_in_sg = tf.stop_gradient(states_proc_in)
-
-    # states_proc = states_proc_in / initial_mb + 1e-6
-    states_proc = states_proc_in / 100
-
-    local_map_model = build_lm_preproc_model(local_map_in, name)
-    # if path_to_local_pretrained_weights:
-    #     print(f'Loading weights from: {path_to_local_pretrained_weights}')
-    #     local_map_model.load_weights(path_to_local_pretrained_weights)
-    flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
-
-    # global map processing layers
-
-    global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
-    norm = tf.keras.layers.LayerNormalization()(global_map_1)
-    norm = swish(norm)
-    global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
-    norm = tf.keras.layers.LayerNormalization()(global_map_2)
-    norm = swish(norm)
-    global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
-    norm = tf.keras.layers.LayerNormalization()(global_map_3)
-    norm = swish(norm)
-
-    flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
-
-    flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
-        [flatten_global, flatten_local, states_proc])
-
-    # layer = tf.keras.layers.Concatenate(name=name + 'concat')([flatten_map, states_proc_in])
-
-    layer_1 = tf.keras.layers.Dense(256, activation=None, name=name + 'hidden_layer_all_hl_' + str(0))(
-        flatten_map)
-    norm = tf.keras.layers.LayerNormalization()(layer_1)
-    norm = swish(norm)
-    layer_2 = tf.keras.layers.Dense(256, activation=None, name=name + 'hidden_layer_all_hl_' + str(1))(
-        norm)
-    norm = tf.keras.layers.LayerNormalization()(layer_2)
-    norm = swish(norm)
-    # layer_3 = tf.keras.layers.Dense(256, activation='elu', name=name + 'hidden_layer_all_hl_' + str(2))(
-    #     layer_1)
-
-    Q_vals = tf.keras.layers.Dense(units=num_actions, activation=None, name=name + 'last_dense_layer_hl')(
-        norm)
-
-    # tf.debugging.assert_all_finite(Q_vals, message='Nan in Q_vals')
-
-    print(f'Qvals: {Q_vals}')
-
-    model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
-    return model
-
-def build_smaller_flat_model_no_mask(states_in, num_actions, initial_mb, path_to_local_pretrained_weights=None,
-                            name=''):  # local:17,17,4; global:21:21,4
-    '''
-     usage: model = build_hl_model(lm[tf.newaxis, ...], gm[tf.newaxis, ...], states_proc[tf.newaxis, ...])
-    '''
-
-    local_map_in, global_map_in, states_proc_in = states_in
-    # local_map_in_sg = tf.stop_gradient(local_map_in)
-    # global_map_in_sg = tf.stop_gradient(global_map_in)
-    # states_proc_in_sg = tf.stop_gradient(states_proc_in)
-
-    # states_proc = states_proc_in / initial_mb + 1e-6
-    states_proc = states_proc_in / 100
-
-    # local_map_model = build_lm_preproc_model(local_map_in, name)
-    # if path_to_local_pretrained_weights:
-    #     print(f'Loading weights from: {path_to_local_pretrained_weights}')
-    #     local_map_model.load_weights(path_to_local_pretrained_weights)
-    # flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
-
-    local_map = Conv2D(16, 5, activation='relu',
-                       strides=(1, 1),
-                       name=name + 'local_conv_' + str(0 + 1))(local_map_in)
-    local_map = Conv2D(16, 5, activation='relu',
-                       strides=(1, 1),
-                       name=name + 'local_conv_' + str(1 + 1))(local_map)
-
-    flatten_local = Flatten(name=name + 'local_flatten')(local_map)
-
-    # for k in range(2):
-    global_map = Conv2D(16, 5, activation='relu',
-                       strides=(1, 1),
-                       name=name + 'global_conv_' + str(0 + 1))(global_map_in)
-
-    global_map = Conv2D(16, 5, activation='relu',
-                       strides=(1, 1),
-                       name=name + 'global_conv_' + str(1 + 1))(global_map)
-
-    flatten_global = Flatten(name=name + 'global_flatten')(global_map)
-
-
-    flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
-        [flatten_global, flatten_local, states_proc])
-
-    layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(0))(
-        flatten_map)
-    layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(1))(
-        layer)
-    layer = Dense(256, activation='relu', name=name + 'hidden_layer_all_' + str(2))(
-        layer)
-
-
-    Q_vals = tf.keras.layers.Dense(units=num_actions, activation=None, name=name + 'last_dense_layer_hl')(
-        layer)
-
-    print(f'Qvals: {Q_vals}')
-
-
-    model = tf.keras.Model(inputs=[local_map_in, global_map_in, states_proc_in], outputs=Q_vals)
-    return model
+#   tf.logical_or(tf.cast(local_map_in[:, 9, 8, 0], tf.bool), tf.cast(local_map_in[:, 8, 9, 0], tf.bool))*1,
+# tf.logical_or(tf.cast(local_map_in[:, 8, 9, 0], tf.bool), tf.cast(local_map_in[:, 8, 9, 0], tf.bool))*1,
+# tf.logical_or(tf.cast(local_map_in[:, 7, 8, 0], tf.bool), tf.cast(local_map_in[:, 8, 7, 0], tf.bool))*1,
+# tf.logical_or(tf.cast(local_map_in[:, 8, 7, 0], tf.bool), tf.cast(local_map_in[:, 9, 8, 0], tf.bool))*1

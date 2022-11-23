@@ -2,7 +2,7 @@
     "model_stats_params": {
         "save_model": "models/save_model",
         "moving_average_length": 50,
-        "log_file_name": "CPP_urb50_nomask_little_2009",
+        "log_file_name": "CPP_multi_diagonal_big_2709",
         "training_images": false
     },
     "grid_params": {
@@ -48,7 +48,7 @@
     },
     "trainer_params": {
         "batch_size": 128,
-        "num_steps": 1000000.0,
+        "num_steps": 3000000.0,
         "rm_pre_fill_ratio": 0.5,
         "rm_pre_fill_random": true,
         "eval_period": 5,
@@ -71,10 +71,10 @@
         "global_map_scaling": 3,
         "local_map_size": 17,
         "print_summary": false,
-        "masked": false,
-        "multimap": false,
-        "diagonal": false,
-        "tinymodel": true
+        "masked": true,
+        "multimap": true,
+        "diagonal": true,
+        "tinymodel": false
     },
     "physics_params": {
         "camera_params": {

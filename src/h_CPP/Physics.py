@@ -31,16 +31,22 @@ class H_CPPPhysics(GridPhysics):
         stats.add_log_data_callback('boundary_counter', self.get_boundary_counter)
         stats.add_log_data_callback('landing_attempts', self.get_landing_attempts)
         stats.add_log_data_callback('movement_ratio', self.get_movement_ratio)
+        stats.add_log_data_callback('efficiency ratio', self.get_efficiency_ratio)
 
     def reset(self, state: H_CPPState):
         GridPhysics.reset(self, state)
         self.landed = False
 
-    def step(self, action: GridActions):
+    def step(self, action: GridActionsDiagonal):
         h_term_before = self.state.get_remaining_h_target_cells() == 0
         self.movement_step(action, True)
         if not self.state.terminal:
             self.vision_step()
+
+        if (self.state.position[1], self.state.position[0]) == self.state.get_goal_idx():
+            print('on goal')
+            self.state.set_terminal_h()
+
 
         if self.state.landed:
             self.landed = True
@@ -54,8 +60,8 @@ class H_CPPPhysics(GridPhysics):
     def vision_step(self):
         view = self.camera.computeView(self.state.position, 0)
         self.state.add_explored(view)
-        view_ll = self.camera.computeView(self.state.position, 0, 0)
-        self.state.add_explored_h_target(view_ll)
+        # view_ll = self.camera.computeView(self.state.position, 0, 1)
+        # self.state.add_explored_h_target(view_ll)
 
     def get_example_action(self):
         return [self.get_example_action_h(), self.get_example_action_l()]
@@ -99,6 +105,9 @@ class H_CPPPhysics(GridPhysics):
 
     def has_landed(self):
         return self.landed
+
+    def get_efficiency_ratio(self):
+        return float(self.state.get_tiles_uncovered()) / float(self.get_movement_budget_used())
 
     def reset_h_target(self, goal):
         goal = goal.astype(bool)

@@ -21,8 +21,9 @@ class CPPGridParams(BaseGridParams):
 
 class CPPGrid(BaseGrid):
 
-    def __init__(self, params: CPPGridParams, stats):
+    def __init__(self, params: CPPGridParams, stats, diagonal=False):
         super().__init__(params, stats)
+        self.diagonal = diagonal
         self.params = params
 
         self.generator = RandomTargetGenerator(params.generator_params, self.map_image.get_size())
@@ -31,7 +32,7 @@ class CPPGrid(BaseGrid):
     def init_episode(self):
         self.target_zone = self.generator.generate_target(self.map_image.obstacles)
 
-        state = CPPState(self.map_image)
+        state = CPPState(self.map_image, self.diagonal)
         state.reset_target(self.target_zone)
 
         idx = np.random.randint(0, len(self.starting_vector))
@@ -61,7 +62,7 @@ class CPPGrid(BaseGrid):
         return state
 
     def get_example_state(self):
-        state = CPPState(self.map_image)
+        state = CPPState(self.map_image, False)
         state.reset_target(self.target_zone)
         state.position = [0, 0]
         state.movement_budget = 0

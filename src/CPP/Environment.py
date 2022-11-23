@@ -10,7 +10,7 @@ from src.CPP.Rewards import CPPRewardParams, CPPRewards
 
 from src.DDQN.Trainer import DDQNTrainerParams, DDQNTrainer
 from src.base.Environment import BaseEnvironment, BaseEnvironmentParams
-from src.base.GridActions import GridActions
+from src.base.GridActions import GridActions, GridActionsDiagonal
 
 
 class CPPEnvironmentParams(BaseEnvironmentParams):
@@ -91,8 +91,8 @@ class CPPEnvironment(BaseEnvironment):
         self.stats.on_episode_begin(self.episode_count)
         while not state.terminal:
             action = self.agent.get_exploitation_action_target(state)
-            next_state = self.physics.step(GridActions(action))
-            reward = self.rewards.calculate_reward(state, GridActions(action), next_state)
+            next_state = self.physics.step(GridActionsDiagonal(action))
+            reward = self.rewards.calculate_reward(state, GridActionsDiagonal(action), next_state)
             self.stats.add_experience((copy.deepcopy(state), action, reward, copy.deepcopy(next_state)))
             state = copy.deepcopy(next_state)
 

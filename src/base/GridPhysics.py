@@ -49,6 +49,9 @@ class GridPhysics:
             x-=1
             d = True
 
+        # if d:
+        #     print('diagonal!')
+
 
         elif action == GridActionsDiagonal.LAND:
             self.landing_attempts += 1
@@ -57,6 +60,7 @@ class GridPhysics:
 
         self.state.set_position([x, y])
         if self.state.is_in_no_fly_zone():
+            # print('boundary hit!!')
             # Reset state
             self.boundary_counter += 1
             x, y = old_position
@@ -65,7 +69,7 @@ class GridPhysics:
         # print('checking diagonal corner',
         #       self.state.no_fly_zone[old_position[1], x] or self.state.no_fly_zone[y, old_position[0]])
         if self.state.no_fly_zone[old_position[1], x] or self.state.no_fly_zone[y, old_position[0]]:
-            print('hit diagonal corner')
+            # print('hit diagonal corner')
             # Reset state
             self.boundary_counter += 1
             x, y = old_position

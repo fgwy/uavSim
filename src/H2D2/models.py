@@ -47,7 +47,7 @@ def build_lm_preproc_model(local_map_in, name=''):
     activation = swish(norm)
     flatten_local = tf.keras.layers.Flatten(name=name + 'local_flatten')(activation)
 
-    model = tf.keras.Model(inputs=[local_map_in], outputs=[flatten_local, local_map_2, local_map_3, local_map_4])
+    model = tf.keras.Model(inputs=[local_map_in], outputs=[flatten_local, local_map_1, local_map_2, local_map_3, local_map_4])
 
     return model
 
@@ -63,7 +63,7 @@ def build_ll_model(states_in, initial_mb, num_actions, path_to_local_pretrained_
     if path_to_local_pretrained_weights:
         print(f'Loading weights from: {path_to_local_pretrained_weights}')
         local_map_model.load_weights(path_to_local_pretrained_weights)
-    flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
+    flatten_local, local_map_1, local_map_2, local_map_3, local_map_4 = local_map_model.output
 
     flatten_map = tf.keras.layers.Concatenate(name=name + 'concat_flatten')(
         [flatten_local, states_proc])
@@ -276,21 +276,31 @@ def build_hl_model_ddqn_masked_dueling(states_in, goal_size, local_map_shape, us
 
     # global map processing layers
 
-    global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
-    norm = tf.keras.layers.LayerNormalization()(global_map_1)
-    norm = swish(norm)
-    global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
-    norm = tf.keras.layers.LayerNormalization()(global_map_2)
-    norm = swish(norm)
-    global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
-    norm = tf.keras.layers.LayerNormalization()(global_map_3)
-    norm = swish(norm)
+    # global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
+    #                                       strides=(1, 1),
+    #                                       name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
+    # norm = tf.keras.layers.LayerNormalization()(global_map_1)
+    # norm = swish(norm)
+    # global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
+    #                                       strides=(1, 1),
+    #                                       name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
+    # norm = tf.keras.layers.LayerNormalization()(global_map_2)
+    # norm = swish(norm)
+    # global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
+    #                                       strides=(1, 1),
+    #                                       name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
+    # norm = tf.keras.layers.LayerNormalization()(global_map_3)
+    # norm = swish(norm)
+
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(0 + 1))(global_map_in)
+
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(1 + 1))(global_map)
+
+    norm = tf.keras.layers.LayerNormalization()(global_map)
 
     flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
 
@@ -418,11 +428,16 @@ def build_hl_model_ddqn_masked_non_dueling(states_in, goal_size, local_map_shape
     # states_proc_in_sg = tf.stop_gradient(states_proc_in)
 
     # states_proc = states_proc_in / initial_mb + 1e-6
-
-    local_map_in = local_map_in[:,:,:,0:4]
-
-    local_mask = local_map_in[:,:,:,5]
-    # print('localm map in shape',local_map_in.shape)
+    # print(local_map_in.shape)
+    # local_map_input = tf.gather(local_map_in, [:,:,:,0:4])
+    local_map_input, local_mask = tf.split(local_map_in, [4,1], -1)
+    print("lm input",local_mask.shape)
+    # print("lm",local_map_in.shape)
+    #local_mask = local_map_in[:,:,:,4:5]
+    # print(local_mask.shape)
+    # # local_mask = tf.cast(tf.expand_dims(local_mask, -1), tf.bool)
+    #
+    # print(local_mask.shape)
 
     states_proc = states_proc_in / 100
 
@@ -430,25 +445,48 @@ def build_hl_model_ddqn_masked_non_dueling(states_in, goal_size, local_map_shape
     if path_to_local_pretrained_weights:
         print(f'Loading weights from: {path_to_local_pretrained_weights}')
         local_map_model.load_weights(path_to_local_pretrained_weights)
-    flatten_local, local_map_2, local_map_3, local_map_4 = local_map_model.output
+    flatten_local, local_map_1, local_map_2, local_map_3, local_map_4 = local_map_model.output
 
     # global map processing layers
 
-    global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
-    norm = tf.keras.layers.LayerNormalization()(global_map_1)
-    norm = swish(norm)
-    global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
-    norm = tf.keras.layers.LayerNormalization()(global_map_2)
-    norm = swish(norm)
-    global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
-                                          strides=(1, 1),
-                                          name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
-    norm = tf.keras.layers.LayerNormalization()(global_map_3)
-    norm = swish(norm)
+    # global_map_1 = tf.keras.layers.Conv2D(4, 5, activation=None,
+    #                                       strides=(1, 1),
+    #                                       name=name + 'global_conv_' + str(0 + 1))(global_map_in)  # out:17
+    # norm = tf.keras.layers.LayerNormalization()(global_map_1)
+    # norm = swish(norm)
+    # global_map_2 = tf.keras.layers.Conv2D(8, 5, activation=None,
+    #                                       strides=(1, 1),
+    #                                       name=name + 'global_conv_' + str(1 + 1))(norm)  # out:13
+    # norm = tf.keras.layers.LayerNormalization()(global_map_2)
+    # norm = swish(norm)
+    # global_map_3 = tf.keras.layers.Conv2D(16, 5, activation=None,
+    #                                       strides=(1, 1),
+    #                                       name=name + 'global_conv_' + str(2 + 1))(norm)  # out:9
+    # norm = tf.keras.layers.LayerNormalization()(global_map_3)
+    # norm = swish(norm)
+
+    global_map = Conv2D(4, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(0 + 1))(global_map_in)
+
+    global_map = Conv2D(8, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(1 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(2 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(3 + 1))(global_map)
+    global_map = Conv2D(16, 5, activation='relu',
+                        strides=(1, 1),
+                        name=name + 'global_conv_' + str(4 + 1))(global_map)
+    # global_map = Conv2D(16, 5, activation='relu',
+    #                     strides=(1, 1),
+    #                     name=name + 'global_conv_' + str(5 + 1))(global_map)
+
+    norm = tf.keras.layers.LayerNormalization()(global_map)
+
 
     flatten_global = tf.keras.layers.Flatten(name=name + 'global_flatten')(norm)
 
@@ -504,7 +542,9 @@ def build_hl_model_ddqn_masked_non_dueling(states_in, goal_size, local_map_shape
         norm = swish(norm)
         deconv_3 = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=5, activation=None,
                                                    name=name + 'deconv_' + str(3))(norm)
-        norm = tf.keras.layers.LayerNormalization()(deconv_3)
+        skip_4 = tf.keras.layers.Concatenate(name=name + '4th_skip_connection_concat', axis=3)(
+            [deconv_3, local_map_in])
+        norm = tf.keras.layers.LayerNormalization()(skip_4)
         norm = swish(norm)
         deconv_4 = tf.keras.layers.Conv2DTranspose(filters=1, kernel_size=1, activation='linear',
                                                    name=name + 'deconv_' + str(4))(norm)
@@ -542,8 +582,22 @@ def build_hl_model_ddqn_masked_non_dueling(states_in, goal_size, local_map_shape
     view = tf.pad(view, paddings, "CONSTANT")
     nfz_mask = tf.image.central_crop(tf.expand_dims(local_map_in[..., 0], -1), crop_frac)
     view_nfz_mask = tf.math.logical_or(tf.expand_dims(tf.expand_dims(view, 0),-1), tf.cast(nfz_mask, tf.bool))
+    # print('view_nfz', view_nfz_mask.shape, 'view', view.shape)
     crop = tf.where(tf.squeeze(view_nfz_mask, -1), -np.inf, crop)
+    # print("crop size: ", crop.shape)
+    local_mask = tf.cast(local_mask, tf.bool)
+
+    # print("lm size: ", local_mask)
+    # local_mask = tf.where(local_mask, False, True)
+    # print("lm size: ", local_mask.shape)
+
+    # print("crop before", tf.squeeze(crop))
+    local_mask = tf.image.central_crop(local_mask, crop_frac)
+    # print("lm size: ", local_mask.shape)
     crop = tf.where(tf.squeeze(local_mask, -1), -np.inf, crop) # TODO: not working!
+    # print("crop size: ", crop.shape)
+
+    # print("crop after", tf.squeeze(crop))
 
 
     not_on_lz = 1 - local_map_in[:, local_map_shape[0] // 2, local_map_shape[1] // 2, 2]
@@ -551,6 +605,7 @@ def build_hl_model_ddqn_masked_non_dueling(states_in, goal_size, local_map_shape
 
     flatten_deconv = tf.keras.layers.Flatten(name=name + 'deconv_flatten')(crop)
     adv = tf.keras.layers.Concatenate(name=name + 'concat_final')([flatten_deconv, landing])
+    # print("adv size: ", adv.shape)
 
     Q_vals = adv
 

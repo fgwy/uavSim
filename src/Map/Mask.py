@@ -139,22 +139,31 @@ def calculate_distance_mask(map_path, save_as, local_map_size):
     total_map = load_map(map_path)
     obstacles = total_map.no_fly_zone
     size = total_map.obstacles.shape[0]
-    total = size * size
-    astar=A_star()
+    total = size * size * local_map_size * local_map_size
+    astar=A_star(diag=True)
 
-    total_shadow_map = np.ones((size, size, local_map_size, local_map_size), dtype=bool)
+    total_distance_map = np.ones((size, size, local_map_size, local_map_size), dtype=bool)
+    total_inner_distance_map = np.ones((size, size, local_map_size, local_map_size), dtype=bool)
     with tqdm.tqdm(total=total) as pbar:
         for i, j in np.ndindex(total_map.obstacles.shape):
             shadow_map = np.ones((size, size), dtype=bool)
 
-            for x in range(size):
-                bresenham(i, j, x, 0, obstacles, shadow_map)
-                bresenham(i, j, x, size - 1, obstacles, shadow_map)
-                bresenham(i, j, 0, x, obstacles, shadow_map)
-                bresenham(i, j, size - 1, x, obstacles, shadow_map)
+            for ii, jj in np.ndindex((local_map_size, local_map_size)):
+                astar.astar(total_map.nfz, (i, j), (ii, jj), )
 
-            total_shadow_map[j, i] = shadow_map
-            pbar.update(1)
+                if i+ii-8 < 0 or j+jj-8:
+                    pass
+
+                elif obstacles[i, j] or obstacles[i+ii-8, j+jj-8]:
+                    total_distance_map[j, i] = None
+                    total_inner_distance_map[j, i] = None
+
+                elif total_distance_map[i][j][ii][jj] is None:
+                    total_distance_map
+
+
+
+                pbar.update(1)
 
     np.save(save_as, total_shadow_map)
     return total_shadow_map

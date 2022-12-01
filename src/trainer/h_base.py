@@ -10,7 +10,7 @@ import tensorflow as tf
 
 
 @dataclass
-class BaseTrainerParams:
+class h_BaseTrainerParams:
     training_steps: int = 2_000_000
     batch_size: int = 128
 
@@ -42,7 +42,7 @@ def polynomial_activation(layer, degree=3):
     return tf.concat([layer ** d for d in range(1, degree + 1)], axis=-1)
 
 
-class BaseTrainer:
+class h_BaseTrainer:
     def __init__(self, params: BaseTrainerParams, gym: GridGym):
         self.params = params
         self.params = params

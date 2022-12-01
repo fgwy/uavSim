@@ -1,28 +1,29 @@
 from dataclasses import dataclass
 
-from src.gym.h_cpp import h_CPPGymParams, h_CPPGym
-from src.trainer.h_ddqn import h_DDQNTrainerParams, h_DDQNTrainer
+from src.gym.cpp import CPPGymParams, CPPGym
+from src.gym.hcpp import HCPPGymParams, HCPPGym
 from src.base.evaluator import Evaluator, EvaluatorParams
 from src.base.logger import LoggerParams, Logger
+from src.trainer.hddqn import HDDQNTrainer, HDDQNTrainerParams
 from utils import AbstractParams
 
 
 @dataclass
-class h_CPPParams(AbstractParams):
-    trainer: DDQNTrainerParams = h_DDQNTrainerParams()
-    gym: h_CPPGymParams = h_CPPGymParams()
+class HCPPParams(AbstractParams):
+    trainer: HDDQNTrainerParams = HDDQNTrainerParams()
+    gym: HCPPGymParams = HCPPGymParams()
     logger: LoggerParams = LoggerParams()
     evaluator: EvaluatorParams = EvaluatorParams()
 
 
 if __name__ == "__main__":
 
-    params, args = h_CPPParams.from_args()
+    params, args = HCPPParams.from_args()
     log_dir = params.create_folders(args)
 
     logger = Logger(params.logger, log_dir)
-    gym = h_CPPGym(params.gym)
-    trainer = h_DDQNTrainer(params.trainer, gym, logger)
+    gym = HCPPGym(params.gym)
+    trainer = HDDQNTrainer(params.trainer, gym, logger)
     evaluator = Evaluator(params.evaluator, trainer, gym)
     logger.evaluator = evaluator
 

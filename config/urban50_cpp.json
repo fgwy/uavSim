@@ -50,7 +50,7 @@
         "use_global_local": true,
         "global_map_scaling": 5,
         "local_map_size": 17,
-        "print_summary": false
+        "print_summary": true
     },
     "physics_params": {
         "camera_params": {

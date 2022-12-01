@@ -107,8 +107,9 @@ class AbstractParams(DataClassJsonMixin):
                 tf.config.experimental.set_memory_growth(gpu_used, True)
                 print('Using following GPU: ', gpu_used.name)
             except:
-                print("Not too good probably")
-                exit(0)
+                print("Training with no PGU: Not too good probably: Invalid device or cannot modify virtual devices once initialized.")
+                # exit(0)
+                os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
                 # Invalid device or cannot modify virtual devices once initialized.
                 pass
         return params, args
